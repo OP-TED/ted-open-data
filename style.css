@@ -1,0 +1,27 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+#header {
+    background-color: #003366; /* TED Blue */
+    color: #fff;
+    padding: 1em;
+    text-align: center;
+}
+form {
+    max-width: 600px;
+    margin: 2em auto;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+}
+#results {
+    max-width: 600px;
+    margin: 2em auto;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f1f1f1;
+}

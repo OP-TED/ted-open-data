@@ -7,6 +7,30 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="header">
+        <h1>TED SPARQL Query Editor</h1>
+    </div>
+    
+    <!-- Updated Form -->
+    <form id="queryForm" action="javascript:void(0);">
+        <label for="default-graph-uri">Default Graph IRI:</label>
+        <input type="text" id="default-graph-uri" name="default-graph-uri" placeholder="Optional">
+
+        <label for="query">SPARQL Query:</label>
+        <textarea id="query" name="query" rows="10" cols="50" placeholder="Enter your SPARQL query here"></textarea>
+
+        <label for="format">Results Format:</label>
+        <select id="format" name="format">
+            <option value="application/sparql-results+json" selected>JSON</option>
+            <option value="application/sparql-results+xml">XML</option>
+            <option value="text/csv">CSV</option>
+        </select>
+
+        <button type="submit">Run Query</button>
+    </form>
+    
+    <div id="results"></div>
+
     <script src="script.js"></script>
 </body>
 </html>
