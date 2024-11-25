@@ -1,36 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TED SPARQL Query Editor</title>
-    <link rel="stylesheet" href="style.css">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom TED Branding -->
+    <link rel="stylesheet" href="src/assets/style.css">
+
+    <!-- Favicon (if applicable) -->
+    <link rel="icon" type="image/png" href="/path-to-ted-favicon.png">
 </head>
-<body>
-    <div id="header">
-        <h1>TED SPARQL Query Editor</h1>
-    </div>
-    
-    <!-- Updated Form -->
-    <form id="queryForm" action="javascript:void(0);">
-        <label for="default-graph-uri">Default Graph IRI:</label>
-        <input type="text" id="default-graph-uri" name="default-graph-uri" placeholder="Optional">
 
-        <label for="query">SPARQL Query:</label>
-        <textarea id="query" name="query" rows="10" cols="50" placeholder="Enter your SPARQL query here"></textarea>
+<body class="bg-light">
 
-        <label for="format">Results Format:</label>
-        <select id="format" name="format">
-            <option value="application/sparql-results+json" selected>JSON</option>
-            <option value="application/sparql-results+xml">XML</option>
-            <option value="text/csv">CSV</option>
-        </select>
+    <!-- Header -->
+    <header class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="./src/assets/ted-logo.png" alt="TED - Publications Office of the EU" width="60"
+                    class="d-inline-block align-middle mr-2"><span>TED Open Data Service</span>
+            </a>
+            <div class="d-flex align-items-center arrow">
+                <!-- not used for now -->
+            </div>
+        </div>
+    </header>
 
-        <button type="submit">Run Query</button>
-    </form>
-    
-    <div id="results"></div>
+    <nav>
+        <ul class="nav nav-tabs" role="tablist">
+            <div style="width: 20px;"><!-- leaves some space before the first tab --></div>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
+                    type="button" role="tab" aria-controls="home-tab-content" aria-selected="true">Home</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="query-editor-tab" data-bs-toggle="tab" data-bs-target="#query-editor"
+                    type="button" role="tab" aria-controls="query-editor" aria-selected="false">Query Editor</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="query-results-tab" data-bs-toggle="tab" data-bs-target="#query-results"
+                    type="button" role="tab" aria-controls="query-results" aria-selected="false">Query Results</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
+                    aria-controls="help" aria-selected="false">Help</button>
+            </li>
+            <div class="spinner-grow spinner-grow-sm text-info ml-auto" role="status" id="centralLoadingSpinner"
+                style="visibility: hidden;" data-bs-toggle="popover" data-trigger="manual" data-placement="top"
+                data-html="true" data-step="2" title="Loading indicator"
+                data-content="<p>A flashing indicator will appear here while data is being processed in the background.</p><p>The SDK Explorer downloads and compares SDK versions from GitHub every time you switch to a different tab. This is done to conserve memory on your browser.</p><div class='tour-button-container'><a href='#' class='btn btn-link cancel-tour'>Cancel</a><a href='#' class='btn btn-primary next-step'>Next</a></div>">
+            </div>
+        </ul>
+    </nav>
 
-    <script src="script.js"></script>
+    <main class="tab-content">
+
+        <!-- Home -->
+        <div class="tab-pane h-100 fade show active" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
+            <div class="alert alert-warning" role="alert"><b>Please note</b>: This is a pre-release version of the TED SPARQL Editor. Some features may not be fully functional.</div>
+            <div class="jumbotron">
+                <h1 class="display-4">TED SPARQL Editor</h1>
+                <p class="lead">Explore and download TED Open Data using SPARQL queries.</p>
+                <hr class="my-4">
+                <p>The TED SPARQL Editor, is a tool that allows you to query and explore TED Open Data using SPARQL.
+                    The application is being developed by the Publications Office of the EU and is available as open
+                    source on <a href="https://github.com/OP-TED/ted-sparql-editor">GitHub</a>. We welcome your
+                    feedback, suggestions for improvement as well as your contributions to the project.
+                </p>
+                <button id="start-tour" class="btn btn-primary">Write your query</button>
+            </div>
+        </div> <!-- Close home-tab-content div -->
+
+        <!-- Main Container -->
+        <div class="tab-pane h-100 fade" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
+            <!-- Query Form -->
+            <form id="queryForm" class="d-flex flex-column h-100">
+                <div class="mb-3 flex-grow-1 d-flex flex-column">
+                    <div class="form-group flex-grow-1 d-flex flex-column">
+                        <label for="query" class="form-label">SPARQL Query</label>
+                        <textarea id="query" name="query" class="form-control flex-grow-1" placeholder="Add your SPARQL query here"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <select id="format" name="format" class="form-select">
+                        <option value="auto" selected>Auto</option>
+                        <option value="text/html">HTML</option>
+                        <option value="text/x-html+tr">HTML (Basic Browsing Links)</option>
+                        <option value="application/vnd.ms-excel">Spreadsheet</option>
+                        <option value="application/sparql-results+xml">XML</option>
+                        <option value="application/sparql-results+json">JSON</option>
+                        <option value="application/javascript">Javascript</option>
+                        <option value="text/turtle">Turtle</option>
+                        <option value="application/rdf+xml">RDF/XML</option>
+                        <option value="text/plain">N-Triples</option>
+                        <option value="text/csv">CSV</option>
+                        <option value="text/tab-separated-values">TSV</option>
+                    </select>
+                    <label for="format">Results Format</label>
+                </div>
+
+                <div class="mb-3 d-flex justify-content-between">
+                    <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#optionsCollapse" aria-expanded="false" aria-controls="optionsCollapse">
+                        Options
+                    </button>
+                    <button type="submit" class="btn btn-primary">Run Query</button>
+                </div>
+
+                <div class="collapse" id="optionsCollapse">
+                    <div class="card card-body">
+                        <div class="d-flex">
+                            <div class="form-floating mb-3 me-2 flex-grow-1">
+                                <input type="text" id="default-graph-uri" name="default-graph-uri" class="form-control"
+                                    placeholder="Enter Graph IRI (optional)">
+                                <label for="default-graph-uri">Default Graph IRI</label>
+                            </div>
+
+                            <div class="form-floating mb-3 flex-grow-1">
+                                <input type="number" id="timeout" name="timeout" class="form-control"
+                                    placeholder="Enter timeout in milliseconds (optional)">
+                                <label for="timeout">Timeout (ms)</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap">
+                            <div class="form-check mb-3 me-3">
+                                <input class="form-check-input" type="checkbox" id="strict" name="strict">
+                                <label class="form-check-label" for="strict">Strict checking of void variables</label>
+                            </div>
+
+                            <div class="form-check mb-3 me-3">
+                                <input class="form-check-input" type="checkbox" id="debug" name="debug">
+                                <label class="form-check-label" for="debug">Log debug info at the end of output</label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="report" name="report">
+                                <label class="form-check-label" for="report">Generate SPARQL compilation report</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div> <!-- Close query-editor div -->
+
+        <!-- Query Results -->
+        <div class="tab-pane h-100 fade" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
+            <!-- Copy URL Alert Box -->
+            <div class="alert alert-info d-flex justify-content-between align-items-center mb-2" id="copy-url-alert" style="display: none!important;">
+                <span>You can run this query directly from any application (i.e. Excel) by using its URL.</span>
+                <button id="copy-url-button" class="btn btn-secondary">Copy URL</button>
+            </div>
+            <!-- Results Section -->
+            <div id="results">
+                <p class="text-muted">Query results will appear here...</p>
+            </div>
+        </div> <!-- Close query-results div -->
+
+        <!-- Help -->
+        <div class="tab-pane h-100 fade" id="help" role="tabpanel" aria-labelledby="help-tab">
+            <div class="container mt-4">
+                <h2>Help</h2>
+                <p>This is the help section. Here you can find information on how to use the TED SPARQL Query Editor.</p>
+                <ul>
+                    <li><strong>Home:</strong> Overview of the application.</li>
+                    <li><strong>Query Editor:</strong> Write and run your SPARQL queries.</li>
+                    <li><strong>Query Results:</strong> View the results of your queries.</li>
+                </ul>
+                <p>For more detailed documentation, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation page</a>.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="d-flex w-100">
+        <!-- Legend -->
+        <div class="legend-container flex-grow-1 ml-3">
+            Developed by the Publications Office of the EU.
+        </div>
+        <div class="progress mr-3" style="width: 10%; min-width: 100px">
+            <div class="progress-bar bg-info" role="progressbar" style="width: 0%;"></div>
+        </div>
+        <div id="apiStatus" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+            <div class="toast-header">
+                <svg width="16" height="16" class="rounded mr-2">
+                    <rect width="16" height="16" fill="red"></rect>
+                </svg>
+                <strong class="mr-auto">Error</strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <ul class="toast-body">
+                <!-- Error message will be inserted here -->
+            </ul>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript File -->
+    <script src="src/js/script.js"></script>
 </body>
+
 </html>

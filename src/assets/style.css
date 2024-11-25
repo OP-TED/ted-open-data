@@ -1,0 +1,140 @@
+/* TED Branding */
+:root {
+    --op-green-color: #2c862d;
+    --dark-background-color: #EEEEEE;
+    --light-background-color: #f8f9fa;
+    --border-color: #ddd;
+
+    --ted-primary: #2c862d; /* TED blue */
+    --ted-secondary: #0055cc; /* Lighter blue */
+    --ted-text-color: #fff; /* Text color */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body > header {
+    background-color: var(--dark-background-color);
+    border-bottom: 6px solid var(--op-green-color);
+    height: 84px;
+}
+
+body > footer {
+    height: 42px;
+    background-color: var(--light-background-color);
+    border-top: 1px solid var(--border-color);
+    align-items: center;
+    padding: 0 20px;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar */
+.navbar-brand img {
+    margin-right: 10px;
+}
+
+.navbar-dark .navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* Page Header */
+.text-primary {
+    color: var(--ted-primary) !important;
+}
+
+/* Card Styles */
+.card-header {
+    background-color: var(--ted-primary);
+    color: white;
+    font-weight: 500;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--ted-primary);
+    border-color: var(--ted-primary);
+}
+
+.btn-primary:hover {
+    background-color: #002080;
+    border-color: #002080;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--dark-background-color);
+    color: var(--ted-text-color);
+    margin-top: auto;
+}
+
+/* Results Section */
+#results {
+    min-height: 150px;
+}
+
+/* Header Styles */
+.header {
+    background-color: var(--ted-primary);
+    color: var(--ted-text-color);
+    padding: 20px 0;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.header p {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+.tab-pane {
+    padding: 20px;
+}
+
+.tab-content {
+    background-color: white;
+}
+
+.nav-tabs {
+    margin-top: 10px; /* Adjust the value as needed */
+}
+
+#help .container {
+    padding-left: 0; /* Remove left padding */
+    margin-left: 0; /* Remove left margin */
+}
+
+#queryForm {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#queryForm .form-label {
+    margin-bottom: 0;
+}
+
+#optionsCollapse {
+    margin-top: 10px;
+}
+
+#optionsCollapse .form-check {
+    flex: 1 1 auto;
+}
+
+#queryForm .form-control.flex-grow-1 {
+    height: auto;
+    min-height: 200px;
+}
