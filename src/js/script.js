@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
     copyUrlButton.addEventListener('click', function () {
         const query = document.getElementById("query").value;
         const format = document.getElementById("format").value || "application/sparql-results+json";
-        const endpoint = "https://cellar-test.publications.europa.eu/webapi/rdf/sparql";
+        const endpoint = "http://cellar-test.publications.europa.eu/webapi/rdf/sparql";
         const url = `${endpoint}?query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`;
         navigator.clipboard.writeText(url).then(() => {
             alert('URL copied to clipboard');
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const strict = document.getElementById("strict").checked ? "true" : "false";
         const debug = document.getElementById("debug").checked ? "true" : "false";
         const report = document.getElementById("report").checked ? "true" : "false";
-        const endpoint = "https://cellar-test.publications.europa.eu/webapi/rdf/sparql"; // Correct endpoint
+        const endpoint = "http://cellar-test.publications.europa.eu/webapi/rdf/sparql"; // Correct endpoint
 
         const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
             + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
