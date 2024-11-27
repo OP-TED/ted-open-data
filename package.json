@@ -1,0 +1,14 @@
+{
+  "name": "ted-sparql-editor",
+  "version": "1.0.0",
+  "description": "TED SPARQL Query Editor",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/js/cors-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-fetch": "^2.6.1",
+    "cors": "^2.8.5"
+  }
+}

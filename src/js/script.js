@@ -15,11 +15,23 @@ async function loadConfig() {
 
 // Function to get SPARQL endpoint
 function getSparqlEndpoint(env) {
-  if (config.environments.cellar[env]) {
-    return config.environments.cellar[env].sparqlEndpoint;
-  } else {
+  let endpoint = config.environments.cellar[env]?.sparqlEndpoint;
+  if (!endpoint) {
     throw new Error(`Environment ${env} not found in configuration`);
   }
+  if (appEnvironment === 'development') {
+    endpoint = `http://localhost:8080/proxy?url=${encodeURIComponent(endpoint)}`;
+  }
+  return endpoint;
+}
+
+// Function to get original SPARQL endpoint (without proxy)
+function getOriginalSparqlEndpoint(env) {
+  let endpoint = config.environments.cellar[env]?.sparqlEndpoint;
+  if (!endpoint) {
+    throw new Error(`Environment ${env} not found in configuration`);
+  }
+  return endpoint;
 }
 
 // Function to get app configuration
@@ -82,7 +94,14 @@ document.addEventListener('DOMContentLoaded', async function () {
   copyUrlButton.addEventListener('click', function () {
     const query = document.getElementById("query").value;
     const format = document.getElementById("format").value || "application/sparql-results+json";
-    const url = `${sparqlEndpoint}?query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`;
+    const defaultGraphUri = document.getElementById("default-graph-uri").value;
+    const timeout = document.getElementById("timeout").value || 30000;
+    const shouldSponge = ""; // Assuming this is a fixed value
+
+    // Use the original SPARQL endpoint URL
+    const originalSparqlEndpoint = getOriginalSparqlEndpoint(sparqlEnvironment);
+    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&should-sponge=${encodeURIComponent(shouldSponge)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    
     navigator.clipboard.writeText(url).then(() => {
       alert('URL copied to clipboard');
     }).catch(err => {
