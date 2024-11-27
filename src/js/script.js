@@ -3,7 +3,10 @@ let config;
 let sparqlEndpoint;
 
 async function loadConfig() {
-  const response = await fetch('../../config.json');
+  const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? ''
+    : '/ted-sparql-editor';
+  const response = await fetch(`${baseUrl}/config.json`);
   if (!response.ok) {
     throw new Error(`Failed to load configuration: ${response.statusText}`);
   }
