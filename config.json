@@ -1,0 +1,20 @@
+{
+  "environments": {
+    "cellar": {
+      "test": {
+        "sparqlEndpoint": "http://cellar-test.publications.europa.eu/webapi/rdf/sparql"
+      },
+      "production": {
+        "sparqlEndpoint": "https://publications.europa.eu/webapi/rdf/sparql"
+      }
+    },
+    "application": {
+      "development": {
+        "someConfigKey": "someConfigValue"
+      },
+      "production": {
+        "someConfigKey": "someOtherConfigValue"
+      }
+    }
+  }
+}
