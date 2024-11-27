@@ -2,7 +2,7 @@
   "environments": {
     "cellar": {
       "test": {
-        "sparqlEndpoint": "http://cellar-test.publications.europa.eu/webapi/rdf/sparql"
+        "sparqlEndpoint": "https://virtuoso.cellar.development.op.aws.cloud.tech.ec.europa.eu/sparql"
       },
       "production": {
         "sparqlEndpoint": "https://publications.europa.eu/webapi/rdf/sparql"
