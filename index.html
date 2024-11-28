@@ -1,10 +1,23 @@
+<!--
+  Copyright 2022 European Union
+
+  Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
+  Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
+  compliance with the Licence. You may obtain a copy of the Licence at:
+  https://joinup.ec.europa.eu/software/page/eupl
+
+  Unless required by applicable law or agreed to in writing, software distributed under the Licence
+  is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+  or implied. See the Licence for the specific language governing permissions and limitations under
+  the Licence
+-->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TED SPARQL Query Editor</title>
+    <title>TED Open Data Service</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -14,6 +27,10 @@
 
     <!-- Favicon (if applicable) -->
     <link rel="icon" type="image/png" href="/path-to-ted-favicon.png">
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
 </head>
 
 <body class="bg-light">
@@ -32,7 +49,7 @@
     </header>
 
     <nav>
-        <ul class="nav nav-tabs" role="tablist">
+        <ul class="nav nav-tabs w-100 d-flex align-items-center" role="tablist">
             <div style="width: 20px;"><!-- leaves some space before the first tab --></div>
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
@@ -50,25 +67,31 @@
                 <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
                     aria-controls="help" aria-selected="false">Help</button>
             </li>
-            <div class="spinner-grow spinner-grow-sm text-info ml-auto" role="status" id="centralLoadingSpinner"
-                style="visibility: hidden;" data-bs-toggle="popover" data-trigger="manual" data-placement="top"
-                data-html="true" data-step="2" title="Loading indicator"
-                data-content="<p>A flashing indicator will appear here while data is being processed in the background.</p><p>The SDK Explorer downloads and compares SDK versions from GitHub every time you switch to a different tab. This is done to conserve memory on your browser.</p><div class='tour-button-container'><a href='#' class='btn btn-link cancel-tour'>Cancel</a><a href='#' class='btn btn-primary next-step'>Next</a></div>">
-            </div>
+            <li class="flex-grow-1"></li> <!-- Spacer -->
+            <div style="width: 20px;"></div> <!-- Right margin -->
         </ul>
     </nav>
 
-    <main class="tab-content">
+    <main class="tab-content h-100">
 
         <!-- Home -->
-        <div class="tab-pane h-100 fade show active" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
+        <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
             <div class="alert alert-warning" role="alert"><b>Please note</b>: This is a pre-release version of the TED SPARQL Editor. Some features may not be fully functional.</div>
             <div class="jumbotron">
-                <h1 class="display-4">TED SPARQL Editor</h1>
+                <h1 class="display-4">TED Open Data</h1>
                 <p class="lead">Explore and download TED Open Data using SPARQL queries.</p>
                 <hr class="my-4">
-                <p>The TED SPARQL Editor, is a tool that allows you to query and explore TED Open Data using SPARQL.
-                    The application is being developed by the Publications Office of the EU and is available as open
+                <p>
+                    The public procurement data collected by the Publications Office is available as Linked Open Data in the TED Open Data Service.
+                </p>
+                <p>
+                    This tool allows you to explore and download TED Open Data using SPARQL queries. 
+                    You can use it to compose your queries, test them, and customise the dataset that you want to retrieve. 
+                    You can then use these queries to retrieve live data directly into your applications. 
+                    See the Help tab for more information or writing queries and examples on how to connect Excel and other applications with TED Open Data, for further analysis and reporting.
+                </p>
+                <p>
+                    This application is developed by the Publications Office of the EU and is available as open
                     source on <a href="https://github.com/OP-TED/ted-sparql-editor">GitHub</a>. We welcome your
                     feedback, suggestions for improvement as well as your contributions to the project.
                 </p>
@@ -77,7 +100,7 @@
         </div> <!-- Close home-tab-content div -->
 
         <!-- Main Container -->
-        <div class="tab-pane h-100 fade" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
+        <div class="tab-pane w-100 fade position-absolute" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
             <!-- Query Form -->
             <form id="queryForm" class="d-flex flex-column h-100">
                 <div class="mb-3 flex-grow-1 d-flex flex-column">
@@ -109,40 +132,54 @@
                     <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#optionsCollapse" aria-expanded="false" aria-controls="optionsCollapse">
                         Options
                     </button>
-                    <button type="submit" class="btn btn-primary">Run Query</button>
+                    <button type="submit" class="btn btn-primary" id="runQueryButton" disabled>Run Query</button>
                 </div>
 
                 <div class="collapse" id="optionsCollapse">
                     <div class="card card-body">
-                        <div class="d-flex">
-                            <div class="form-floating mb-3 me-2 flex-grow-1">
-                                <input type="text" id="default-graph-uri" name="default-graph-uri" class="form-control"
-                                    placeholder="Enter Graph IRI (optional)">
-                                <label for="default-graph-uri">Default Graph IRI</label>
+                        <div class="row">
+                            <!-- First Column: Inputs -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="number" id="timeout" name="timeout" class="form-control"
+                                        placeholder="Enter timeout in milliseconds (optional)">
+                                    <label for="timeout">Timeout (ms)</label>
+                                </div>
+
+                                <div class="form-floating">
+                                    <select id="cellarEnvironment" class="form-select">
+                                        <option value="production" selected>Production</option>
+                                        <option value="test">Test</option>
+                                    </select>
+                                    <label for="cellarEnvironment">Environment</label>
+                                </div>
                             </div>
 
-                            <div class="form-floating mb-3 flex-grow-1">
-                                <input type="number" id="timeout" name="timeout" class="form-control"
-                                    placeholder="Enter timeout in milliseconds (optional)">
-                                <label for="timeout">Timeout (ms)</label>
+                            <!-- Second Column: Checkboxes -->
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="strict" name="strict" checked>
+                                        <label class="form-check-label" for="strict">Strict checking of void variables</label>
+                                    </div>
+
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="debug" name="debug">
+                                        <label class="form-check-label" for="debug">Log debug info at the end of output</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="report" name="report">
+                                        <label class="form-check-label" for="report">Generate SPARQL compilation report</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="d-flex flex-wrap">
-                            <div class="form-check mb-3 me-3">
-                                <input class="form-check-input" type="checkbox" id="strict" name="strict">
-                                <label class="form-check-label" for="strict">Strict checking of void variables</label>
-                            </div>
-
-                            <div class="form-check mb-3 me-3">
-                                <input class="form-check-input" type="checkbox" id="debug" name="debug">
-                                <label class="form-check-label" for="debug">Log debug info at the end of output</label>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="report" name="report">
-                                <label class="form-check-label" for="report">Generate SPARQL compilation report</label>
-                            </div>
+                        <!-- Keep the hidden default-graph-uri input -->
+                        <div class="d-none">
+                            <input type="text" id="default-graph-uri" name="default-graph-uri" class="form-control"
+                                placeholder="Enter Graph IRI (optional)">
                         </div>
                     </div>
                 </div>
@@ -150,11 +187,14 @@
         </div> <!-- Close query-editor div -->
 
         <!-- Query Results -->
-        <div class="tab-pane h-100 fade" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
+        <div class="tab-pane w-100 fade position-absolute" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
             <!-- Copy URL Alert Box -->
             <div class="alert alert-info d-flex justify-content-between align-items-center mb-2" id="copy-url-alert" style="display: none!important;">
-                <span>You can run this query directly from any application (i.e. Excel) by using its URL.</span>
-                <button id="copy-url-button" class="btn btn-secondary">Copy URL</button>
+                <span>You can run this query directly from Excel or any other application by using its URL.</span>
+                <div>
+                    <button id="copy-url-button" class="btn btn-secondary me-2">Copy URL</button>
+                    <button id="open-url-button" class="btn btn-secondary">Download</button>
+                </div>
             </div>
             <!-- Results Section -->
             <div id="results">
@@ -163,16 +203,82 @@
         </div> <!-- Close query-results div -->
 
         <!-- Help -->
-        <div class="tab-pane h-100 fade" id="help" role="tabpanel" aria-labelledby="help-tab">
-            <div class="container mt-4">
-                <h2>Help</h2>
-                <p>This is the help section. Here you can find information on how to use the TED SPARQL Query Editor.</p>
-                <ul>
-                    <li><strong>Home:</strong> Overview of the application.</li>
-                    <li><strong>Query Editor:</strong> Write and run your SPARQL queries.</li>
-                    <li><strong>Query Results:</strong> View the results of your queries.</li>
-                </ul>
-                <p>For more detailed documentation, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation page</a>.</p>
+        <div class="tab-pane w-100 fade position-absolute" id="help" role="tabpanel" aria-labelledby="help-tab">
+            <div class="container-fluid mt-4">
+                <div class="row">
+                    <!-- Left Column - Help Content -->
+                    <div class="col-lg-8">
+                        <h2>Help</h2>
+                        <p>
+                            The TED Open Data Service allows you to extract custom datasets from the entire collection of public procurement data published by the Publications Office. 
+                            This is made possible with Semantic Web technologies, specifically the SPARQL query language which allows you to specify the data you want to retrieve to meet the specific needs of your application.
+                        </p>
+                        <p>
+                            To use this tool you will need to develop some familiarity with the logic and syntax of SPARQL as well as the concepts defined in the eProcurement Ontology. 
+                            For detailed information and guidance on these topics, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation website</a>.</p>
+                        </p>
+                        <h3>How to use this tool</h3>
+                        <p>
+                            <ul>
+                                <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
+                                <li>To test your query use the <b>Run Query</b> button.</li>
+                                <li>The results will be displayed in the <b>Query Results</b> tab.</li>
+                                <li>You can get a URL that directly runs your query by clicking on the <b>Copy URL</b> button in the <b>Query Results</b> tab.<br/> 
+                                    You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
+                                <li>To download a copy of the data retrieved by your query you can use the <b>Download</b> button in the <b>Query Results</b> tab.</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <!-- Right Column - Components -->
+                    <div class="col-lg-4">
+                        <!-- Third-Party Components -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Third-Party Components</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Frontend Components</h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <strong>Bootstrap</strong> (v5.3.0-alpha3)
+                                        <br><small class="text-muted">CSS framework for styling and components</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>CodeMirror</strong> (v5.65.2)
+                                        <br><small class="text-muted">Code editor with SPARQL syntax highlighting</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                </ul>
+
+                                <h6 class="mt-4">Backend Components</h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <strong>Express</strong> (v4.17.1)
+                                        <br><small class="text-muted">Web server framework</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>cors</strong> (v2.8.5)
+                                        <br><small class="text-muted">CORS middleware for Express</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>node-fetch</strong> (v2.6.1)
+                                        <br><small class="text-muted">Fetch API implementation for Node.js</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li>
+                                        <strong>https-proxy-agent</strong> (v7.0.5)
+                                        <br><small class="text-muted">HTTP(s) proxy agent for Node.js</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -185,7 +291,7 @@
             Developed by the Publications Office of the EU.
         </div>
         <div class="progress mr-3" style="width: 10%; min-width: 100px">
-            <div class="progress-bar bg-info" role="progressbar" style="width: 0%;"></div>
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
         </div>
         <div id="apiStatus" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
             <div class="toast-header">
@@ -203,11 +309,28 @@
         </div>
     </footer>
 
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="copyUrlToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">TED SPARQL Editor</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                URL copied to clipboard
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- JavaScript File -->
     <script src="src/js/script.js"></script>
+
+    <!-- Add these before the closing body tag -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sparql/sparql.min.js"></script>
 </body>
 
 </html>
