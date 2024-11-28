@@ -17,7 +17,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TED SPARQL Query Editor</title>
+    <title>TED Open Data Service</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -78,11 +78,20 @@
         <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
             <div class="alert alert-warning" role="alert"><b>Please note</b>: This is a pre-release version of the TED SPARQL Editor. Some features may not be fully functional.</div>
             <div class="jumbotron">
-                <h1 class="display-4">TED SPARQL Editor</h1>
+                <h1 class="display-4">TED Open Data</h1>
                 <p class="lead">Explore and download TED Open Data using SPARQL queries.</p>
                 <hr class="my-4">
-                <p>The TED SPARQL Editor, is a tool that allows you to query and explore TED Open Data using SPARQL.
-                    The application is being developed by the Publications Office of the EU and is available as open
+                <p>
+                    The public procurement data collected by the Publications Office is available as Linked Open Data in the TED Open Data Service.
+                </p>
+                <p>
+                    This tool allows you to explore and download TED Open Data using SPARQL queries. 
+                    You can use it to compose your queries, test them, and customise the dataset that you want to retrieve. 
+                    You can then use these queries to retrieve live data directly into your applications. 
+                    See the Help tab for more information or writing queries and examples on how to connect Excel and other applications with TED Open Data, for further analysis and reporting.
+                </p>
+                <p>
+                    This application is developed by the Publications Office of the EU and is available as open
                     source on <a href="https://github.com/OP-TED/ted-sparql-editor">GitHub</a>. We welcome your
                     feedback, suggestions for improvement as well as your contributions to the project.
                 </p>
@@ -200,13 +209,25 @@
                     <!-- Left Column - Help Content -->
                     <div class="col-lg-8">
                         <h2>Help</h2>
-                        <p>This is the help section. Here you can find information on how to use the TED SPARQL Query Editor.</p>
-                        <ul>
-                            <li><strong>Home:</strong> Overview of the application.</li>
-                            <li><strong>Query Editor:</strong> Write and run your SPARQL queries.</li>
-                            <li><strong>Query Results:</strong> View the results of your queries.</li>
-                        </ul>
-                        <p>For more detailed documentation, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation page</a>.</p>
+                        <p>
+                            The TED Open Data Service allows you to extract custom datasets from the entire collection of public procurement data published by the Publications Office. 
+                            This is made possible with Semantic Web technologies, specifically the SPARQL query language which allows you to specify the data you want to retrieve to meet the specific needs of your application.
+                        </p>
+                        <p>
+                            To use this tool you will need to develop some familiarity with the logic and syntax of SPARQL as well as the concepts defined in the eProcurement Ontology. 
+                            For detailed information and guidance on these topics, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation website</a>.</p>
+                        </p>
+                        <h3>How to use this tool</h3>
+                        <p>
+                            <ul>
+                                <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
+                                <li>To test your query use the <b>Run Query</b> button.</li>
+                                <li>The results will be displayed in the <b>Query Results</b> tab.</li>
+                                <li>You can get a URL that directly runs your query by clicking on the <b>Copy URL</b> button in the <b>Query Results</b> tab.<br/> 
+                                    You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
+                                <li>To download a copy of the data retrieved by your query you can use the <b>Download</b> button in the <b>Query Results</b> tab.</li>
+                            </ul>
+                        </p>
                     </div>
 
                     <!-- Right Column - Components -->
