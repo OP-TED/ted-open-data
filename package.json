@@ -7,8 +7,9 @@
     "start": "node src/js/cors-proxy.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.1",
-    "node-fetch": "^2.6.1",
-    "cors": "^2.8.5"
+    "https-proxy-agent": "^7.0.5",
+    "node-fetch": "^2.6.1"
   }
 }

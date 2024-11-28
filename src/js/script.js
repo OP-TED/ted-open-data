@@ -96,12 +96,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
-    const shouldSponge = ""; // Assuming this is a fixed value
 
     // Use the original SPARQL endpoint URL
     const originalSparqlEndpoint = getOriginalSparqlEndpoint(sparqlEnvironment);
-    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&should-sponge=${encodeURIComponent(shouldSponge)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
+    console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
       alert('URL copied to clipboard');
     }).catch(err => {
@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       + `&strict=${encodeURIComponent(strict)}`
       + `&debug=${encodeURIComponent(debug)}`
       + `&report=${encodeURIComponent(report)}`;
+
+    console.log(`Request body: ${body}`);
+    console.log(`Sending request to: ${sparqlEndpoint}`);
 
     try {
       const response = await fetch(sparqlEndpoint, {
