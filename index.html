@@ -32,7 +32,7 @@
     </header>
 
     <nav>
-        <ul class="nav nav-tabs" role="tablist">
+        <ul class="nav nav-tabs w-100 d-flex align-items-center" role="tablist">
             <div style="width: 20px;"><!-- leaves some space before the first tab --></div>
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
@@ -50,11 +50,8 @@
                 <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
                     aria-controls="help" aria-selected="false">Help</button>
             </li>
-            <div class="spinner-grow spinner-grow-sm text-info ml-auto" role="status" id="centralLoadingSpinner"
-                style="visibility: hidden;" data-bs-toggle="popover" data-trigger="manual" data-placement="top"
-                data-html="true" data-step="2" title="Loading indicator"
-                data-content="<p>A flashing indicator will appear here while data is being processed in the background.</p><p>The SDK Explorer downloads and compares SDK versions from GitHub every time you switch to a different tab. This is done to conserve memory on your browser.</p><div class='tour-button-container'><a href='#' class='btn btn-link cancel-tour'>Cancel</a><a href='#' class='btn btn-primary next-step'>Next</a></div>">
-            </div>
+            <li class="flex-grow-1"></li> <!-- Spacer -->
+            <div style="width: 20px;"></div> <!-- Right margin -->
         </ul>
     </nav>
 
@@ -204,7 +201,7 @@
             Developed by the Publications Office of the EU.
         </div>
         <div class="progress mr-3" style="width: 10%; min-width: 100px">
-            <div class="progress-bar bg-info" role="progressbar" style="width: 0%;"></div>
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
         </div>
         <div id="apiStatus" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
             <div class="toast-header">

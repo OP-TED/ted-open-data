@@ -127,26 +127,33 @@ document.addEventListener('DOMContentLoaded', async function () {
   queryForm.addEventListener('submit', async function (event) {
     event.preventDefault();
     
-    // Run the query
-    const query = document.getElementById("query").value;
-    const format = document.getElementById("format").value || "application/sparql-results+json";
-    const defaultGraphUri = document.getElementById("default-graph-uri").value;
-    const timeout = document.getElementById("timeout").value;
-    const strict = document.getElementById("strict").checked ? "true" : "false";
-    const debug = document.getElementById("debug").checked ? "true" : "false";
-    const report = document.getElementById("report").checked ? "true" : "false";
-
-    const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
-      + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
-      + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
-      + `&strict=${encodeURIComponent(strict)}`
-      + `&debug=${encodeURIComponent(debug)}`
-      + `&report=${encodeURIComponent(report)}`;
-
-    console.log(`Request body: ${body}`);
-    console.log(`Sending request to: ${sparqlEndpoint}`);
-
+    // Show progress bar and disable Run Query button
+    const progressBar = document.querySelector('.progress-bar');
+    const submitButton = this.querySelector('button[type="submit"]');
+    progressBar.style.width = '100%';
+    progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    submitButton.disabled = true;
+    
     try {
+      // Run the query
+      const query = document.getElementById("query").value;
+      const format = document.getElementById("format").value || "application/sparql-results+json";
+      const defaultGraphUri = document.getElementById("default-graph-uri").value;
+      const timeout = document.getElementById("timeout").value;
+      const strict = document.getElementById("strict").checked ? "true" : "false";
+      const debug = document.getElementById("debug").checked ? "true" : "false";
+      const report = document.getElementById("report").checked ? "true" : "false";
+
+      const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
+        + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
+        + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
+        + `&strict=${encodeURIComponent(strict)}`
+        + `&debug=${encodeURIComponent(debug)}`
+        + `&report=${encodeURIComponent(report)}`;
+
+      console.log(`Request body: ${body}`);
+      console.log(`Sending request to: ${sparqlEndpoint}`);
+
       const response = await fetch(sparqlEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -185,6 +192,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     } catch (error) {
       document.getElementById("results").textContent = `Error: ${error.message}`;
       copyUrlAlert.style.display = 'none'; // Hide the alert box if there's an error
+    } finally {
+      // Reset progress bar and re-enable Run Query button
+      progressBar.style.width = '0%';
+      progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+      submitButton.disabled = false;
     }
 
     // Switch to the results tab
