@@ -84,9 +84,11 @@ main {
     border-color: var(--ted-primary);
 }
 
-.btn-primary:hover {
-    background-color: #002080;
-    border-color: #002080;
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: #236b24; /* Darker shade of TED green */
+    border-color: #236b24;
 }
 
 .btn-primary:disabled {

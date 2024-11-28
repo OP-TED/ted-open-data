@@ -69,6 +69,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     return;
   }
 
+  // Get references to elements
+  const queryTextarea = document.getElementById('query');
+  const runQueryButton = document.getElementById('runQueryButton');
+
+  // Add event listener for textarea changes
+  queryTextarea.addEventListener('input', function() {
+    runQueryButton.disabled = !this.value.trim();
+  });
+
   // DOM elements
   const queryForm = document.getElementById('queryForm');
   const queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
