@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
   const copyUrlButton = document.getElementById('copy-url-button');
   const copyUrlAlert = document.getElementById('copy-url-alert');
+  const openUrlButton = document.getElementById('open-url-button');
   const cellarEnvironmentSelect = document.getElementById('cellarEnvironment');
 
   // Set the environment (test or production)
@@ -103,10 +104,24 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
-      alert('URL copied to clipboard');
+      const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
+      toast.show();
     }).catch(err => {
-      alert('Failed to copy URL');
+      console.error('Failed to copy URL:', err);
     });
+  });
+
+  openUrlButton.addEventListener('click', function () {
+    const query = document.getElementById("query").value;
+    const format = document.getElementById("format").value || "application/sparql-results+json";
+    const defaultGraphUri = document.getElementById("default-graph-uri").value;
+    const timeout = document.getElementById("timeout").value || 30000;
+
+    // Use the original SPARQL endpoint URL
+    const originalSparqlEndpoint = getOriginalSparqlEndpoint(sparqlEnvironment);
+    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    
+    window.open(url, '_blank');
   });
 
   queryForm.addEventListener('submit', async function (event) {
@@ -142,8 +157,31 @@ document.addEventListener('DOMContentLoaded', async function () {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const result = await response.json(); // Assuming JSON format
-      displayResults(result);
+      const contentType = response.headers.get('content-type');
+      let result;
+
+      if (contentType.includes('json')) {
+        result = await response.json();
+        displayJsonResults(result);
+      } else if (contentType.includes('html') || 
+                 format === 'text/html' || 
+                 format === 'text/x-html+tr' ||
+                 format === 'application/vnd.ms-excel') {
+        // Handle HTML and spreadsheet content
+        result = await response.text();
+        resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = result;
+        copyUrlAlert.style.display = 'flex';
+      } else if (contentType.includes('xml')) {
+        result = await response.text();
+        displayTextResults(result, 'xml');
+      } else if (contentType.includes('csv')) {
+        result = await response.text();
+        displayTextResults(result, 'csv');
+      } else {
+        result = await response.text();
+        displayTextResults(result, 'text');
+      }
     } catch (error) {
       document.getElementById("results").textContent = `Error: ${error.message}`;
       copyUrlAlert.style.display = 'none'; // Hide the alert box if there's an error
@@ -153,8 +191,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     queryResultsTab.show();
   });
 
-  // Function to display results
-  function displayResults(data) {
+  function displayJsonResults(data) {
     const resultsDiv = document.getElementById("results");
     resultsDiv.innerHTML = ""; // Clear previous results
 
@@ -188,5 +225,28 @@ document.addEventListener('DOMContentLoaded', async function () {
       resultsDiv.textContent = "No results found.";
       copyUrlAlert.style.display = 'none'; // Hide the alert box if no results
     }
+  }
+
+  function displayTextResults(content, type) {
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    const pre = document.createElement("pre");
+    pre.className = "p-3 bg-white border rounded";
+    pre.style.overflow = "auto";
+    
+    if (type === 'xml') {
+      pre.innerHTML = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    } else {
+      pre.textContent = content;
+    }
+
+    resultsDiv.appendChild(pre);
+    copyUrlAlert.style.display = 'flex';
   }
 });

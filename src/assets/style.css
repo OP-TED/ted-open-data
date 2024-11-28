@@ -13,13 +13,17 @@
 body {
     display: flex;
     flex-direction: column;
+    height: 100vh;
     min-height: 100vh;
+    margin: 0;
+    overflow: hidden; /* Prevent page-level scrolling */
 }
 
 body > header {
     background-color: var(--dark-background-color);
     border-bottom: 6px solid var(--op-green-color);
     height: 84px;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 body > footer {
@@ -28,10 +32,14 @@ body > footer {
     border-top: 1px solid var(--border-color);
     align-items: center;
     padding: 0 20px;
+    flex-shrink: 0; /* Prevent footer from shrinking */
 }
 
 main {
     flex: 1;
+    overflow: hidden; /* Contain scrolling within tabs */
+    display: flex;
+    flex-direction: column;
 }
 
 /* Navbar */
@@ -76,7 +84,26 @@ main {
 
 /* Results Section */
 #results {
-    min-height: 150px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0; /* Important for flex overflow behavior */
+    margin-bottom: 0;
+}
+
+#results pre {
+    flex: 1;
+    margin: 0;
+    overflow: auto;
+    max-height: none !important;
+}
+
+/* Make sure the results tab container can stretch */
+#query-results {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* Header Styles */
@@ -99,12 +126,37 @@ main {
     font-weight: 300;
 }
 
+/* Tab Styles */
 .tab-pane {
+    flex: 1;
+    display: none; /* Hide by default */
     padding: 20px;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+}
+
+.tab-pane.active {
+    display: flex; /* Show when active */
+    flex-direction: column;
+    z-index: 1;
 }
 
 .tab-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
     background-color: white;
+    min-height: 0; /* Important for nested flex containers */
+    position: relative;
+}
+
+.tab-pane.active.show {
+    display: flex;
+    flex-direction: column;
 }
 
 .nav-tabs {
@@ -116,7 +168,17 @@ main {
     margin-left: 0; /* Remove left margin */
 }
 
+/* Query Editor Styles */
+#query-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+}
+
 #queryForm {
+    flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -137,4 +199,72 @@ main {
 #queryForm .form-control.flex-grow-1 {
     height: auto;
     min-height: 200px;
+    flex: 1;
+    min-height: 0; /* Important for flex overflow behavior */
+}
+
+#queryForm .mb-3.flex-grow-1 {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#queryForm .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex overflow behavior */
+    height: 100%;
+}
+
+#queryForm textarea.form-control {
+    flex: 1;
+    resize: none;
+    min-height: 0; /* Allow shrinking */
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+}
+
+/* SPARQL Results Table Styling */
+.sparql {
+    width: 100%;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    border-collapse: collapse;
+}
+
+.sparql th {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.sparql td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    vertical-align: top;
+}
+
+.sparql tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.sparql tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Copy URL Alert */
+#copy-url-alert {
+    flex-shrink: 0; /* Prevent alert from shrinking */
+}
+
+/* Query Editor Styles */
+#query-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
 }
