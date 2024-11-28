@@ -78,6 +78,13 @@ main {
     font-weight: 500;
 }
 
+/* Third-Party Components Card */
+#help .card .card-header {
+    background-color: var(--light-background-color);
+    color: var(--ted-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
 /* Buttons */
 .btn-primary {
     background-color: var(--ted-primary);
@@ -289,4 +296,22 @@ main {
     flex-direction: column;
     height: 100%;
     padding: 20px;
+}
+
+/* CodeMirror Styles */
+.CodeMirror {
+    height: 100vh;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.CodeMirror-placeholder {
+    color: #999;
+}
+
+/* Adjust query editor container for CodeMirror */
+#queryForm .form-group {
+    min-height: 200px;
 }

@@ -81,6 +81,44 @@ The application supports two environments:
 
 The endpoints are configured in `config.json`
 
+## Third-Party Components
+
+This project uses the following third-party components:
+
+### Frontend Components
+- **Bootstrap** (v5.3.0-alpha3)
+  - Purpose: CSS framework for styling and components
+  - License: MIT
+  - Website: https://getbootstrap.com/
+
+- **CodeMirror** (v5.65.2)
+  - Purpose: Code editor with SPARQL syntax highlighting
+  - License: MIT
+  - Website: https://codemirror.net/
+
+### Backend Components
+- **Express** (v4.17.1)
+  - Purpose: Web server framework
+  - License: MIT
+  - Website: https://expressjs.com/
+
+- **cors** (v2.8.5)
+  - Purpose: CORS middleware for Express
+  - License: MIT
+  - Website: https://github.com/expressjs/cors
+
+- **node-fetch** (v2.6.1)
+  - Purpose: Fetch API implementation for Node.js
+  - License: MIT
+  - Website: https://github.com/node-fetch/node-fetch
+
+- **https-proxy-agent** (v7.0.5)
+  - Purpose: HTTP(s) proxy agent for Node.js
+  - License: MIT
+  - Website: https://github.com/TooTallNate/node-https-proxy-agent
+
+All third-party components are used under their respective licenses.
+
 [^1]: _Copyright 2022 European Union_  
 _Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission –
 subsequent versions of the EUPL (the "Licence");_

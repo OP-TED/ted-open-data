@@ -115,8 +115,26 @@ document.addEventListener('DOMContentLoaded', async function () {
     queryEditorTab.show();
   });
 
+  // Initialize CodeMirror
+  const editor = CodeMirror.fromTextArea(document.getElementById("query"), {
+    mode: "sparql",
+    theme: "eclipse",
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    lineWrapping: true,
+    extraKeys: {"Ctrl-Space": "autocomplete"},
+    placeholder: "Enter your SPARQL query here..."
+  });
+
+  // Update button state on editor changes
+  editor.on("change", function() {
+    runQueryButton.disabled = !editor.getValue().trim();
+  });
+
+  // Update copyUrlButton click handler
   copyUrlButton.addEventListener('click', function () {
-    const query = document.getElementById("query").value;
+    const query = editor.getValue();
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
@@ -134,8 +152,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
+  // Update openUrlButton click handler
   openUrlButton.addEventListener('click', function () {
-    const query = document.getElementById("query").value;
+    const query = editor.getValue();
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
@@ -158,8 +177,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     submitButton.disabled = true;
     
     try {
-      // Run the query
-      const query = document.getElementById("query").value;
+      // Get query from CodeMirror instead of textarea
+      const query = editor.getValue();
       const format = document.getElementById("format").value || "application/sparql-results+json";
       const defaultGraphUri = document.getElementById("default-graph-uri").value;
       const timeout = document.getElementById("timeout").value;

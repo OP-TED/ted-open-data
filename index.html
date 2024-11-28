@@ -27,6 +27,10 @@
 
     <!-- Favicon (if applicable) -->
     <link rel="icon" type="image/png" href="/path-to-ted-favicon.png">
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
 </head>
 
 <body class="bg-light">
@@ -191,19 +195,71 @@
 
         <!-- Help -->
         <div class="tab-pane w-100 fade position-absolute" id="help" role="tabpanel" aria-labelledby="help-tab">
-            <div class="container mt-4">
-                <h2>Help</h2>
-                <p>This is the help section. Here you can find information on how to use the TED SPARQL Query Editor.</p>
-                <ul>
-                    <li><strong>Home:</strong> Overview of the application.</li>
-                    <li><strong>Query Editor:</strong> Write and run your SPARQL queries.</li>
-                    <li><strong>Query Results:</strong> View the results of your queries.</li>
-                </ul>
-                <p>For more detailed documentation, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation page</a>.</p>
+            <div class="container-fluid mt-4">
+                <div class="row">
+                    <!-- Left Column - Help Content -->
+                    <div class="col-lg-8">
+                        <h2>Help</h2>
+                        <p>This is the help section. Here you can find information on how to use the TED SPARQL Query Editor.</p>
+                        <ul>
+                            <li><strong>Home:</strong> Overview of the application.</li>
+                            <li><strong>Query Editor:</strong> Write and run your SPARQL queries.</li>
+                            <li><strong>Query Results:</strong> View the results of your queries.</li>
+                        </ul>
+                        <p>For more detailed documentation, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation page</a>.</p>
+                    </div>
+
+                    <!-- Right Column - Components -->
+                    <div class="col-lg-4">
+                        <!-- Third-Party Components -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Third-Party Components</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Frontend Components</h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <strong>Bootstrap</strong> (v5.3.0-alpha3)
+                                        <br><small class="text-muted">CSS framework for styling and components</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>CodeMirror</strong> (v5.65.2)
+                                        <br><small class="text-muted">Code editor with SPARQL syntax highlighting</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                </ul>
+
+                                <h6 class="mt-4">Backend Components</h6>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3">
+                                        <strong>Express</strong> (v4.17.1)
+                                        <br><small class="text-muted">Web server framework</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>cors</strong> (v2.8.5)
+                                        <br><small class="text-muted">CORS middleware for Express</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>node-fetch</strong> (v2.6.1)
+                                        <br><small class="text-muted">Fetch API implementation for Node.js</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li>
+                                        <strong>https-proxy-agent</strong> (v7.0.5)
+                                        <br><small class="text-muted">HTTP(s) proxy agent for Node.js</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-
 
     </main>
 
@@ -250,6 +306,10 @@
 
     <!-- JavaScript File -->
     <script src="src/js/script.js"></script>
+
+    <!-- Add these before the closing body tag -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sparql/sparql.min.js"></script>
 </body>
 
 </html>
