@@ -1,4 +1,7 @@
 {
+  "defaultEnvironment": {
+    "cellarEnvironment": "production"
+  },
   "environments": {
     "cellar": {
       "test": {
