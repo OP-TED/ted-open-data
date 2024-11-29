@@ -300,7 +300,7 @@ main {
 
 /* CodeMirror Styles */
 .CodeMirror {
-    height: 100vh;
+    height: 100vh!important;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 14px;
     border: 1px solid var(--border-color);
