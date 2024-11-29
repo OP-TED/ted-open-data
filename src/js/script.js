@@ -12,66 +12,32 @@
  * the Lic
  */
 
-// Load configuration
-let config;
+// Production SPARQL endpoint
+const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 let sparqlEndpoint;
 
-async function loadConfig() {
-  const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? ''
-    : '/ted-sparql-editor';
-  const response = await fetch(`${baseUrl}/config.json`);
-  if (!response.ok) {
-    throw new Error(`Failed to load configuration: ${response.statusText}`);
-  }
-  config = await response.json();
-}
-
-// Function to get SPARQL endpoint
-function getSparqlEndpoint(env) {
-  let endpoint = config.environments.cellar[env]?.sparqlEndpoint;
-  if (!endpoint) {
-    throw new Error(`Environment ${env} not found in configuration`);
-  }
-  if (appEnvironment === 'development') {
-    endpoint = `http://localhost:8080/proxy?url=${encodeURIComponent(endpoint)}`;
-  }
-  return endpoint;
-}
-
-// Function to get original SPARQL endpoint (without proxy)
-function getOriginalSparqlEndpoint(env) {
-  let endpoint = config.environments.cellar[env]?.sparqlEndpoint;
-  if (!endpoint) {
-    throw new Error(`Environment ${env} not found in configuration`);
-  }
-  return endpoint;
-}
-
-// Function to get app configuration
-function getAppConfig(env) {
-  if (config.environments.application[env]) {
-    return config.environments.application[env];
-  } else {
-    throw new Error(`App environment ${env} not found in configuration`);
-  }
-}
-
-// Detect the application environment based on the URL
+// Detect if we're running locally
 const hostname = window.location.hostname;
-const appEnvironment = (hostname === 'localhost' || hostname === '127.0.0.1') ? 'development' : 'production';
+const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
 
 document.addEventListener('DOMContentLoaded', async function () {
-  try {
-    await loadConfig();
-  } catch (error) {
-    console.error(error.message);
-    return;
-  }
+  // Set endpoint (with proxy if running locally)
+  sparqlEndpoint = isDevelopment 
+    ? `http://localhost:8080/proxy?url=${encodeURIComponent(SPARQL_ENDPOINT)}`
+    : SPARQL_ENDPOINT;
 
   // Get references to elements
   const queryTextarea = document.getElementById('query');
   const runQueryButton = document.getElementById('runQueryButton');
+
+  // Remove environment selector if it exists
+  const envSelector = document.querySelector('#cellarEnvironment');
+  if (envSelector) {
+    const container = envSelector.closest('.form-floating');
+    if (container) {
+      container.remove();
+    }
+  }
 
   // Add event listener for textarea changes
   queryTextarea.addEventListener('input', function() {
@@ -86,28 +52,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   const copyUrlButton = document.getElementById('copy-url-button');
   const copyUrlAlert = document.getElementById('copy-url-alert');
   const openUrlButton = document.getElementById('open-url-button');
-  const cellarEnvironmentSelect = document.getElementById('cellarEnvironment');
-
-  // Set the environment (test or production)
-  let sparqlEnvironment = cellarEnvironmentSelect.value || config.defaultEnvironment.cellarEnvironment;
-
-  try {
-    sparqlEndpoint = getSparqlEndpoint(sparqlEnvironment);
-    const appConfig = getAppConfig(appEnvironment);
-    console.log(`Using SPARQL endpoint: ${sparqlEndpoint}`);
-    console.log(`Using app configuration:`, appConfig);
-    // Your code to use the sparqlEndpoint and appConfig
-  } catch (error) {
-    console.error(error.message);
-  }
-
-  // Update sparqlEndpoint when the environment dropdown changes
-  cellarEnvironmentSelect.addEventListener('change', function () {
-    sparqlEnvironment = cellarEnvironmentSelect.value;
-    sparqlEndpoint = getSparqlEndpoint(sparqlEnvironment);
-    console.log(`Environment changed to: ${sparqlEnvironment}`);
-    console.log(`Using SPARQL endpoint: ${sparqlEndpoint}`);
-  });
 
   // Event listeners
   startTourButton.addEventListener('click', function () {
@@ -140,8 +84,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const originalSparqlEndpoint = getOriginalSparqlEndpoint(sparqlEnvironment);
-    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
@@ -160,8 +103,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const originalSparqlEndpoint = getOriginalSparqlEndpoint(sparqlEnvironment);
-    const url = `${originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     window.open(url, '_blank');
   });
