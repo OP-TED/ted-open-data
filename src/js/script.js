@@ -76,9 +76,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     runQueryButton.disabled = !editor.getValue().trim();
   });
 
+  // Add this function to minify SPARQL queries
+  function minifySparqlQuery(query) {
+    return query
+      .replace(/\s+/g, ' ') // Replace multiple spaces/newlines with single space
+      .replace(/\s*\{\s*/g, '{') // Remove spaces around braces
+      .replace(/\s*\}\s*/g, '}')
+      .replace(/\s*\(\s*/g, '(') // Remove spaces around parentheses
+      .replace(/\s*\)\s*/g, ')')
+      .replace(/\s*\.\s*/g, '.') // Remove spaces around dots
+      .replace(/\s*;\s*/g, ';') // Remove spaces around semicolons
+      .replace(/\s*,\s*/g, ',') // Remove spaces around commas
+      .trim();
+  }
+
   // Update copyUrlButton click handler
   copyUrlButton.addEventListener('click', function () {
-    const query = editor.getValue();
+    const query = minifySparqlQuery(editor.getValue());
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
@@ -97,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Update openUrlButton click handler
   openUrlButton.addEventListener('click', function () {
-    const query = editor.getValue();
+    const query = minifySparqlQuery(editor.getValue());
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
