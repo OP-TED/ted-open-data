@@ -76,9 +76,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     runQueryButton.disabled = !editor.getValue().trim();
   });
 
+  // Add this function to minify SPARQL queries
+  function minifySparqlQuery(query) {
+    return query
+      .replace(/\s+/g, ' ') // Replace multiple spaces/newlines with single space
+      .replace(/\s*\{\s*/g, '{') // Remove spaces around braces
+      .replace(/\s*\}\s*/g, '}')
+      .replace(/\s*\(\s*/g, '(') // Remove spaces around parentheses
+      .replace(/\s*\)\s*/g, ')')
+      .replace(/\s*\.\s*/g, '.') // Remove spaces around dots
+      .replace(/\s*;\s*/g, ';') // Remove spaces around semicolons
+      .replace(/\s*,\s*/g, ',') // Remove spaces around commas
+      .trim();
+  }
+
   // Update copyUrlButton click handler
   copyUrlButton.addEventListener('click', function () {
-    const query = editor.getValue();
+    const query = minifySparqlQuery(editor.getValue());
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
@@ -97,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Update openUrlButton click handler
   openUrlButton.addEventListener('click', function () {
-    const query = editor.getValue();
+    const query = minifySparqlQuery(editor.getValue());
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
@@ -162,6 +176,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         result = await response.text();
         resultsDiv = document.getElementById("results");
         resultsDiv.innerHTML = result;
+
+        // Fix table structure and pre tags
+        const table = resultsDiv.querySelector('table');
+        if (table) {
+          // Fix thead
+          const firstRow = table.querySelector('tr');
+          if (firstRow && firstRow.querySelectorAll('th').length > 0) {
+            if (!table.querySelector('thead')) {
+              const thead = document.createElement('thead');
+              thead.appendChild(firstRow);
+              table.insertBefore(thead, table.firstChild);
+            }
+          }
+
+          // Fix pre tags in cells
+          table.querySelectorAll('td pre').forEach(pre => {
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.style.wordBreak = 'break-word';
+            pre.style.overflowX = 'hidden';
+          });
+        }
+
         copyUrlAlert.style.display = 'flex';
       } else if (contentType.includes('xml')) {
         result = await response.text();
@@ -189,16 +225,16 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function displayJsonResults(data) {
     const resultsDiv = document.getElementById("results");
-    resultsDiv.innerHTML = ""; // Clear previous results
+    resultsDiv.innerHTML = "";
 
     if (data.results && data.results.bindings.length > 0) {
       const table = document.createElement("table");
-      table.className = "table table-bordered table-striped";
+      table.className = "table sparql monospace";
 
       // Create table headers
-      const headers = Object.keys(data.results.bindings[0]);
       const thead = table.createTHead();
       const headerRow = thead.insertRow();
+      const headers = Object.keys(data.results.bindings[0]);
       headers.forEach((header) => {
         const th = document.createElement("th");
         th.textContent = header;
@@ -207,8 +243,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
       // Create table rows
       const tbody = table.createTBody();
-      data.results.bindings.forEach((row) => {
+      data.results.bindings.forEach((row, index) => {
         const tr = tbody.insertRow();
+        tr.className = index % 2 === 1 ? 'even' : ''; // Use CSS classes instead of inline styles
         headers.forEach((header) => {
           const td = tr.insertCell();
           td.textContent = row[header]?.value || "";
@@ -216,10 +253,10 @@ document.addEventListener('DOMContentLoaded', async function () {
       });
 
       resultsDiv.appendChild(table);
-      copyUrlAlert.style.display = 'flex'; // Show the alert box when there are results
+      copyUrlAlert.style.display = 'flex';
     } else {
       resultsDiv.textContent = "No results found.";
-      copyUrlAlert.style.display = 'none'; // Hide the alert box if no results
+      copyUrlAlert.style.display = 'none';
     }
   }
 
