@@ -11,6 +11,7 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Lic
  */
+import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
 
 // Production SPARQL endpoint
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
@@ -71,34 +72,31 @@ document.addEventListener('DOMContentLoaded', async function () {
     placeholder: "Enter your SPARQL query here..."
   });
 
-  // Update button state on editor changes
-  editor.on("change", function() {
-    runQueryButton.disabled = !editor.getValue().trim();
-  });
-
-  // Add this function to minify SPARQL queries
+  // Add this function to minify SPARQL queries using sparqljs
   function minifySparqlQuery(query) {
-    return query
-      .replace(/\s+/g, ' ') // Replace multiple spaces/newlines with single space
-      .replace(/\s*\{\s*/g, '{') // Remove spaces around braces
-      .replace(/\s*\}\s*/g, '}')
-      .replace(/\s*\(\s*/g, '(') // Remove spaces around parentheses
-      .replace(/\s*\)\s*/g, ')')
-      .replace(/\s*\.\s*/g, '.') // Remove spaces around dots
-      .replace(/\s*;\s*/g, ';') // Remove spaces around semicolons
-      .replace(/\s*,\s*/g, ',') // Remove spaces around commas
-      .trim();
+    const parser = new SparqlJs.Parser();
+    const generator = new SparqlJs.Generator();
+    const parsedQuery = parser.parse(query);
+    return generator.stringify(parsedQuery);
   }
+
+  // Update button state on editor changes
+  function onEditorChange() {
+    runQueryButton.disabled = !editor.getValue().trim();
+  }
+
+  editor.on("change", onEditorChange);
 
   // Update copyUrlButton click handler
   copyUrlButton.addEventListener('click', function () {
-    const query = minifySparqlQuery(editor.getValue());
+    const query = editor.getValue();
+    const minifiedQuery = minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
@@ -111,13 +109,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Update openUrlButton click handler
   openUrlButton.addEventListener('click', function () {
-    const query = minifySparqlQuery(editor.getValue());
+    const query = editor.getValue();
+    const minifiedQuery = minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     window.open(url, '_blank');
   });
