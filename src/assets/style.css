@@ -392,3 +392,21 @@ main {
     min-width: 150px; /* Minimum width for cells */
     max-width: 300px; /* Maximum width for cells */
 }
+
+/* Syntax Error Highlight */
+.syntax-error-highlight {
+    /* background-color: rgba(255, 0, 0, 0.3); Red background with some transparency */
+    border-bottom: 2px solid red; /* Add a red underline to make it more noticeable */
+}
+
+.custom-tooltip {
+  position: absolute;
+  background: #f8d7da;
+  color: #721c24;
+  padding: 5px;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  z-index: 10;
+  pointer-events: none; /* Prevent tooltip from interfering with mouse events */
+}

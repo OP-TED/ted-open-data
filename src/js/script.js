@@ -11,6 +11,7 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Lic
  */
+import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
 
 // Production SPARQL endpoint
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const copyUrlButton = document.getElementById('copy-url-button');
   const copyUrlAlert = document.getElementById('copy-url-alert');
   const openUrlButton = document.getElementById('open-url-button');
+  const resultsDiv = document.getElementById("results"); // Define resultsDiv here
 
   // Event listeners
   startTourButton.addEventListener('click', function () {
@@ -71,34 +73,111 @@ document.addEventListener('DOMContentLoaded', async function () {
     placeholder: "Enter your SPARQL query here..."
   });
 
-  // Update button state on editor changes
-  editor.on("change", function() {
-    runQueryButton.disabled = !editor.getValue().trim();
-  });
+  let errorMarker = null; // Variable to store the error marker
 
-  // Add this function to minify SPARQL queries
+  // Add this function to minify SPARQL queries using sparqljs
   function minifySparqlQuery(query) {
-    return query
-      .replace(/\s+/g, ' ') // Replace multiple spaces/newlines with single space
-      .replace(/\s*\{\s*/g, '{') // Remove spaces around braces
-      .replace(/\s*\}\s*/g, '}')
-      .replace(/\s*\(\s*/g, '(') // Remove spaces around parentheses
-      .replace(/\s*\)\s*/g, ')')
-      .replace(/\s*\.\s*/g, '.') // Remove spaces around dots
-      .replace(/\s*;\s*/g, ';') // Remove spaces around semicolons
-      .replace(/\s*,\s*/g, ',') // Remove spaces around commas
-      .trim();
+    const parser = new SparqlJs.Parser();
+    const generator = new SparqlJs.Generator();
+    const parsedQuery = parser.parse(query);
+    return generator.stringify(parsedQuery);
   }
+
+  // Add this function to check SPARQL syntax using sparqljs
+  function checkSparqlSyntax(query) {
+    const parser = new SparqlJs.Parser();
+    try {
+      parser.parse(query);
+      return null; // No errors
+    } catch (error) {
+      return error; // Return error object
+    }
+  }
+
+  // Update button state on editor changes
+  function onEditorChange() {
+    const query = editor.getValue();
+    const error = checkSparqlSyntax(query);
+
+    if (error) {
+      // Log the error object to inspect its structure
+      console.log('SPARQL Syntax Error:', error);
+
+      // Clear previous error marker
+      if (errorMarker) {
+        errorMarker.clear();
+      }
+
+      // Highlight the error position in the editor if location is available
+      if (error.hash && error.hash.loc && error.hash.loc.first_line && error.hash.loc.last_line) {
+        const start = error.hash.loc;
+        errorMarker = editor.markText(
+          { line: start.first_line - 1, ch: start.first_column },
+          { line: start.last_line - 1, ch: start.last_column },
+          { className: 'syntax-error-highlight', title: `${error.message}` }
+        );
+        addTooltipToMarker(errorMarker, `${error.message}`);
+      } else if (error.hash && error.hash.loc && error.hash.loc.first_line) {
+        const start = error.hash.loc;
+        errorMarker = editor.markText(
+          { line: start.first_line - 1, ch: 0 },
+          { line: start.first_line - 1, ch: editor.getLine(start.first_line - 1).length },
+          { className: 'syntax-error-highlight', title: `${error.message}` }
+        );
+        addTooltipToMarker(errorMarker, `${error.message}`);
+      }
+      runQueryButton.disabled = true; // Disable the button if there's a syntax error
+    } else {
+      // Clear previous error marker
+      if (errorMarker) {
+        errorMarker.clear();
+        errorMarker = null;
+      }
+      runQueryButton.disabled = !query.trim(); // Enable the button only if the query is not empty
+    }
+  }
+
+  function addTooltipToMarker(marker, message) {
+    const markerElements = marker.replacedWith || [marker];
+    markerElements.forEach((element) => {
+      const from = element.from || marker.from;
+      const to = element.to || marker.to;
+      if (from && to) {
+        const lineHandle = editor.getLineHandle(from.line);
+        const lineElement = editor.getWrapperElement().querySelector(`.CodeMirror-line:nth-child(${from.line + 1})`);
+
+        if (lineElement) {
+          lineElement.addEventListener('mouseenter', function () {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = message;
+            document.body.appendChild(tooltip);
+
+            const rect = lineElement.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + window.scrollX}px`;
+            tooltip.style.top = `${rect.bottom + window.scrollY}px`;
+
+            lineElement.addEventListener('mouseleave', function () {
+              tooltip.remove();
+            }, { once: true });
+          });
+        }
+      }
+    });
+  }
+
+  editor.on("change", onEditorChange);
 
   // Update copyUrlButton click handler
   copyUrlButton.addEventListener('click', function () {
-    const query = minifySparqlQuery(editor.getValue());
+    const query = editor.getValue();
+    const minifiedQuery = minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
@@ -111,13 +190,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Update openUrlButton click handler
   openUrlButton.addEventListener('click', function () {
-    const query = minifySparqlQuery(editor.getValue());
+    const query = editor.getValue();
+    const minifiedQuery = minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
 
     // Use the original SPARQL endpoint URL
-    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    const url = `${SPARQL_ENDPOINT}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
     
     window.open(url, '_blank');
   });
@@ -174,8 +254,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                  format === 'application/vnd.ms-excel') {
         // Handle HTML and spreadsheet content
         result = await response.text();
-        resultsDiv = document.getElementById("results");
-        resultsDiv.innerHTML = result;
+        resultsDiv.innerHTML = result; // Use resultsDiv here
 
         // Fix table structure and pre tags
         const table = resultsDiv.querySelector('table');
@@ -210,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         displayTextResults(result, 'text');
       }
     } catch (error) {
-      document.getElementById("results").textContent = `Error: ${error.message}`;
+      resultsDiv.textContent = `Error: ${error.message}`; // Use resultsDiv here
       copyUrlAlert.style.display = 'none'; // Hide the alert box if there's an error
     } finally {
       // Reset progress bar and re-enable Run Query button
