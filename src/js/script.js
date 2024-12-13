@@ -12,6 +12,7 @@
  * the Lic
  */
 import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
+import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 
 // Production SPARQL endpoint
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
@@ -30,6 +31,23 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Get references to elements
   const queryTextarea = document.getElementById('query');
   const runQueryButton = document.getElementById('runQueryButton');
+  const queryForm = document.getElementById('queryForm');
+  const queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
+  const startTourButton = document.getElementById('start-tour');
+  const tryQueryLibraryButton = document.getElementById('try-query-library');
+  const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
+  const queryLibraryTab = new bootstrap.Tab(document.getElementById('query-library-tab'));
+  const copyUrlButton = document.getElementById('copy-url-button');
+  const copyUrlAlert = document.getElementById('copy-url-alert');
+  const openUrlButton = document.getElementById('open-url-button');
+  const resultsDiv = document.getElementById("results");
+  const queryAccordion = document.getElementById('queryAccordion');
+  const selectQueryMessage = document.getElementById('selectQueryMessage');
+  const queryCard = document.getElementById('queryCard');
+  const queryTitle = document.getElementById('queryTitle');
+  const queryDescription = document.getElementById('queryDescription');
+  const querySparql = document.getElementById('querySparql');
+  const tryQueryButton = document.getElementById('tryQueryButton');
 
   // Remove environment selector if it exists
   const envSelector = document.querySelector('#cellarEnvironment');
@@ -45,19 +63,21 @@ document.addEventListener('DOMContentLoaded', async function () {
     runQueryButton.disabled = !this.value.trim();
   });
 
-  // DOM elements
-  const queryForm = document.getElementById('queryForm');
-  const queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
-  const startTourButton = document.getElementById('start-tour');
-  const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
-  const copyUrlButton = document.getElementById('copy-url-button');
-  const copyUrlAlert = document.getElementById('copy-url-alert');
-  const openUrlButton = document.getElementById('open-url-button');
-  const resultsDiv = document.getElementById("results"); // Define resultsDiv here
-
   // Event listeners
   startTourButton.addEventListener('click', function () {
     console.log('Write your query button clicked'); // Debugging log
+    queryEditorTab.show();
+  });
+
+  tryQueryLibraryButton.addEventListener('click', function () {
+    console.log('Try our query library button clicked'); // Debugging log
+    queryLibraryTab.show();
+  });
+
+  // Add event listener for "Try this query" button
+  tryQueryButton.addEventListener('click', function () {
+    const queryText = querySparqlEditor.getValue();
+    editor.setValue(queryText);
     queryEditorTab.show();
   });
 
@@ -71,6 +91,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     lineWrapping: true,
     extraKeys: {"Ctrl-Space": "autocomplete"},
     placeholder: "Enter your SPARQL query here..."
+  });
+
+  // Initialize CodeMirror for the query library display
+  const querySparqlEditor = CodeMirror.fromTextArea(document.getElementById("querySparql"), {
+    mode: "sparql",
+    theme: "eclipse",
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    lineWrapping: true,
+    readOnly: true,
+    viewportMargin: Infinity // Ensure the editor adjusts its height to fit the content
   });
 
   let errorMarker = null; // Variable to store the error marker
@@ -361,4 +393,97 @@ document.addEventListener('DOMContentLoaded', async function () {
     resultsDiv.appendChild(pre);
     copyUrlAlert.style.display = 'flex';
   }
+
+  let queries = [];
+  let selectedQueryElement = null;
+
+  const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/develop/docs/antora/modules/samples/queries/';
+
+  // Load categories and queries from a remote YAML file
+  async function loadQueries() {
+    try {
+      const response = await fetch(`${REMOTE_QUERIES_URL}index.yaml`);
+      const text = await response.text();
+      const data = yaml.load(text);
+      const categories = new Map();
+
+      data.queries.forEach(query => {
+        if (!categories.has(query.category)) {
+          categories.set(query.category, []);
+        }
+        categories.get(query.category).push(query);
+      });
+
+      categories.forEach((queries, category) => {
+        const categoryId = `category-${category.replace(/\s+/g, '-')}`;
+        const categoryItem = document.createElement('div');
+        categoryItem.className = 'accordion-item';
+
+        categoryItem.innerHTML = `
+          <h2 class="accordion-header" id="${categoryId}-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${categoryId}" aria-expanded="false" aria-controls="${categoryId}">
+              ${category}
+            </button>
+          </h2>
+          <div id="${categoryId}" class="accordion-collapse collapse" aria-labelledby="${categoryId}-header" data-bs-parent="#queryAccordion">
+            <div class="accordion-body p-0">
+              <ul class="list-group list-group-flush">
+                ${queries.map(query => `
+                  <li class="list-group-item list-group-item-action" data-query-title="${query.title}" data-query-file="${query.sparql}">
+                    ${query.title}
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+
+        queryAccordion.appendChild(categoryItem);
+      });
+
+      // Store the queries for later use
+      queries = data.queries;
+    } catch (error) {
+      console.error('Failed to load queries:', error);
+    }
+  }
+
+  // Display selected query details
+  queryAccordion.addEventListener('click', async function (event) {
+    if (event.target.matches('.list-group-item')) {
+      const selectedQuery = queries.find(query => query.title === event.target.dataset.queryTitle);
+
+      if (selectedQuery) {
+        const queryFileResponse = await fetch(`${REMOTE_QUERIES_URL}${selectedQuery.sparql}`);
+        const querySparqlText = await queryFileResponse.text();
+
+        queryTitle.textContent = selectedQuery.title;
+        queryDescription.textContent = selectedQuery.description;
+        querySparqlEditor.setValue(querySparqlText);
+        setTimeout(() => querySparqlEditor.refresh(), 0); // Ensure the editor is refreshed after setting the value
+        tryQueryButton.disabled = false;
+        queryCard.classList.remove('d-none');
+        selectQueryMessage.classList.add('d-none');
+
+        // Highlight the selected query
+        if (selectedQueryElement) {
+          selectedQueryElement.classList.remove('active');
+        }
+        event.target.classList.add('active');
+        selectedQueryElement = event.target;
+      } else {
+        queryTitle.textContent = 'Query Title';
+        queryDescription.textContent = 'Select a query to see its description.';
+        querySparqlEditor.setValue('SPARQL query will be displayed here.');
+        setTimeout(() => querySparqlEditor.refresh(), 0); // Ensure the editor is refreshed after setting the value
+        tryQueryButton.disabled = true;
+        queryCard.classList.add('d-none');
+        selectQueryMessage.classList.remove('d-none');
+      }
+    }
+  });
+
+  // Load queries on page load
+  loadQueries();
+
 });

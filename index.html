@@ -25,6 +25,50 @@
     <!-- Custom TED Branding -->
     <link rel="stylesheet" href="src/assets/style.css">
 
+    <!-- Custom Styles -->
+    <style>
+        .list-group-item-action:hover {
+            cursor: pointer;
+        }
+        .list-group-item-action {
+            user-select: none; /* Prevent caret from appearing */
+        }
+        #queryCard {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        #querySparql {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        #queryDetails {
+            flex-shrink: 0;
+        }
+        .col-md-8 {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .container-fluid {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .accordion-container {
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: calc(100vh - 200px); /* Further adjust height to fit within the tab */
+            margin-bottom: 20px; /* Add margin at the bottom */
+            border: 1px solid #dee2e6; /* Add border */
+            border-radius: 0.25rem; /* Add border radius */
+        }
+    </style>
+
     <!-- Favicon (if applicable) -->
     <link rel="icon" type="image/png" href="/path-to-ted-favicon.png">
 
@@ -53,6 +97,10 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
                     type="button" role="tab" aria-controls="home-tab-content" aria-selected="true">Home</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="query-library-tab" data-bs-toggle="tab" data-bs-target="#query-library"
+                    type="button" role="tab" aria-controls="query-library" aria-selected="false">Query Library</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="query-editor-tab" data-bs-toggle="tab" data-bs-target="#query-editor"
@@ -95,9 +143,42 @@
                     We welcome your feedback, suggestions for improvement as well as your contributions to the project. 
                     Visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank">GitHub Discussions</a> forum to share your ideas and feedback.
                 </p>
-                <button id="start-tour" class="btn btn-primary">Write your query</button>
+                <button id="try-query-library" class="btn btn-primary">Try our query library</button>
+                <button id="start-tour" class="btn btn-primary">Write your own query</button>
             </div>
         </div> <!-- Close home-tab-content div -->
+
+        <!-- Query Library -->
+        <div class="tab-pane w-100 h-100 fade position-absolute" id="query-library" role="tabpanel" aria-labelledby="query-library-tab">
+            <div class="container-fluid h-100">
+                <div class="row h-100">
+                    <div class="col-md-4 d-flex flex-column h-100">
+                        <div class="accordion-container">
+                            <div class="accordion accordion-flush flex-grow-1" id="queryAccordion">
+                                <!-- Categories and queries will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 d-flex flex-column">
+                        <div id="selectQueryMessage" class="d-flex align-items-center justify-content-center flex-grow-1">
+                            <p class="text-muted">Select a query from the available categories on the left.</p>
+                        </div>
+                        <div class="card flex-grow-1 border-0 m-0 p-0 d-none" id="queryCard">
+                            <div class="card-body d-flex flex-column p-0">
+                                <textarea id="querySparql" class="d-none"></textarea>
+                                <div id="queryDetails" class="p-3">
+                                    <h5 id="queryTitle" class="mt-3">Query Title</h5>
+                                    <p id="queryDescription">Select a query to see its description.</p>
+                                    <div class="d-flex justify-content-end">
+                                        <button id="tryQueryButton" class="btn btn-primary mt-3" disabled>Try this query</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- Close query-library div -->
 
         <!-- Main Container -->
         <div class="tab-pane w-100 fade position-absolute" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
