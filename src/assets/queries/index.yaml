@@ -1,0 +1,81 @@
+queries:
+  - category: Category1
+    title: Query1
+    description: Description for Query1 in Category1
+    sparql: query1.sparql
+  - category: Category1
+    title: Query2
+    description: Description for Query2 in Category1
+    sparql: query2.sparql
+  - category: Category2
+    title: Query3
+    description: Description for Query3 in Category2
+    sparql: query3.sparql
+  - category: Category2
+    title: Query4
+    description: Description for Query4 in Category2
+    sparql: query4.sparql
+  - category: Category3
+    title: Query5
+    description: Description for Query5 in Category3
+    sparql: query5.sparql
+  - category: Category3
+    title: Query6
+    description: Description for Query6 in Category3
+    sparql: query6.sparql
+  - category: Category4
+    title: Query7
+    description: Description for Query7 in Category4
+    sparql: query7.sparql
+  - category: Category4
+    title: Query8
+    description: Description for Query8 in Category4
+    sparql: query8.sparql
+  - category: Category5
+    title: Query9
+    description: Description for Query9 in Category5
+    sparql: query9.sparql
+  - category: Category5
+    title: Query10
+    description: Description for Query10 in Category5
+    sparql: query10.sparql
+  - category: Category6
+    title: Query11
+    description: Description for Query11 in Category6
+    sparql: query11.sparql
+  - category: Category6
+    title: Query12
+    description: Description for Query12 in Category6
+    sparql: query12.sparql
+  - category: Category7
+    title: Query13
+    description: Description for Query13 in Category7
+    sparql: query13.sparql
+  - category: Category7
+    title: Query14
+    description: Description for Query14 in Category7
+    sparql: query14.sparql
+  - category: Category8
+    title: Query15
+    description: Description for Query15 in Category8
+    sparql: query15.sparql
+  - category: Category8
+    title: Query16
+    description: Description for Query16 in Category8
+    sparql: query16.sparql
+  - category: Category9
+    title: Query17
+    description: Description for Query17 in Category9
+    sparql: query17.sparql
+  - category: Category9
+    title: Query18
+    description: Description for Query18 in Category9
+    sparql: query18.sparql
+  - category: Category10
+    title: Query19
+    description: Description for Query19 in Category10
+    sparql: query19.sparql
+  - category: Category10
+    title: Query20
+    description: Description for Query20 in Category10
+    sparql: query20.sparql

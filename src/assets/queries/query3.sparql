@@ -1,0 +1,4 @@
+
+SELECT ?x ?y ?z WHERE { 
+  ?x ?y ?z 
+} LIMIT 15
