@@ -11,7 +11,7 @@ A web-based SPARQL query editor for exploring TED Open Data. This application al
 
 ## Live Version
 
-Visit [TED SPARQL Editor](https://docs.ted.europa.eu/ted-sparql-editor) to use the live version of the application.
+Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of the application.
 
 ## Development Setup
 
