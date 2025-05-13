@@ -89,7 +89,7 @@ export class QueryLibrary {
         categoryItem.className = 'accordion-item';
 
         categoryItem.innerHTML = `
-          <h2 class="accordion-header" id="${categoryId}-header" style="background-color: #DAF7A6;">
+          <h2 class="query-library-accordion-header" id="${categoryId}-header">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${categoryId}" aria-expanded="false" aria-controls="${categoryId}">
               ${category}
             </button>
