@@ -461,3 +461,8 @@ main {
     border: 1px solid #dee2e6; /* Add border */
     border-radius: 0.25rem; /* Add border radius */
 }
+
+.query-library-accordion-header {
+    background-color: #daf7a6;
+    margin-bottom: 0;
+}
