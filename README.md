@@ -11,7 +11,7 @@ A web-based SPARQL query editor for exploring TED Open Data. This application al
 
 ## Live Version
 
-Visit [TED SPARQL Editor](https://docs.ted.europa.eu/ted-sparql-editor) to use the live version of the application.
+Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of the application.
 
 ## Development Setup
 
@@ -24,7 +24,7 @@ Visit [TED SPARQL Editor](https://docs.ted.europa.eu/ted-sparql-editor) to use t
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/OP-TED/ted-sparql-editor.git
+    git clone https://github.com/OP-TED/ted-open-data.git
     cd ted-sparql-editor
     ```
 
@@ -96,6 +96,11 @@ This project uses the following third-party components:
   - License: MIT
   - Website: https://codemirror.net/
 
+- **js-yaml** (v4.1.0)
+  - Purpose: YAML parser and dumper
+  - License: MIT
+  - Website: https://github.com/nodeca/js-yaml
+
 ### Backend Components
 - **Express** (v4.17.1)
   - Purpose: Web server framework
@@ -117,10 +122,14 @@ This project uses the following third-party components:
   - License: MIT
   - Website: https://github.com/TooTallNate/node-https-proxy-agent
 
+- **sparqljs** (v3.7.3)
+  - Purpose: SPARQL query parser and generator
+  - License: MIT
+  - Website: https://github.com/RubenVerborgh/SPARQL.js
+
 All third-party components are used under their respective licenses.
 
 [^1]: _Copyright 2022 European Union_  
-_Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission –
-subsequent versions of the EUPL (the "Licence");_
+_Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission – subsequent versions of the EUPL (the "Licence");_
 _You may not use this work except in compliance with the Licence. You may obtain [a copy of the Licence here](LICENSE)._  
 _Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Licence for the specific language governing permissions and limitations under the Licence._
