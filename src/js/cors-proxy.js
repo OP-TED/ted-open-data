@@ -80,6 +80,9 @@ app.all('/proxy', async (req, res) => {
   }
 });
 
+// Serve static files from the project root
+app.use(express.static('.'));
+
 app.listen(port, () => {
   console.log(`CORS proxy server running at http://localhost:${port}`);
 });
