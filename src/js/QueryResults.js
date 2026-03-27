@@ -53,8 +53,11 @@ export class QueryResults {
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
+    const strict = document.getElementById("strict").checked ? "true" : "false";
+    const debug = document.getElementById("debug").checked ? "true" : "false";
+    const report = document.getElementById("report").checked ? "true" : "false";
 
-    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
   }
 
   /**
