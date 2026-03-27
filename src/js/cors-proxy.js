@@ -58,8 +58,7 @@ app.all('/proxy', async (req, res) => {
     options.agent = proxyAgent;
   } else {
     options.agent = new https.Agent({
-      rejectUnauthorized: false,
-      secureOptions: require('constants').SSL_OP_NO_TLSv1_2
+      rejectUnauthorized: false
     });
   }
 
