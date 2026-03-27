@@ -40,8 +40,10 @@ export class QueryEditor {
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
+    this.stopQueryButton = document.getElementById('stopQueryButton');
     this.errorMarker = null;
     this.queryResults = null;
+    this.abortController = null;
 
     this.initEventListeners();
   }
@@ -62,6 +64,7 @@ export class QueryEditor {
     this.editor.on("change", this.onEditorChange.bind(this));
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
+    this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
   }
 
   /**
@@ -151,6 +154,8 @@ export class QueryEditor {
     progressBar.style.width = '100%';
     progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
     submitButton.disabled = true;
+    this.stopQueryButton.style.display = 'flex';
+    this.abortController = new AbortController();
 
     try {
       const query = this.editor.getValue();
@@ -174,7 +179,8 @@ export class QueryEditor {
       const response = await fetch(this.sparqlEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
+        body: body,
+        signal: this.abortController.signal
       });
 
       if (!response.ok) {
@@ -226,15 +232,31 @@ export class QueryEditor {
         this.queryResults.displayTextResults(result, 'text');
       }
     } catch (error) {
-      this.resultsDiv.textContent = `Error: ${error.message}`;
+      if (error.name === 'AbortError') {
+        this.resultsDiv.textContent = 'Query cancelled.';
+      } else {
+        this.resultsDiv.textContent = `Error: ${error.message}`;
+      }
       this.copyUrlAlert.style.display = 'none';
     } finally {
       progressBar.style.width = '0%';
       progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
       submitButton.disabled = false;
+      this.stopQueryButton.style.display = 'none';
+      this.abortController = null;
     }
 
     this.queryResultsTab.show();
+  }
+
+  /**
+   * Handle stop query button click event.
+   * Aborts the currently running SPARQL query.
+   */
+  onStopQuery() {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
   }
 
   /**
