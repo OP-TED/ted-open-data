@@ -176,6 +176,7 @@ export class QueryEditor {
   async onSubmit(event) {
     event.preventDefault();
     if (this.isQueryRunning) return;
+    this.queryResults.setResponseData(null, null);
     const progressBar = document.querySelector('.progress-bar');
     const submitButton = this.queryForm.querySelector('button[type="submit"]');
     progressBar.style.width = '100%';
@@ -216,19 +217,17 @@ export class QueryEditor {
       }
 
       const contentType = response.headers.get('content-type');
-      let result;
+      const responseText = await response.text();
+      this.queryResults.setResponseData(responseText, contentType);
 
       if (contentType.includes('json')) {
-        const responseText = await response.text();
-        console.log(`Response text: ${responseText}`);
-        result = JSON.parse(responseText);
+        const result = JSON.parse(responseText);
         this.queryResults.displayJsonResults(result);
       } else if (contentType.includes('html') ||
                  format === 'text/html' ||
                  format === 'text/x-html+tr' ||
                  format === 'application/vnd.ms-excel') {
-        result = await response.text();
-        this.resultsDiv.innerHTML = result;
+        this.resultsDiv.innerHTML = responseText;
 
         const table = this.resultsDiv.querySelector('table');
         if (table) {
@@ -250,14 +249,11 @@ export class QueryEditor {
 
         this.copyUrlAlert.style.display = 'flex';
       } else if (contentType.includes('xml')) {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'xml');
+        this.queryResults.displayTextResults(responseText, 'xml');
       } else if (contentType.includes('csv')) {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'csv');
+        this.queryResults.displayTextResults(responseText, 'csv');
       } else {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'text');
+        this.queryResults.displayTextResults(responseText, 'text');
       }
     } catch (error) {
       if (error.name === 'AbortError') {

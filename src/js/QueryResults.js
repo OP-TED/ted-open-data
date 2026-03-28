@@ -31,7 +31,20 @@ export class QueryResults {
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
 
+    this.lastResponseData = null;
+    this.lastResponseType = null;
+
     this.initEventListeners();
+  }
+
+  /**
+   * Store the raw response data for download.
+   * @param {string} data - The raw response text.
+   * @param {string} contentType - The response content type.
+   */
+  setResponseData(data, contentType) {
+    this.lastResponseData = data;
+    this.lastResponseType = contentType;
   }
 
   /**
@@ -143,16 +156,35 @@ export class QueryResults {
 
   /**
    * Handle open URL button click event.
-   * Generates a URL for the current query and triggers a download.
+   * Downloads the last query response as a file.
    */
   onOpenUrl() {
-    const url = this.generateUrl();
-    
+    if (this.lastResponseData == null) return;
+
+    const extensions = {
+      'application/sparql-results+json': '.json',
+      'application/sparql-results+xml': '.xml',
+      'text/html': '.html',
+      'application/vnd.ms-excel': '.xls',
+      'text/csv': '.csv',
+      'text/tab-separated-values': '.tsv',
+      'text/turtle': '.ttl',
+      'application/rdf+xml': '.rdf',
+      'text/plain': '.nt',
+      'application/javascript': '.js',
+    };
+
+    const requestedFormat = document.getElementById("format").value;
+    const baseType = this.lastResponseType?.split(';')[0]?.trim();
+    const ext = extensions[requestedFormat] || extensions[baseType] || '.txt';
+    const blob = new Blob([this.lastResponseData], { type: this.lastResponseType });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'query-results';
+    link.download = `query-results${ext}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }
