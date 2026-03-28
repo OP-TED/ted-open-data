@@ -45,6 +45,7 @@ export class QueryEditor {
     this.stopQueryButton = document.getElementById('stopQueryButton');
     this.queryResults = null;
     this.abortController = null;
+    this.isQueryRunning = false;
 
     const sparqlLinter = linter((view) => {
       const doc = view.state.doc.toString();
@@ -159,6 +160,7 @@ export class QueryEditor {
    * Updates the run query button state based on syntax validity.
    */
   onEditorChange() {
+    if (this.isQueryRunning) return;
     const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
     this.runQueryButton.disabled = error ? true : !query.trim();
@@ -172,12 +174,14 @@ export class QueryEditor {
    */
   async onSubmit(event) {
     event.preventDefault();
+    if (this.isQueryRunning) return;
     const progressBar = document.querySelector('.progress-bar');
     const submitButton = this.queryForm.querySelector('button[type="submit"]');
     progressBar.style.width = '100%';
     progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
     submitButton.disabled = true;
     this.stopQueryButton.style.display = 'flex';
+    this.isQueryRunning = true;
     this.abortController = new AbortController();
 
     try {
@@ -266,7 +270,9 @@ export class QueryEditor {
       progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
       submitButton.disabled = false;
       this.stopQueryButton.style.display = 'none';
+      this.isQueryRunning = false;
       this.abortController = null;
+      this.onEditorChange();
     }
 
     this.queryResultsTab.show();
