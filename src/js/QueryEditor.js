@@ -11,7 +11,7 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Lic
  */
-import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
+import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.4/+esm';
 import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         drawSelection, dropCursor, rectangularSelection, crosshairCursor,
         highlightSpecialChars, placeholder, keymap} from 'https://esm.sh/@codemirror/view@6.40.0';

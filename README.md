@@ -86,7 +86,7 @@ The endpoints are configured in `config.json`
 This project uses the following third-party components:
 
 ### Application
-- **Bootstrap** (v5.3.0-alpha3)
+- **Bootstrap** (v5.3.8)
   - Purpose: CSS framework for styling and components
   - License: MIT
   - Website: https://getbootstrap.com/
@@ -106,7 +106,7 @@ This project uses the following third-party components:
   - License: MIT
   - Website: https://github.com/aatauil/codemirror-lang-sparql
 
-- **sparqljs** (v3.7.3)
+- **sparqljs** (v3.7.4)
   - Purpose: SPARQL query parser and generator
   - License: MIT
   - Website: https://github.com/RubenVerborgh/SPARQL.js

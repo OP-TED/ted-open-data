@@ -7,10 +7,10 @@
     "start": "node src/js/cors-proxy.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "express": "^4.17.1",
     "https-proxy-agent": "^7.0.5",
     "node-fetch": "^2.6.1",
-    "sparqljs": "^3.7.3"
+    "sparqljs": "^3.7.4"
   }
 }
