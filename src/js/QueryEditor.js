@@ -12,6 +12,18 @@
  * the Lic
  */
 import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
+import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
+        drawSelection, dropCursor, rectangularSelection, crosshairCursor,
+        highlightSpecialChars, placeholder, keymap} from 'https://esm.sh/@codemirror/view@6.40.0';
+import {EditorState} from 'https://esm.sh/@codemirror/state@6.6.0';
+import {history, defaultKeymap, historyKeymap} from 'https://esm.sh/@codemirror/commands@6.10.3';
+import {bracketMatching, foldGutter, foldKeymap, indentOnInput,
+        syntaxHighlighting, defaultHighlightStyle} from 'https://esm.sh/@codemirror/language@6.12.3';
+import {autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap} from 'https://esm.sh/@codemirror/autocomplete@6.20.1';
+import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirror/search@6.6.0';
+import {linter, lintGutter, lintKeymap} from 'https://esm.sh/@codemirror/lint@6.9.5';
+import {sparql} from 'https://esm.sh/codemirror-lang-sparql@2.0.0';
+import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 
 /**
  * Class representing the Query Editor.
@@ -24,16 +36,6 @@ export class QueryEditor {
    */
   constructor(sparqlEndpoint) {
     this.sparqlEndpoint = sparqlEndpoint;
-    this.editor = CodeMirror.fromTextArea(document.getElementById("query"), {
-      mode: "sparql",
-      theme: "eclipse",
-      lineNumbers: true,
-      matchBrackets: true,
-      autoCloseBrackets: true,
-      lineWrapping: true,
-      extraKeys: {"Ctrl-Space": "autocomplete"},
-      placeholder: "Enter your SPARQL query here..."
-    });
     this.runQueryButton = document.getElementById('runQueryButton');
     this.queryForm = document.getElementById('queryForm');
     this.resultsDiv = document.getElementById("results");
@@ -41,9 +43,77 @@ export class QueryEditor {
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.stopQueryButton = document.getElementById('stopQueryButton');
-    this.errorMarker = null;
     this.queryResults = null;
     this.abortController = null;
+
+    const sparqlLinter = linter((view) => {
+      const doc = view.state.doc.toString();
+      if (!doc.trim()) return [];
+      const error = this.checkSparqlSyntax(doc);
+      if (!error) return [];
+
+      const diagnostics = [];
+      if (error.hash && error.hash.loc && error.hash.loc.first_line) {
+        const loc = error.hash.loc;
+        const fromLine = view.state.doc.line(loc.first_line);
+        const from = fromLine.from + (loc.first_column || 0);
+        let to;
+        if (loc.last_line && loc.last_column) {
+          const toLine = view.state.doc.line(loc.last_line);
+          to = toLine.from + loc.last_column;
+        } else {
+          to = fromLine.to;
+        }
+        diagnostics.push({ from, to, severity: "error", message: error.message });
+      }
+      return diagnostics;
+    });
+
+    this.editor = new EditorView({
+      state: EditorState.create({
+        doc: "",
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          foldGutter(),
+          drawSelection(),
+          dropCursor(),
+          indentOnInput(),
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion(),
+          rectangularSelection(),
+          crosshairCursor(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          EditorView.lineWrapping,
+          placeholder("Enter your SPARQL query here..."),
+          sparql(),
+          eclipseTheme,
+          eclipseHighlightStyle,
+          sparqlLinter,
+          lintGutter(),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...completionKeymap,
+            ...lintKeymap,
+          ]),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              this.onEditorChange();
+            }
+          }),
+        ]
+      }),
+      parent: document.getElementById("query")
+    });
 
     this.initEventListeners();
   }
@@ -57,11 +127,28 @@ export class QueryEditor {
   }
 
   /**
+   * Get the current query text.
+   * @returns {string} - The current query text.
+   */
+  getQuery() {
+    return this.editor.state.doc.toString();
+  }
+
+  /**
+   * Set the query text.
+   * @param {string} text - The query text to set.
+   */
+  setValue(text) {
+    this.editor.dispatch({
+      changes: { from: 0, to: this.editor.state.doc.length, insert: text }
+    });
+  }
+
+  /**
    * Initialize event listeners.
-   * Sets up event listeners for the query editor, form submission, and copy URL button.
+   * Sets up event listeners for form submission, copy URL button, and stop button.
    */
   initEventListeners() {
-    this.editor.on("change", this.onEditorChange.bind(this));
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
     this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
@@ -69,76 +156,12 @@ export class QueryEditor {
 
   /**
    * Handle editor change event.
-   * Checks the SPARQL syntax and updates the run query button state.
+   * Updates the run query button state based on syntax validity.
    */
   onEditorChange() {
-    const query = this.editor.getValue();
+    const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
-
-    if (error) {
-      console.log('SPARQL Syntax Error:', error);
-      if (this.errorMarker) {
-        this.errorMarker.clear();
-      }
-      if (error.hash && error.hash.loc && error.hash.loc.first_line && error.hash.loc.last_line) {
-        const start = error.hash.loc;
-        this.errorMarker = this.editor.markText(
-          { line: start.first_line - 1, ch: start.first_column },
-          { line: start.last_line - 1, ch: start.last_column },
-          { className: 'syntax-error-highlight', title: `${error.message}` }
-        );
-        this.addTooltipToMarker(this.errorMarker, `${error.message}`);
-      } else if (error.hash && error.hash.loc && error.hash.loc.first_line) {
-        const start = error.hash.loc;
-        this.errorMarker = this.editor.markText(
-          { line: start.first_line - 1, ch: 0 },
-          { line: start.first_line - 1, ch: this.editor.getLine(start.first_line - 1).length },
-          { className: 'syntax-error-highlight', title: `${error.message}` }
-        );
-        this.addTooltipToMarker(this.errorMarker, `${error.message}`);
-      }
-      this.runQueryButton.disabled = true;
-    } else {
-      if (this.errorMarker) {
-        this.errorMarker.clear();
-        this.errorMarker = null;
-      }
-      this.runQueryButton.disabled = !query.trim();
-    }
-  }
-
-  /**
-   * Add a tooltip to the syntax error marker.
-   * @param {CodeMirror.TextMarker} marker - The syntax error marker.
-   * @param {string} message - The tooltip message.
-   */
-  addTooltipToMarker(marker, message) {
-    const markerElements = marker.replacedWith || [marker];
-    markerElements.forEach((element) => {
-      const from = element.from || marker.from;
-      const to = element.to || marker.to;
-      if (from && to) {
-        const lineHandle = this.editor.getLineHandle(from.line);
-        const lineElement = this.editor.getWrapperElement().querySelector(`.CodeMirror-line:nth-child(${from.line + 1})`);
-
-        if (lineElement) {
-          lineElement.addEventListener('mouseenter', function () {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'custom-tooltip';
-            tooltip.textContent = message;
-            document.body.appendChild(tooltip);
-
-            const rect = lineElement.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
-            tooltip.style.top = `${rect.bottom + window.scrollY}px`;
-
-            lineElement.addEventListener('mouseleave', function () {
-              tooltip.remove();
-            }, { once: true });
-          });
-        }
-      }
-    });
+    this.runQueryButton.disabled = error ? true : !query.trim();
   }
 
   /**
@@ -158,7 +181,7 @@ export class QueryEditor {
     this.abortController = new AbortController();
 
     try {
-      const query = this.editor.getValue();
+      const query = this.getQuery();
       const format = document.getElementById("format").value || "application/sparql-results+json";
       const defaultGraphUri = document.getElementById("default-graph-uri").value;
       const timeout = document.getElementById("timeout").value;
@@ -195,8 +218,8 @@ export class QueryEditor {
         console.log(`Response text: ${responseText}`);
         result = JSON.parse(responseText);
         this.queryResults.displayJsonResults(result);
-      } else if (contentType.includes('html') || 
-                 format === 'text/html' || 
+      } else if (contentType.includes('html') ||
+                 format === 'text/html' ||
                  format === 'text/x-html+tr' ||
                  format === 'application/vnd.ms-excel') {
         result = await response.text();
@@ -264,7 +287,7 @@ export class QueryEditor {
    * Generates a URL for the current query and copies it to the clipboard.
    */
   onCopyUrl() {
-    const query = this.editor.getValue();
+    const query = this.getQuery();
     const minifiedQuery = this.minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
@@ -274,7 +297,7 @@ export class QueryEditor {
     const report = document.getElementById("report").checked ? "true" : "false";
 
     const url = `${this.sparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
-    
+
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
       const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));

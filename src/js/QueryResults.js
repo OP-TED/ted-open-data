@@ -48,7 +48,7 @@ export class QueryResults {
    * @returns {string} - The generated URL.
    */
   generateUrl() {
-    const query = this.queryEditor.editor.getValue();
+    const query = this.queryEditor.getQuery();
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;

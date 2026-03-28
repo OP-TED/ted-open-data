@@ -280,13 +280,6 @@ main {
     flex: 1 1 auto;
 }
 
-#queryForm .form-control.flex-grow-1 {
-    height: auto;
-    min-height: 200px;
-    flex: 1;
-    min-height: 0; /* Important for flex overflow behavior */
-}
-
 #queryForm .mb-3.flex-grow-1 {
     flex: 1;
     min-height: 0;
@@ -300,14 +293,6 @@ main {
     flex-direction: column;
     min-height: 0; /* Important for flex overflow behavior */
     height: 100%;
-}
-
-#queryForm textarea.form-control {
-    flex: 1;
-    resize: none;
-    min-height: 0; /* Allow shrinking */
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
 }
 
 /* SPARQL Results Table Styling */
@@ -355,24 +340,25 @@ main {
     flex-shrink: 0; /* Prevent alert from shrinking */
 }
 
-/* Query Editor Styles */
-#query-editor {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 20px;
+/* CodeMirror Styles */
+#query {
+    overflow: hidden;
+    min-height: 0;
 }
 
-/* CodeMirror Styles */
-.CodeMirror {
-    height: 100vh!important;
+.cm-editor {
+    height: 100% !important;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 14px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
 }
 
-.CodeMirror-placeholder {
+.cm-editor .cm-scroller {
+    overflow: auto;
+}
+
+.cm-editor .cm-placeholder {
     color: #999;
 }
 
@@ -394,23 +380,7 @@ main {
     max-width: 300px; /* Maximum width for cells */
 }
 
-/* Syntax Error Highlight */
-.syntax-error-highlight {
-    /* background-color: rgba(255, 0, 0, 0.3); Red background with some transparency */
-    border-bottom: 2px solid red; /* Add a red underline to make it more noticeable */
-}
-
-.custom-tooltip {
-  position: absolute;
-  background: #f8d7da;
-  color: #721c24;
-  padding: 5px;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
-  white-space: pre-wrap;
-  z-index: 10;
-  pointer-events: none; /* Prevent tooltip from interfering with mouse events */
-}
+/* Syntax error styling is handled by @codemirror/lint */
 
 /* Query Library Styles */
 .list-group-item-action:hover {

@@ -85,25 +85,40 @@ The endpoints are configured in `config.json`
 
 This project uses the following third-party components:
 
-### Frontend Components
+### Application
 - **Bootstrap** (v5.3.0-alpha3)
   - Purpose: CSS framework for styling and components
   - License: MIT
   - Website: https://getbootstrap.com/
 
-- **CodeMirror** (v5.65.2)
-  - Purpose: Code editor with SPARQL syntax highlighting
+- **Bootstrap Icons** (v1.11.3)
+  - Purpose: Icon library
+  - License: MIT
+  - Website: https://icons.getbootstrap.com/
+
+- **CodeMirror** (v6)
+  - Purpose: Code editor
   - License: MIT
   - Website: https://codemirror.net/
+
+- **codemirror-lang-sparql** (v2.0.0)
+  - Purpose: SPARQL syntax highlighting for CodeMirror
+  - License: MIT
+  - Website: https://github.com/aatauil/codemirror-lang-sparql
+
+- **sparqljs** (v3.7.3)
+  - Purpose: SPARQL query parser and generator
+  - License: MIT
+  - Website: https://github.com/RubenVerborgh/SPARQL.js
 
 - **js-yaml** (v4.1.0)
   - Purpose: YAML parser and dumper
   - License: MIT
   - Website: https://github.com/nodeca/js-yaml
 
-### Backend Components
+### Development Tools
 - **Express** (v4.17.1)
-  - Purpose: Web server framework
+  - Purpose: Local CORS proxy server
   - License: MIT
   - Website: https://expressjs.com/
 
@@ -113,19 +128,14 @@ This project uses the following third-party components:
   - Website: https://github.com/expressjs/cors
 
 - **node-fetch** (v2.6.1)
-  - Purpose: Fetch API implementation for Node.js
+  - Purpose: Fetch API for Node.js
   - License: MIT
   - Website: https://github.com/node-fetch/node-fetch
 
 - **https-proxy-agent** (v7.0.5)
-  - Purpose: HTTP(s) proxy agent for Node.js
+  - Purpose: Corporate proxy support
   - License: MIT
   - Website: https://github.com/TooTallNate/node-https-proxy-agent
-
-- **sparqljs** (v3.7.3)
-  - Purpose: SPARQL query parser and generator
-  - License: MIT
-  - Website: https://github.com/RubenVerborgh/SPARQL.js
 
 All third-party components are used under their respective licenses.
 

@@ -29,5 +29,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const queryEditor = new QueryEditor(sparqlEndpoint);
   const queryResults = new QueryResults(queryEditor, SPARQL_ENDPOINT);
   queryEditor.setQueryResults(queryResults);
-  new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
+  const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
+
+  // Ensure CM6 editors re-measure when their Bootstrap tabs become visible
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', () => {
+      queryEditor.editor.requestMeasure();
+      queryLibrary.querySparqlEditor.requestMeasure();
+    });
+  });
 });
