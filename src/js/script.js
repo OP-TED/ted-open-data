@@ -38,4 +38,39 @@ document.addEventListener('DOMContentLoaded', function () {
       queryLibrary.querySparqlEditor.requestMeasure();
     });
   });
+
+  // Fetch data period from the SPARQL endpoint and display in footer
+  const datePeriodQuery = `PREFIX epo: <http://data.europa.eu/a4g/ontology#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT ?earliestDate ?latestDate WHERE {
+  { SELECT ?date AS ?earliestDate WHERE {
+      GRAPH ?g { ?notice a epo:Notice ; epo:hasPublicationDate ?date . FILTER(DATATYPE(?date) = xsd:date) }
+    } ORDER BY ASC(?date) LIMIT 1 }
+  { SELECT ?date AS ?latestDate WHERE {
+      GRAPH ?g { ?notice a epo:Notice ; epo:hasPublicationDate ?date . FILTER(DATATYPE(?date) = xsd:date) }
+    } ORDER BY DESC(?date) LIMIT 1 }
+}`;
+
+  fetch(sparqlEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `query=${encodeURIComponent(datePeriodQuery)}&format=${encodeURIComponent('application/sparql-results+json')}`
+  })
+    .then(response => response.json())
+    .then(data => {
+      const bindings = data.results?.bindings?.[0];
+      if (bindings?.earliestDate?.value && bindings?.latestDate?.value) {
+        const fmt = (dateStr) => {
+          const [y, m, d] = dateStr.split('-');
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+        };
+        document.getElementById('data-period').textContent =
+          `Data period: ${fmt(bindings.earliestDate.value)} to ${fmt(bindings.latestDate.value)}`;
+        const infoIcon = document.getElementById('data-period-info');
+        infoIcon.style.display = 'inline';
+        new bootstrap.Tooltip(infoIcon);
+      }
+    })
+    .catch(() => {});
 });

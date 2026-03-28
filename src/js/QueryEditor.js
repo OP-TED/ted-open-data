@@ -153,6 +153,7 @@ export class QueryEditor {
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
     this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
+    new bootstrap.Tooltip(this.stopQueryButton);
   }
 
   /**
