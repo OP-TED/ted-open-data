@@ -46,6 +46,7 @@ export class QueryEditor {
     this.queryResults = null;
     this.abortController = null;
     this.isQueryRunning = false;
+    this.timerInterval = null;
 
     const sparqlLinter = linter((view) => {
       const doc = view.state.doc.toString();
@@ -179,12 +180,20 @@ export class QueryEditor {
     this.queryResults.setResponseData(null, null);
     const progressBar = document.querySelector('.progress-bar');
     const submitButton = this.queryForm.querySelector('button[type="submit"]');
+    const queryTimer = document.getElementById('query-timer');
     progressBar.style.width = '100%';
     progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    queryTimer.textContent = '0s';
     submitButton.disabled = true;
     this.stopQueryButton.style.display = 'flex';
     this.isQueryRunning = true;
     this.abortController = new AbortController();
+
+    const startTime = performance.now();
+    this.timerInterval = setInterval(() => {
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
+      queryTimer.textContent = `${elapsed}s`;
+    }, 1000);
 
     try {
       const query = this.getQuery();
@@ -263,8 +272,11 @@ export class QueryEditor {
       }
       this.copyUrlAlert.style.display = 'none';
     } finally {
+      clearInterval(this.timerInterval);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
       progressBar.style.width = '0%';
       progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+      queryTimer.textContent = `${elapsed}s`;
       submitButton.disabled = false;
       this.stopQueryButton.style.display = 'none';
       this.isQueryRunning = false;

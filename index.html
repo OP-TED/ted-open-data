@@ -363,8 +363,9 @@
                title="Publication dates of the earliest and most recent notices available in our dataset."></span>
         </div>
         <div class="flex-grow-1 text-center small text-muted">&copy; Publications Office of the EU</div>
-        <div class="progress mr-3" style="width: 10%; min-width: 100px">
+        <div class="progress mr-3 position-relative" style="width: 10%; min-width: 100px">
             <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
+            <span id="query-timer" class="position-absolute w-100 text-center small text-muted" style="top: 0; left: 0; line-height: 1rem; font-size: 0.65rem; font-weight: 600;"></span>
         </div>
         <button id="stopQueryButton" class="btn p-0 align-items-center justify-content-center" aria-label="Cancel query" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel query" style="display: none; font-size: 1.2rem; line-height: 1; margin-left: 0.5rem; color: #dc3545; border: none;"><i class="bi bi-x-circle-fill"></i></button>
         <div id="apiStatus" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
