@@ -24,7 +24,7 @@ import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirro
 import {linter, lintGutter, lintKeymap} from 'https://esm.sh/@codemirror/lint@6.9.5';
 import {sparql} from 'https://esm.sh/codemirror-lang-sparql@2.0.0';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
-import {epoCompletionSource} from './epo-completion.js';
+import {epoCompletionSource, getEpoData} from './epo-completion.js';
 
 /**
  * Class representing the Query Editor.
@@ -54,23 +54,61 @@ export class QueryEditor {
     const sparqlLinter = linter((view) => {
       const doc = view.state.doc.toString();
       if (!doc.trim()) return [];
-      const error = this.checkSparqlSyntax(doc);
-      if (!error) return [];
-
       const diagnostics = [];
-      if (error.hash && error.hash.loc && error.hash.loc.first_line) {
-        const loc = error.hash.loc;
-        const fromLine = view.state.doc.line(loc.first_line);
-        const from = fromLine.from + (loc.first_column || 0);
-        let to;
-        if (loc.last_line && loc.last_column) {
-          const toLine = view.state.doc.line(loc.last_line);
-          to = toLine.from + loc.last_column;
-        } else {
-          to = fromLine.to;
+
+      // Syntax errors
+      const error = this.checkSparqlSyntax(doc);
+      if (error) {
+        if (error.hash && error.hash.loc && error.hash.loc.first_line) {
+          const loc = error.hash.loc;
+          const fromLine = view.state.doc.line(loc.first_line);
+          const from = fromLine.from + (loc.first_column || 0);
+          let to;
+          if (loc.last_line && loc.last_column) {
+            const toLine = view.state.doc.line(loc.last_line);
+            to = toLine.from + loc.last_column;
+          } else {
+            to = fromLine.to;
+          }
+          diagnostics.push({ from, to, severity: "error", message: error.message });
         }
-        diagnostics.push({ from, to, severity: "error", message: error.message });
+        return diagnostics;
       }
+
+      // ePO term validation — check epo:Term references against known terms
+      const epo = getEpoData();
+      if (epo) {
+        const allTerms = new Set([...epo.classes, ...epo.objectProperties, ...epo.datatypeProperties]);
+        const allTermsLower = new Map();
+        for (const term of allTerms) {
+          allTermsLower.set(term.toLowerCase(), term);
+        }
+
+        const regex = /epo:(\w+)/g;
+        let match;
+        while ((match = regex.exec(doc)) !== null) {
+          const term = match[1];
+          if (!allTerms.has(term)) {
+            const correctTerm = allTermsLower.get(term.toLowerCase());
+            const from = match.index;
+            const to = from + match[0].length;
+            if (correctTerm) {
+              diagnostics.push({
+                from, to,
+                severity: "warning",
+                message: `Unknown term "epo:${term}". Did you mean "epo:${correctTerm}"?`
+              });
+            } else {
+              diagnostics.push({
+                from, to,
+                severity: "warning",
+                message: `"epo:${term}" is not a known ePO class or property.`
+              });
+            }
+          }
+        }
+      }
+
       return diagnostics;
     });
 

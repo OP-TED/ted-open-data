@@ -142,5 +142,12 @@ export function epoCompletionSource(context) {
   return { from, options };
 }
 
+/**
+ * Returns the loaded ePO data, or null if not yet loaded.
+ */
+export function getEpoData() {
+  return epoData;
+}
+
 // Start loading immediately when the module is imported
 ensureLoaded();
