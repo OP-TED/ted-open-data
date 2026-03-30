@@ -41,6 +41,8 @@ export class QueryEditor {
     this.resultsDiv = document.getElementById("results");
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
+    this.alertMessage = document.getElementById('alert-message');
+    this.openUrlButton = document.getElementById('open-url-button');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.stopQueryButton = document.getElementById('stopQueryButton');
     this.queryResults = null;
@@ -195,6 +197,13 @@ export class QueryEditor {
       queryTimer.textContent = `${elapsed}s`;
     }, 1000);
 
+    this.copyUrlAlert.classList.add('d-none');
+    this.copyUrlAlert.classList.remove('d-flex', 'alert-danger');
+    this.copyUrlAlert.classList.add('alert-info');
+    this.alertMessage.textContent = 'You can run this query directly from Excel or any other application by using its URL.';
+    this.openUrlButton.classList.remove('d-none');
+    this.resultsDiv.innerHTML = '';
+
     try {
       const query = this.getQuery();
       const format = document.getElementById("format").value || "application/sparql-results+json";
@@ -222,7 +231,10 @@ export class QueryEditor {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const errorBody = await response.text();
+        const error = new Error(`HTTP error. Status: ${response.status}`);
+        error.serverMessage = errorBody;
+        throw error;
       }
 
       const contentType = response.headers.get('content-type');
@@ -256,7 +268,7 @@ export class QueryEditor {
           });
         }
 
-        this.copyUrlAlert.style.display = 'flex';
+        this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
       } else if (contentType.includes('xml')) {
         this.queryResults.displayTextResults(responseText, 'xml');
       } else if (contentType.includes('csv')) {
@@ -265,12 +277,29 @@ export class QueryEditor {
         this.queryResults.displayTextResults(responseText, 'text');
       }
     } catch (error) {
+      let message;
       if (error.name === 'AbortError') {
-        this.resultsDiv.textContent = 'Query cancelled.';
+        message = 'Query cancelled.';
+      } else if (error.message.includes('Status: 400')) {
+        message = 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.';
+      } else if (error.message.includes('Status: 500')) {
+        message = 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.';
+      } else if (error.message.includes('Status: 504') || error.message.includes('timeout')) {
+        message = 'The query timed out. Try simplifying your query or adding more specific filters to reduce the result set.';
       } else {
-        this.resultsDiv.textContent = `Error: ${error.message}`;
+        message = `Error: ${error.message}`;
       }
-      this.copyUrlAlert.style.display = 'none';
+      this.alertMessage.textContent = message;
+      if (error.serverMessage) {
+        const details = document.createElement('pre');
+        details.className = 'mt-2 mb-0 small';
+        details.style.whiteSpace = 'pre-wrap';
+        details.textContent = error.serverMessage;
+        this.alertMessage.appendChild(details);
+      }
+      this.copyUrlAlert.classList.remove('d-none', 'alert-info');
+      this.copyUrlAlert.classList.add('d-flex', 'alert-danger');
+      this.openUrlButton.classList.add('d-none');
     } finally {
       clearInterval(this.timerInterval);
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);

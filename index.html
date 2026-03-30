@@ -233,8 +233,8 @@
         <!-- Query Results -->
         <div class="tab-pane w-100 fade position-absolute" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
             <!-- Copy URL Alert Box -->
-            <div class="alert alert-info d-flex justify-content-between align-items-center mb-2" id="copy-url-alert" style="display: none!important;">
-                <span>You can run this query directly from Excel or any other application by using its URL.</span>
+            <div class="alert alert-info justify-content-between align-items-center mb-2 d-none" id="copy-url-alert">
+                <span id="alert-message">You can run this query directly from Excel or any other application by using its URL.</span>
                 <div>
                     <button id="copy-url-button" class="btn btn-secondary me-2">Copy URL</button>
                     <button id="open-url-button" class="btn btn-secondary">Download</button>

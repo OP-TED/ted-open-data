@@ -104,10 +104,10 @@ export class QueryResults {
       });
 
       this.resultsDiv.appendChild(table);
-      this.copyUrlAlert.style.display = 'flex';
+      this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
     } else {
       this.resultsDiv.textContent = "No results found.";
-      this.copyUrlAlert.style.display = 'none';
+      this.copyUrlAlert.classList.add('d-none'); this.copyUrlAlert.classList.remove('d-flex');
     }
   }
 
@@ -135,7 +135,7 @@ export class QueryResults {
     }
 
     this.resultsDiv.appendChild(pre);
-    this.copyUrlAlert.style.display = 'flex';
+    this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
   }
 
   /**
