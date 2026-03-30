@@ -24,6 +24,7 @@ import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirro
 import {linter, lintGutter, lintKeymap} from 'https://esm.sh/@codemirror/lint@6.9.5';
 import {sparql} from 'https://esm.sh/codemirror-lang-sparql@2.0.0';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
+import {epoCompletionSource} from './epo-completion.js';
 
 /**
  * Class representing the Query Editor.
@@ -88,13 +89,13 @@ export class QueryEditor {
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           bracketMatching(),
           closeBrackets(),
-          autocompletion(),
+          autocompletion({ override: [epoCompletionSource] }),
           rectangularSelection(),
           crosshairCursor(),
           highlightActiveLine(),
           highlightSelectionMatches(),
           EditorView.lineWrapping,
-          placeholder("Enter your SPARQL query here..."),
+          placeholder("Enter your SPARQL query here... (Ctrl+Space for suggestions)"),
           sparql(),
           eclipseTheme,
           eclipseHighlightStyle,
