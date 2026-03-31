@@ -72,7 +72,7 @@ SELECT ?earliestDate ?latestDate WHERE {
           `Data period: ${fmt(bindings.earliestDate.value)} to ${fmt(bindings.latestDate.value)}`;
         const infoIcon = document.getElementById('data-period-info');
         infoIcon.style.display = 'inline';
-        new bootstrap.Tooltip(infoIcon);
+        bootstrap.Tooltip.getOrCreateInstance(infoIcon);
       }
     })
     .catch(() => {});
