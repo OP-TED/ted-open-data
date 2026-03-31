@@ -427,7 +427,6 @@ main {
     overflow-y: auto;
     flex-grow: 1;
     max-height: calc(100vh - 200px); /* Further adjust height to fit within the tab */
-    margin-bottom: 20px; /* Add margin at the bottom */
     border: 1px solid #dee2e6; /* Add border */
     border-radius: 0.25rem; /* Add border radius */
 }
