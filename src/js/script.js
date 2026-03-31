@@ -17,7 +17,7 @@ import { HomeTab } from './HomeTab.js';
 import { QueryResults } from './QueryResults.js';
 
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
-const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/develop/docs/antora/modules/samples/queries/';
+const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
 
 document.addEventListener('DOMContentLoaded', function () {
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const queryResults = new QueryResults(queryEditor, SPARQL_ENDPOINT);
   queryEditor.setQueryResults(queryResults);
   const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
+
+  // Initialize all Bootstrap tooltips
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
   // Ensure CM6 editors re-measure when their Bootstrap tabs become visible
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {

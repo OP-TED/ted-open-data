@@ -125,6 +125,12 @@
                                 <!-- Categories and queries will be populated here -->
                             </div>
                         </div>
+                        <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank"
+                           class="small text-muted text-decoration-none mt-2 align-self-start"
+                           data-bs-toggle="tooltip" data-bs-placement="right"
+                           title="Want to contribute a query? See the contributing guide.">
+                            <i class="bi bi-info-circle"></i> Contribute a query
+                        </a>
                     </div>
                     <div class="col-md-8 d-flex flex-column">
                         <div id="selectQueryMessage" class="d-flex align-items-center justify-content-center flex-grow-1">
@@ -136,8 +142,8 @@
                                 <div id="queryDetails" class="p-3">
                                     <h5 id="queryTitle" class="mt-3">Query Title</h5>
                                     <p id="queryDescription">Select a query to see its description.</p>
-                                    <div class="d-flex justify-content-end">
-                                        <button id="tryQueryButton" class="btn btn-primary mt-3" disabled>Try this query</button>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button id="tryQueryButton" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
                                 </div>
                             </div>
@@ -164,18 +170,16 @@
 
                 <div class="form-floating mb-3">
                     <select id="format" name="format" class="form-select">
-                        <option value="auto" selected>Auto</option>
-                        <option value="text/html">HTML</option>
-                        <!-- <option value="text/x-html+tr">HTML (Basic Browsing Links)</option> -->
+                        <option value="text/html" selected>HTML</option>
+                        <option value="application/sparql-results+json">JSON</option>
+                        <option value="text/csv">CSV</option>
+                        <option value="text/tab-separated-values">TSV</option>
                         <option value="application/vnd.ms-excel">Spreadsheet</option>
                         <option value="application/sparql-results+xml">XML</option>
-                        <option value="application/sparql-results+json">JSON</option>
-                        <option value="application/javascript">Javascript</option>
                         <option value="text/turtle">Turtle</option>
                         <option value="application/rdf+xml">RDF/XML</option>
                         <option value="text/plain">N-Triples</option>
-                        <option value="text/csv">CSV</option>
-                        <option value="text/tab-separated-values">TSV</option>
+                        <option value="application/javascript">Javascript</option>
                     </select>
                     <label for="format">Results Format</label>
                 </div>
@@ -283,6 +287,13 @@
                             <li>Press <b>Ctrl+Space</b> to manually trigger suggestions at any time</li>
                         </ul>
                         <p class="small text-muted">Autocomplete is based on the eProcurement Ontology (ePO) v4.2.0.</p>
+
+                        <h3>Query Library</h3>
+                        <p>
+                            The Query Library provides example SPARQL queries to help you get started.
+                            If you'd like to contribute new queries, improve existing ones, or add comments to make them clearer,
+                            see the <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank">contributing guide</a>.
+                        </p>
 
                         <h3>Questions & feedback</h3>
                         <p>
