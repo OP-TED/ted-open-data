@@ -14,7 +14,7 @@
 import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.4/+esm';
 import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         drawSelection, dropCursor, rectangularSelection, crosshairCursor,
-        highlightSpecialChars, placeholder, keymap} from 'https://esm.sh/@codemirror/view@6.40.0';
+        highlightSpecialChars, placeholder, keymap} from 'https://esm.sh/@codemirror/view@6.41.0';
 import {EditorState} from 'https://esm.sh/@codemirror/state@6.6.0';
 import {history, defaultKeymap, historyKeymap} from 'https://esm.sh/@codemirror/commands@6.10.3';
 import {bracketMatching, foldGutter, foldKeymap, indentOnInput,

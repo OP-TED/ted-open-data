@@ -13,7 +13,7 @@
  */
 import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
-        drawSelection, highlightSpecialChars, keymap} from 'https://esm.sh/@codemirror/view@6.40.0';
+        drawSelection, highlightSpecialChars, keymap} from 'https://esm.sh/@codemirror/view@6.41.0';
 import {EditorState} from 'https://esm.sh/@codemirror/state@6.6.0';
 import {defaultKeymap} from 'https://esm.sh/@codemirror/commands@6.10.3';
 import {bracketMatching, foldGutter, foldKeymap,

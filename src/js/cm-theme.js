@@ -12,7 +12,7 @@
  * the Lic
  */
 
-import {EditorView} from 'https://esm.sh/@codemirror/view@6.40.0';
+import {EditorView} from 'https://esm.sh/@codemirror/view@6.41.0';
 import {HighlightStyle, syntaxHighlighting} from 'https://esm.sh/@codemirror/language@6.12.3';
 import {tags} from 'https://esm.sh/@lezer/highlight@1.2.3';
 
