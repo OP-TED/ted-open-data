@@ -4,7 +4,8 @@
   "description": "TED SPARQL Query Editor",
   "main": "index.js",
   "scripts": {
-    "start": "node src/js/cors-proxy.js"
+    "start": "node src/js/cors-proxy.js",
+    "build:codemirror": "node scripts/build-codemirror.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -12,5 +13,17 @@
     "https-proxy-agent": "^7.0.5",
     "node-fetch": "^2.6.1",
     "sparqljs": "^3.7.4"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/lint": "^6.9.5",
+    "@codemirror/search": "^6.6.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.41.0",
+    "@lezer/highlight": "^1.2.3",
+    "codemirror-lang-sparql": "^2.0.0",
+    "esbuild": "^0.27.4"
   }
 }

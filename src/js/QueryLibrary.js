@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -13,12 +13,12 @@
  */
 import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
 import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
-        drawSelection, highlightSpecialChars, keymap} from 'https://esm.sh/@codemirror/view@6.41.0';
-import {EditorState} from 'https://esm.sh/@codemirror/state@6.6.0';
-import {defaultKeymap} from 'https://esm.sh/@codemirror/commands@6.10.3';
-import {bracketMatching, foldGutter, foldKeymap,
-        syntaxHighlighting, defaultHighlightStyle} from 'https://esm.sh/@codemirror/language@6.12.3';
-import {sparql} from 'https://esm.sh/codemirror-lang-sparql@2.0.0';
+        drawSelection, highlightSpecialChars, keymap,
+        EditorState,
+        defaultKeymap,
+        bracketMatching, foldGutter, foldKeymap,
+        syntaxHighlighting, defaultHighlightStyle,
+        sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 
 /**

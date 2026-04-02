@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -14,15 +14,15 @@
 import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.4/+esm';
 import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         drawSelection, dropCursor, rectangularSelection, crosshairCursor,
-        highlightSpecialChars, placeholder, keymap} from 'https://esm.sh/@codemirror/view@6.41.0';
-import {EditorState} from 'https://esm.sh/@codemirror/state@6.6.0';
-import {history, defaultKeymap, historyKeymap} from 'https://esm.sh/@codemirror/commands@6.10.3';
-import {bracketMatching, foldGutter, foldKeymap, indentOnInput,
-        syntaxHighlighting, defaultHighlightStyle} from 'https://esm.sh/@codemirror/language@6.12.3';
-import {autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap} from 'https://esm.sh/@codemirror/autocomplete@6.20.1';
-import {searchKeymap, highlightSelectionMatches} from 'https://esm.sh/@codemirror/search@6.6.0';
-import {linter, lintGutter, lintKeymap} from 'https://esm.sh/@codemirror/lint@6.9.5';
-import {sparql} from 'https://esm.sh/codemirror-lang-sparql@2.0.0';
+        highlightSpecialChars, placeholder, keymap,
+        EditorState,
+        history, defaultKeymap, historyKeymap,
+        bracketMatching, foldGutter, foldKeymap, indentOnInput,
+        syntaxHighlighting, defaultHighlightStyle,
+        autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap,
+        searchKeymap, highlightSelectionMatches,
+        linter, lintGutter, lintKeymap,
+        sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 import {epoCompletionSource, getEpoData} from './epo-completion.js';
 

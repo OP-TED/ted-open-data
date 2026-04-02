@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2026 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -12,9 +12,7 @@
  * the Lic
  */
 
-import {EditorView} from 'https://esm.sh/@codemirror/view@6.41.0';
-import {HighlightStyle, syntaxHighlighting} from 'https://esm.sh/@codemirror/language@6.12.3';
-import {tags} from 'https://esm.sh/@lezer/highlight@1.2.3';
+import {EditorView, HighlightStyle, syntaxHighlighting, tags} from '../vendor/codemirror-bundle.js';
 
 /**
  * Eclipse-like light theme for the editor chrome (gutters, background, cursor, selection).

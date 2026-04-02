@@ -55,6 +55,15 @@ To run the application locally:
 2. Open `index.html` in your web browser
 3. That's it! No additional web server is needed
 
+### Updating CodeMirror
+
+The SPARQL editor uses a self-hosted CodeMirror v6 bundle (`src/vendor/codemirror-bundle.js`) to avoid CDN version drift issues. This bundle only needs to be rebuilt when updating CodeMirror versions:
+
+1. Update the versions in `package.json` under `devDependencies`
+2. Run `npm install`
+3. Run `npm run build:codemirror`
+4. Commit the updated bundle
+
 ### Corporate Proxy Configuration
 
 If you're behind a corporate proxy:
@@ -139,7 +148,7 @@ This project uses the following third-party components:
 
 All third-party components are used under their respective licenses.
 
-[^1]: _Copyright 2022 European Union_  
+[^1]: _Copyright 2024 European Union_  
 _Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission – subsequent versions of the EUPL (the "Licence");_
 _You may not use this work except in compliance with the Licence. You may obtain [a copy of the Licence here](LICENSE)._  
 _Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Licence for the specific language governing permissions and limitations under the Licence._
