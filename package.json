@@ -5,14 +5,17 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/js/cors-proxy.js",
-    "build:codemirror": "node scripts/build-codemirror.js"
+    "build:codemirror": "node scripts/build-codemirror.js",
+    "test": "node --test test/"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^4.17.1",
     "https-proxy-agent": "^7.0.5",
+    "n3": "^2.0.3",
     "node-fetch": "^2.6.1",
-    "sparqljs": "^3.7.4"
+    "sparqljs": "^3.7.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@codemirror/autocomplete": "^6.20.1",
