@@ -20,19 +20,28 @@ export class HomeTab {
   constructor() {
     this.startTourButton = document.getElementById('start-tour');
     this.tryQueryLibraryButton = document.getElementById('try-query-library');
+    // Stage 11 — third CTA: "Look up an existing notice" jumps to the
+    // Search tab. Mirrors the two existing CTAs.
+    this.lookupNoticeButton = document.getElementById('lookup-notice');
     this.queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     this.queryLibraryTab = new bootstrap.Tab(document.getElementById('query-library-tab'));
+    // Search tab is added by Stage 5; the bootstrap.Tab is built lazily
+    // because the element only exists in the merged app.
+    const searchTabBtn = document.getElementById('app-tab-search');
+    this.searchTab = searchTabBtn ? new bootstrap.Tab(searchTabBtn) : null;
 
     this.initEventListeners();
   }
 
   /**
    * Initialize event listeners.
-   * Sets up event listeners for the start tour button and the try query library button.
    */
   initEventListeners() {
     this.startTourButton.addEventListener('click', this.onStartTour.bind(this));
     this.tryQueryLibraryButton.addEventListener('click', this.onTryQueryLibrary.bind(this));
+    if (this.lookupNoticeButton && this.searchTab) {
+      this.lookupNoticeButton.addEventListener('click', this.onLookupNotice.bind(this));
+    }
   }
 
   /**
@@ -40,7 +49,6 @@ export class HomeTab {
    * Switches to the query editor tab.
    */
   onStartTour() {
-    console.log('Write your query button clicked');
     this.queryEditorTab.show();
   }
 
@@ -49,7 +57,15 @@ export class HomeTab {
    * Switches to the query library tab.
    */
   onTryQueryLibrary() {
-    console.log('Try our query library button clicked');
     this.queryLibraryTab.show();
+  }
+
+  /**
+   * Stage 11 — handle the look-up-a-notice CTA.
+   * Switches to the Search tab and focuses the input.
+   */
+  onLookupNotice() {
+    this.searchTab.show();
+    document.getElementById('search-input')?.focus();
   }
 }
