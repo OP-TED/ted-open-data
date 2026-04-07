@@ -86,6 +86,18 @@ main {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Stage 12 — explorer-port card headers should NOT inherit the global
+   green .card-header treatment; they were styled grey in the original
+   standalone explorer and the user prefers the grey. Two scoped
+   overrides revert these specific cards to Bootstrap defaults. */
+#explorer-procedure-mini .card-header,
+#notice-results .card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: inherit;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
 /* Buttons */
 .btn-primary {
     background-color: var(--ted-primary);

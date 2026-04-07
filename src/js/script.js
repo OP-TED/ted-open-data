@@ -131,13 +131,6 @@ function bootstrapExplorer(queryEditor) {
     if (tabBtn) new bootstrap.Tab(tabBtn).show();
   }
 
-  // Stage 7 — let QueryEditor route CONSTRUCT/DESCRIBE queries to
-  // this controller. SELECT/ASK queries continue to use ted-open-data's
-  // existing fetch-based path on the Query Results tab.
-  if (queryEditor?.setExplorerRouting) {
-    queryEditor.setExplorerRouting(controller, showExplorerTab);
-  }
-
   // Stage 8 — best-effort callback that drops a query string into the
   // SPARQL editor as a side effect of a notice-search gesture. The
   // notice-number facet path through the controller is unchanged; the
@@ -145,11 +138,38 @@ function bootstrapExplorer(queryEditor) {
   // that produced what they are now looking at on the Explore tab.
   const loadEditorText = (text) => queryEditor?.setQueryText?.(text);
 
-  const searchPanel = new SearchPanel(controller, { showExplorerTab, loadEditorText });
+  // Stage 12 — mutual exclusion of the two result tabs. Both share the
+  // visible label "Query Results"; only one is shown at a time, based
+  // on which query type just ran. Cold load = both hidden.
+  //   'select' → ted-open-data's tabular results tab
+  //   'graph'  → explorer's tree/turtle/backlinks tab
+  //   'none'   → both hidden
+  // Declared BEFORE setExplorerRouting because that call passes it in.
+  const setActiveResultTab = (kind) => {
+    const selectItem = document.getElementById('query-results-tab-item');
+    const graphItem = document.getElementById('app-tab-explorer-item');
+    if (selectItem) selectItem.style.display = kind === 'select' ? '' : 'none';
+    if (graphItem)  graphItem.style.display  = kind === 'graph'  ? '' : 'none';
+  };
+
+  // Stage 7 — let QueryEditor route CONSTRUCT/DESCRIBE queries to
+  // this controller. SELECT/ASK queries continue to use ted-open-data's
+  // existing fetch-based path on the Query Results tab. The
+  // setActiveResultTab callback enforces the Stage 12 mutual exclusion.
+  if (queryEditor?.setExplorerRouting) {
+    queryEditor.setExplorerRouting(controller, showExplorerTab, setActiveResultTab);
+  }
+
+  const searchPanel = new SearchPanel(controller, {
+    showExplorerTab,
+    loadEditorText,
+    setActiveResultTab,
+  });
   new NoticeView(controller, {
     showExplorerTab,
     setSearchInput: (v) => searchPanel.setInputValue(v),
     loadEditorText,
+    setActiveResultTab,
   });
   new DataView(controller, {
     pickRandom: () => searchPanel.pickRandom(),

@@ -180,9 +180,13 @@ export class QueryEditor {
    * @param {() => void} showExplorerTab — switches the active Bootstrap
    *   tab to the Explore tab and resets its view mode to Tree.
    */
-  setExplorerRouting(explorerController, showExplorerTab) {
+  setExplorerRouting(explorerController, showExplorerTab, setActiveResultTab) {
     this.explorerController = explorerController;
     this.showExplorerTab = showExplorerTab;
+    // Stage 12 mutual exclusion of the two result tabs ("Query Results"
+    // SELECT lane vs graph lane). Optional — defaults to a no-op so
+    // QueryEditor can still run standalone.
+    this.setActiveResultTab = setActiveResultTab || (() => {});
   }
 
   /**
@@ -308,9 +312,11 @@ export class QueryEditor {
         // Hand the raw query to the ExplorerController. It re-runs
         // the query through its own worker-backed sparqlService, parses
         // the Turtle into quads, and emits results-changed for DataView
-        // to render. Then we switch tabs.
+        // to render. Then we switch tabs and enforce Stage 12 mutual
+        // exclusion (hide the SELECT lane's tab — graph lane wins).
         try {
           await this.explorerController.search({ type: 'query', query: queryText });
+          this.setActiveResultTab('graph');
           this.showExplorerTab();
         } catch (error) {
           // Surface controller-side errors to the user via the existing
@@ -461,6 +467,9 @@ export class QueryEditor {
       this.onEditorChange();
     }
 
+    // Stage 12 — mutual exclusion: SELECT lane wins. Reveal the SELECT
+    // result tab and hide the graph result tab. Then switch to it.
+    this.setActiveResultTab('select');
     this.queryResultsTab.show();
   }
 

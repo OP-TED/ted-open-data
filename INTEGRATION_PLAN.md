@@ -298,6 +298,13 @@ follow-up rather than expanding the integration PR:
 - **Query-editor draft sharing** (sharing a query the user typed but
   hasn't run).
 - **Aesthetic refresh of the merged app** (separate post-merge effort).
+- **Home-tab carousel.** User wants to replace the current static
+  Home tab with a Bootstrap carousel that has one slide per CTA
+  ("find and explore an existing notice", "try our queries", "write
+  your own query", "download the results", and an introduction
+  slide). Deferred to a follow-up — the content needs to be defined
+  precisely first, and the current static Home tab with three CTAs
+  is fine as a first integration.
 - **Tests for most pre-existing ted-open-data code.** We bring
   explorer's test suite in and we add a narrow set of characterisation
   tests for `QueryEditor.js` (Stage 1.5), because that file is the
@@ -1018,6 +1025,53 @@ chrome.
 Nothing on Explore should look "louder" than anything on Query Editor.
 
 **Working-state checkpoint**: aesthetic cohesion achieved.
+
+**Note on what this stage now also covers** (added during execution):
+- Move the **Help tab to the right side** of the nav bar (with a `?`
+  icon), mirroring the standalone explorer's layout — done as part
+  of this stage because it's a one-line HTML tweak.
+- Override the global `.card-header` green-background rule for two
+  scoped explorer-port elements (`#explorer-procedure-mini`,
+  `#notice-results`) so the procedure timeline cards stay grey, as
+  in the original explorer. The user explicitly preferred grey here.
+
+---
+
+### Stage 12a — Merge Help tab content from explorer
+
+**Goal**: bring the explorer's Help tab content into the merged app's
+Help tab. Today the Help tab is the legacy ted-open-data version that
+talks only about SPARQL composition; it has nothing about notice
+browsing, RDF tree navigation, breadcrumbs, share URLs, or any of the
+new affordances added by Stages 5-11.
+
+**Files touched**:
+- `index.html` — append the explorer's Help tab content (or merge it
+  into the existing Help tab structure with a clean section heading
+  like "Looking up a notice")
+- `README.md` — same content merge: the README needs to describe what
+  the merged app now does, not just the legacy SPARQL editor side.
+
+**Steps**:
+1. Lift the explorer's Help-tab content from
+   `/home/rousoio/Code/TEDSWS/ted-open-data-explorer/index.html`
+   (the `#app-help` tab pane), trim duplicate framing, and merge
+   into ted-open-data's `#help` tab pane under a new section heading.
+2. Reconcile the "Third-Party Components" sidebar — both apps have
+   one. Merge the lists, dedupe (Bootstrap, CodeMirror, sparqljs are
+   in both), add the new entries (N3, Zod, codemirror-lang-turtle).
+3. Update the README to introduce the merged app's full capability
+   set (notice browsing + SPARQL playground), not just the SPARQL
+   playground.
+4. Manual review of the merged Help text for tone and accuracy.
+
+**Verification**:
+- Help tab visually shows both the SPARQL guidance and the notice
+  browser guidance, in a single coherent layout
+- README at the repo root describes the merged app accurately
+- No broken links
+
+**Working-state checkpoint**: documentation matches the actual app.
 
 ---
 

@@ -89,7 +89,7 @@ function _formatDate(dateStr) {
 }
 
 class NoticeView {
-  constructor(controller, { showExplorerTab, setSearchInput, loadEditorText } = {}) {
+  constructor(controller, { showExplorerTab, setSearchInput, loadEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
     // Called when the user navigates via a timeline click so the Search
@@ -102,6 +102,8 @@ class NoticeView {
     // Query Editor tab stays in sync with what's currently being
     // shown on Explore.
     this.loadEditorText = loadEditorText || (() => {});
+    // Stage 12 — graph lane wins on timeline navigation.
+    this.setActiveResultTab = setActiveResultTab || (() => {});
 
     // Search tab DOM refs
     this.resultsCard = document.getElementById('notice-results');
@@ -398,6 +400,8 @@ class NoticeView {
       // contextual UI for these siblings; History is reserved for
       // notices the user explicitly started from.
       this.controller.search(facet, { addToHistory: false });
+      // Stage 12 — graph lane wins (lateral notice navigation).
+      this.setActiveResultTab('graph');
       // Direct user gesture (timeline click) → switch to Explore tab.
       this.showExplorerTab();
     });

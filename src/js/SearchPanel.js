@@ -33,7 +33,7 @@ function _formatShortDate(dateStr) {
 }
 
 class SearchPanel {
-  constructor(controller, { showExplorerTab, loadEditorText } = {}) {
+  constructor(controller, { showExplorerTab, loadEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
     // Stage 8 — when set, every notice search drops the canned
@@ -43,6 +43,11 @@ class SearchPanel {
     // with a notice-number facet, preserving the title, the procedure
     // timeline, and the History dropdown labels. No-op if not wired.
     this.loadEditorText = loadEditorText || (() => {});
+    // Stage 12 — toggles the SELECT lane vs graph lane result tabs
+    // mutually exclusively. Notice search always lands on the graph
+    // lane (it runs a CONSTRUCT under the hood), so we call
+    // setActiveResultTab('graph') as part of every search.
+    this.setActiveResultTab = setActiveResultTab || (() => {});
 
     this.input = document.getElementById('search-input');
     this.searchBtn = document.getElementById('search-btn');
@@ -94,6 +99,8 @@ class SearchPanel {
       // Ignore — editor reflection is best-effort, never blocks the search.
     }
     this.controller.search(facet);
+    // Stage 12 — graph lane wins, hide the SELECT lane's result tab.
+    this.setActiveResultTab('graph');
     // Direct user gesture (button or Enter) → switch to Explore tab.
     this.showExplorerTab();
   }
@@ -225,7 +232,16 @@ class SearchPanel {
       if (facet.type === 'notice-number') {
         this.input.value = facet.value;
       }
+      // Stage 8 — also reflect the canned query in the editor.
+      try {
+        const query = getQuery(facet);
+        if (query) this.loadEditorText(query);
+      } catch {
+        // Best-effort.
+      }
       this.controller.selectFromHistory(facet);
+      // Stage 12 — graph lane wins.
+      this.setActiveResultTab('graph');
       // Direct user gesture (history dropdown click) → switch to Explore tab.
       this.showExplorerTab();
     });
@@ -309,6 +325,8 @@ class SearchPanel {
       } catch {
         // Best-effort — never break URL loading on editor reflection.
       }
+      // Stage 12 — URL loading is always a graph lane gesture.
+      this.setActiveResultTab('graph');
       // Fresh navigation from a shared link carries explicit intent: the
       // recipient was sent here to look at a notice, so jump straight to
       // the Explore tab. Reloads (F5/⌘R) preserve the current tab so the

@@ -78,23 +78,32 @@
                 <button class="nav-link" id="query-editor-tab" data-bs-toggle="tab" data-bs-target="#query-editor"
                     type="button" role="tab" aria-controls="query-editor" aria-selected="false">Query Editor</button>
             </li>
-            <!-- Query Results — set lane output. Stage 7+ will hide it on cold load
-                 by toggling this <li>'s display. The id makes it findable. -->
-            <li class="nav-item" role="presentation" id="query-results-tab-item">
+            <!-- Query Results — tabular SELECT results lane. Hidden on cold load
+                 (both result tabs are mutually exclusive — see Stage 12 "mutual
+                 exclusion" rule: at any time, at most ONE of the two result tabs
+                 is visible, determined by the last query's type). -->
+            <li class="nav-item" role="presentation" id="query-results-tab-item" style="display: none;">
                 <button class="nav-link" id="query-results-tab" data-bs-toggle="tab" data-bs-target="#query-results"
                     type="button" role="tab" aria-controls="query-results" aria-selected="false">Query Results</button>
             </li>
-            <!-- Explore tab — instance lane output. Hidden until a CONSTRUCT/DESCRIBE
-                 result lands. DataView._onFacetChanged toggles this <li>'s display. -->
+            <!-- Query Results — graph (CONSTRUCT/DESCRIBE) results lane. Same
+                 visible label as the SELECT lane above so the user sees one
+                 conceptual "Query Results" tab whose contents auto-pick the
+                 right rendering based on the query type. The element ID stays
+                 #app-tab-explorer for JS stability — only the label changes.
+                 Hidden on cold load; revealed by DataView._onFacetChanged or
+                 by the QueryEditor SELECT/CONSTRUCT routing branch. -->
             <li class="nav-item" role="presentation" id="app-tab-explorer-item" style="display: none;">
                 <button class="nav-link" id="app-tab-explorer" data-bs-toggle="tab" data-bs-target="#app-explorer"
-                    type="button" role="tab" aria-controls="app-explorer" aria-selected="false">Explore</button>
+                    type="button" role="tab" aria-controls="app-explorer" aria-selected="false">Query Results</button>
             </li>
+            <!-- Stage 12 — push Help to the right side of the nav,
+                 mirroring the standalone explorer's nav layout. -->
+            <li class="flex-grow-1"></li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
-                    aria-controls="help" aria-selected="false">Help</button>
+                    aria-controls="help" aria-selected="false"><i class="bi bi-question-circle"></i> Help</button>
             </li>
-            <li class="flex-grow-1"></li> <!-- Spacer -->
             <div style="width: 20px;"></div> <!-- Right margin -->
         </ul>
     </nav>
