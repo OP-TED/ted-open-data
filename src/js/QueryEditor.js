@@ -186,6 +186,27 @@ export class QueryEditor {
   }
 
   /**
+   * Replace the editor's content with the given text — Stage 8.
+   * Used by the Search tab when it generates a canned CONSTRUCT for a
+   * notice lookup: the query is shown in the editor (so the user can
+   * see, edit, and learn from it) while the actual execution is still
+   * routed via the controller's notice-number facet path so the title,
+   * procedure timeline, and history dropdown stay populated.
+   *
+   * Does NOT trigger Run. Callers that want to also run after loading
+   * the text should follow up with a separate call to onSubmit (or
+   * just dispatch a submit event on the form).
+   *
+   * @param {string} text
+   */
+  setQueryText(text) {
+    if (!this.editor || typeof text !== 'string') return;
+    this.editor.dispatch({
+      changes: { from: 0, to: this.editor.state.doc.length, insert: text },
+    });
+  }
+
+  /**
    * Get the current query text.
    * @returns {string} - The current query text.
    */

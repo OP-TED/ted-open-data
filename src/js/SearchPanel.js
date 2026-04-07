@@ -19,7 +19,7 @@
 // since that's where the user is actually looking at what they want
 // to share.
 
-import { createPublicationNumberFacet, getLabel } from './facets.js';
+import { createPublicationNumberFacet, getLabel, getQuery } from './facets.js';
 import { getRandomPublicationNumber } from './services/randomNotice.js';
 
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -33,9 +33,16 @@ function _formatShortDate(dateStr) {
 }
 
 class SearchPanel {
-  constructor(controller, { showExplorerTab } = {}) {
+  constructor(controller, { showExplorerTab, loadEditorText } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
+    // Stage 8 — when set, every notice search drops the canned
+    // CONSTRUCT for that notice into the SPARQL editor as a side
+    // effect, so the user can see, edit and learn from the underlying
+    // query. The actual execution still goes through controller.search
+    // with a notice-number facet, preserving the title, the procedure
+    // timeline, and the History dropdown labels. No-op if not wired.
+    this.loadEditorText = loadEditorText || (() => {});
 
     this.input = document.getElementById('search-input');
     this.searchBtn = document.getElementById('search-btn');
@@ -76,6 +83,16 @@ class SearchPanel {
     if (!value) return;
     const facet = createPublicationNumberFacet(value);
     if (!facet) return;
+    // Stage 8 — drop the canned CONSTRUCT into the SPARQL editor as a
+    // side effect, so the Query Editor tab shows the underlying query
+    // when the user navigates there. Wraps in a try because the
+    // editor wiring is optional in test contexts.
+    try {
+      const query = getQuery(facet);
+      if (query) this.loadEditorText(query);
+    } catch {
+      // Ignore — editor reflection is best-effort, never blocks the search.
+    }
     this.controller.search(facet);
     // Direct user gesture (button or Enter) → switch to Explore tab.
     this.showExplorerTab();

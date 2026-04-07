@@ -138,10 +138,18 @@ function bootstrapExplorer(queryEditor) {
     queryEditor.setExplorerRouting(controller, showExplorerTab);
   }
 
-  const searchPanel = new SearchPanel(controller, { showExplorerTab });
+  // Stage 8 — best-effort callback that drops a query string into the
+  // SPARQL editor as a side effect of a notice-search gesture. The
+  // notice-number facet path through the controller is unchanged; the
+  // editor reflection is purely visual so the user can see the query
+  // that produced what they are now looking at on the Explore tab.
+  const loadEditorText = (text) => queryEditor?.setQueryText?.(text);
+
+  const searchPanel = new SearchPanel(controller, { showExplorerTab, loadEditorText });
   new NoticeView(controller, {
     showExplorerTab,
     setSearchInput: (v) => searchPanel.setInputValue(v),
+    loadEditorText,
   });
   new DataView(controller, {
     pickRandom: () => searchPanel.pickRandom(),

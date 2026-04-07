@@ -19,7 +19,7 @@
 // Both copies stay in sync: a click navigates everywhere, a highlight-only
 // update (same procedure, different notice selected) avoids refetching.
 
-import { createPublicationNumberFacet } from './facets.js';
+import { createPublicationNumberFacet, getQuery } from './facets.js';
 import {
   extractProcedureIds,
   getNoticeByPublicationNumber,
@@ -89,13 +89,19 @@ function _formatDate(dateStr) {
 }
 
 class NoticeView {
-  constructor(controller, { showExplorerTab, setSearchInput } = {}) {
+  constructor(controller, { showExplorerTab, setSearchInput, loadEditorText } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
     // Called when the user navigates via a timeline click so the Search
     // input mirrors "the notice currently being looked at", matching the
     // behaviour of the lucky link and the History dropdown.
     this.setSearchInput = setSearchInput || (() => {});
+    // Stage 8 — same Search-tab editor reflection as SearchPanel: when
+    // a timeline sibling is clicked, drop the canned CONSTRUCT for the
+    // sibling notice into the SPARQL editor as a side effect, so the
+    // Query Editor tab stays in sync with what's currently being
+    // shown on Explore.
+    this.loadEditorText = loadEditorText || (() => {});
 
     // Search tab DOM refs
     this.resultsCard = document.getElementById('notice-results');
@@ -378,6 +384,14 @@ class NoticeView {
       // reflects "what's currently being looked at", matching the lucky
       // link and History dropdown behaviour.
       this.setSearchInput(notice.publicationNumber);
+      // Stage 8 — also drop the canned CONSTRUCT for this sibling into
+      // the SPARQL editor as a side effect, mirroring SearchPanel._search.
+      try {
+        const query = getQuery(facet);
+        if (query) this.loadEditorText(query);
+      } catch {
+        // Best-effort — never block the navigation on editor reflection.
+      }
       // Lateral navigation within an already-visible procedure: reset
       // the breadcrumb (we're switching notices) but don't add the
       // sibling to History. The Procedure Timeline is already the
