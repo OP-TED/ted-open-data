@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "TED SPARQL Query Editor",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node src/js/cors-proxy.js",
-    "build:codemirror": "node scripts/build-codemirror.js",
+    "start": "node src/js/cors-proxy.cjs",
+    "build:codemirror": "node scripts/build-codemirror.cjs",
     "test": "node --test test/"
   },
   "dependencies": {

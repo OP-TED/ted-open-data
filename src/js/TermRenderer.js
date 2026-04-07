@@ -1,0 +1,173 @@
+/*
+ * Copyright 2026 European Union
+ *
+ * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the European
+ * Commission - subsequent versions of the EUPL (the "Licence"); You may not use this work except in
+ * compliance with the Licence. You may obtain a copy of the Licence at:
+ * https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence
+ * is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the Licence for the specific language governing permissions and limitations under
+ * the Licence.
+ */
+// TermRenderer — renders RDF terms (NamedNode, BlankNode, Literal) as DOM
+// elements. Also exposes renderSubjectBadge() for the clickable badges
+// used in tree card headers and backlinks.
+//
+// The module keeps a reference to the ExplorerController so that default
+// click handlers can navigate without the caller plumbing it through.
+
+import { shortLabel } from './namespaces.js';
+import { isLabelEligible, requestLabel } from './services/labelService.js';
+
+const BADGE_CLICKABLE = 'badge text-info-emphasis bg-info-subtle tree-type-badge';
+const BADGE_READONLY = 'badge text-secondary-emphasis bg-secondary-subtle tree-type-badge';
+
+let _controller = null;
+
+function setController(controller) {
+  _controller = controller;
+}
+
+// Render a term as a DOM element. The returned element depends on the
+// term's kind (named node → <a>, blank node → plain span, literal → span
+// with datatype / language suffixes).
+function renderTerm(term, options = {}) {
+  const { clickable = true, onClick = null } = options;
+
+  if (!term || !term.value) {
+    const span = document.createElement('span');
+    span.textContent = '(empty)';
+    return span;
+  }
+
+  const termType = term.termType || _guessTermType(term);
+
+  if (termType === 'BlankNode') {
+    const span = document.createElement('span');
+    span.textContent = term.value;
+    return span;
+  }
+
+  if (termType === 'NamedNode') {
+    return _renderNamedNode(term, clickable, onClick);
+  }
+
+  return _renderLiteral(term);
+}
+
+// Guess the term type for plain objects that don't carry a termType field.
+function _guessTermType(term) {
+  if (term.datatype || term.language !== undefined) return 'Literal';
+  if (term.value && term.value.startsWith('http')) return 'NamedNode';
+  return 'Literal';
+}
+
+function _renderNamedNode(term, clickable, onClick) {
+  const el = document.createElement('a');
+  el.href = term.value;
+  el.className = 'uri-link';
+  el.textContent = shortLabel(term.value);
+  el.title = term.value;
+
+  // Async-resolve to a human label if one exists in the endpoint.
+  if (isLabelEligible(term.value)) {
+    requestLabel(term.value, (label) => {
+      if (label) el.textContent = label;
+    });
+  }
+
+  _attachNavigationHandler(el, term, clickable, onClick);
+  return el;
+}
+
+// Wires up the click behaviour for a NamedNode element. Blank-node-like
+// identifiers (no http scheme) render as non-clickable plain text.
+function _attachNavigationHandler(el, term, clickable, onClick) {
+  const isNavigable = term.value.startsWith('http://') || term.value.startsWith('https://');
+
+  if (!isNavigable || !clickable) {
+    el.style.cursor = 'default';
+    el.removeAttribute('href');
+    return;
+  }
+
+  if (onClick) {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      onClick(term.value);
+    });
+    return;
+  }
+
+  if (_controller) {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      _controller.navigateTo({
+        type: 'named-node',
+        term: { termType: 'NamedNode', value: term.value },
+        timestamp: Date.now(),
+      });
+    });
+  }
+}
+
+function _renderLiteral(term) {
+  const span = document.createElement('span');
+  span.className = 'literal';
+  span.appendChild(document.createTextNode(`"${term.value}"`));
+
+  if (term.datatype?.value) {
+    const dt = term.datatype.value.split('#').pop() || '';
+    if (dt && dt !== 'string') {
+      const dtSpan = document.createElement('span');
+      dtSpan.className = 'datatype';
+      dtSpan.textContent = `^^${dt}`;
+      span.appendChild(dtSpan);
+    }
+  }
+
+  if (term.language) {
+    const langSpan = document.createElement('span');
+    langSpan.className = 'language';
+    langSpan.textContent = `@${term.language}`;
+    span.appendChild(langSpan);
+  }
+
+  return span;
+}
+
+// Render a subject URI as a badge. The text is the short resource label,
+// asynchronously replaced with a human label if one resolves. Clickable
+// badges navigate (default: extend the breadcrumb); use clickable: false
+// for "you are here" markers.
+//
+// Builds the badge element directly rather than routing through renderTerm,
+// because renderTerm would already issue a label request inside its
+// _renderNamedNode helper — and then this function would issue a second
+// one after overwriting the text. One badge, one request.
+function renderSubjectBadge(subjectUri, options = {}) {
+  const { clickable = true, badgeClass, onClick = null } = options;
+
+  const term = { termType: 'NamedNode', value: subjectUri };
+  const badge = document.createElement(clickable ? 'a' : 'span');
+  badge.className = badgeClass || (clickable ? BADGE_CLICKABLE : BADGE_READONLY);
+  badge.title = subjectUri;
+  badge.textContent = shortLabel(subjectUri);
+
+  if (clickable) {
+    badge.href = subjectUri;
+    _attachNavigationHandler(badge, term, /* clickable */ true, onClick);
+  }
+
+  if (isLabelEligible(subjectUri)) {
+    requestLabel(subjectUri, (label) => {
+      if (label) badge.textContent = label;
+    });
+  }
+
+  return badge;
+}
+
+export { renderSubjectBadge, renderTerm, setController };

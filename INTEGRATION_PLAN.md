@@ -624,18 +624,39 @@ explorer code lands in ted-open-data's tree.
 they're pure functions or pure data structures. These can land without
 wiring anything to the existing UI.
 
-**Files touched** (all NEW):
-- `src/js/facets.js` — facet schema + creators (Zod schemas, no DOM)
-- `src/js/clipboardCopy.js` — already a pure helper
-- `src/js/TreeRenderer.js` — pure RDF tree rendering helpers (DOM
-  creation, but no DOM mutations until called)
+**Files touched** (all NEW unless noted):
+- `src/js/namespaces.js` — RDF namespace prefix → URI map and
+  `shortLabel` helper. Pure data + pure function. Imported by `facets.js`,
+  `TermRenderer.js`, `services/labelService.js`.
+- `src/js/facets.js` — facet schema + creators (Zod schemas, no DOM).
+  Imports `namespaces.js`.
+- `src/js/clipboardCopy.js` — clipboard copy helper (writeText + a
+  document.execCommand fallback). DOM-using but only when called.
+- `src/js/TermRenderer.js` — pure RDF term rendering helpers
+  (renderTerm, renderSubjectBadge). DOM creation only when called.
+  Imports `namespaces.js` and `services/labelService.js`.
+- `src/js/TreeRenderer.js` — pure RDF tree rendering helpers. DOM
+  creation only when called. Imports `namespaces.js` and `TermRenderer.js`.
+- `src/js/sparqlWorker.js` — Web Worker that executes SPARQL queries
+  off-thread and parses Turtle into quads. No imports of explorer
+  modules; runs as a worker (loaded via `new URL('../sparqlWorker.js',
+  import.meta.url)` from `services/sparqlService.js`).
 - `src/js/services/sparqlService.js` — worker-based SPARQL execution.
   Note: this duplicates ted-open-data's existing fetch-based execution,
-  by design — the two coexist temporarily until Stage 7 unifies them
-- `src/js/services/tedAPI.js` — TED procedure-timeline API client
-- `src/js/services/randomNotice.js` — lucky-link backend
-- `src/js/cm-theme.js` — eclipse-inspired CM6 theme (only if not already
-  present in ted-open-data; check first)
+  by design — the two coexist temporarily until Stage 7 unifies them.
+  Loads `sparqlWorker.js`.
+- `src/js/services/tedAPI.js` — TED procedure-timeline API client.
+  Imports `facets.js`. **IMPORTANT**: bring over the post-hotfix-2.0.1
+  version that always uses the acceptance API. The pre-hotfix version
+  had a host-based switch that broke production with CORS errors.
+- `src/js/services/labelService.js` — async label resolution for RDF
+  resources. Imports `namespaces.js` and `services/sparqlService.js`.
+- `src/js/services/randomNotice.js` — lucky-link backend (random notice
+  picker). Imports `services/sparqlService.js`.
+- `src/js/cm-theme.js` — **DO NOT PORT**: ted-open-data already has a
+  functionally equivalent Eclipse-like theme. Keep ted-open-data's
+  existing version. Stage 12 (Aesthetic alignment) catches any subtle
+  styling differences if they matter.
 
 **Steps**:
 1. Copy the files verbatim from
