@@ -41,7 +41,7 @@ import {
 } from '../vendor/codemirror-bundle.js';
 import { eclipseHighlightStyle, eclipseTheme } from './cm-theme.js';
 import { copyToClipboard } from './clipboardCopy.js';
-import { getLabel } from './facets.js';
+import { getLabel, getQuery } from './facets.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
 class DataView {
@@ -73,6 +73,8 @@ class DataView {
     this.notFoundEl = document.getElementById('data-not-found');
     this.notFoundPubEl = document.getElementById('data-not-found-pub');
     this.viewModeGroup = this.card?.querySelector('.btn-group[role="group"]');
+    // Stage 10 — download menu (Turtle / RDF/XML / N-Triples)
+    this.downloadMenu = document.getElementById('data-download-menu');
 
     this.treeRenderer = new TreeRenderer(this.treeContainer);
 
@@ -101,6 +103,19 @@ class DataView {
     if (this.shareBtn) {
       this.shareBtn.addEventListener('click', () => this._share());
     }
+
+    // Stage 10 — download menu items. Each option's data-download-format
+    // attribute carries the MIME type to request from the SPARQL
+    // endpoint. Turtle is short-circuited to use the rawTurtle already
+    // in memory; RDF/XML and N-Triples re-fetch via /sparql.
+    if (this.downloadMenu) {
+      this.downloadMenu.querySelectorAll('[data-download-format]').forEach((item) => {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          this._download(item.dataset.downloadFormat);
+        });
+      });
+    }
   }
 
   // Copy the shareable URL for the currently focused facet to the
@@ -125,6 +140,70 @@ class DataView {
       this.shareBtn.innerHTML = original;
       this.shareBtn.title = 'Copy shareable URL';
     }, 1500);
+  }
+
+  /**
+   * Stage 10 — download the current data card's content in the
+   * requested RDF serialisation. Turtle short-circuits to use the
+   * rawTurtle already in memory; RDF/XML and N-Triples re-fetch via
+   * /sparql with the appropriate Accept header. Triggers a browser
+   * download via a temporary <a> element + Blob URL.
+   *
+   * @param {string} format MIME type — text/turtle, application/rdf+xml, application/n-triples
+   * @private
+   */
+  async _download(format) {
+    const facet = this.controller.currentFacet;
+    if (!facet) return;
+    let body;
+    let extension;
+    try {
+      if (format === 'text/turtle' && this.controller.results?.rawTurtle) {
+        body = this.controller.results.rawTurtle;
+        extension = 'ttl';
+      } else {
+        // Re-fetch from the endpoint with the requested Accept header.
+        // Use the same /sparql route the worker uses; it preserves
+        // Accept and forwards to the real endpoint.
+        const query = getQuery(facet);
+        if (!query) return;
+        const response = await fetch('/sparql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': format,
+          },
+          body: `query=${encodeURIComponent(query)}`,
+        });
+        if (!response.ok) {
+          console.error('Download failed:', response.status, await response.text());
+          return;
+        }
+        body = await response.text();
+        extension = format === 'application/rdf+xml' ? 'rdf'
+          : format === 'application/n-triples' ? 'nt'
+          : 'txt';
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      return;
+    }
+
+    // Build a filename from the current facet for friendlier downloads.
+    const stem = facet.type === 'notice-number'
+      ? `notice-${facet.value}`
+      : facet.type === 'named-node'
+        ? 'resource'
+        : 'query-result';
+    const blob = new Blob([body], { type: format });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${stem}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   _listen() {
@@ -225,6 +304,9 @@ class DataView {
 
   _setShareBtnVisible(visible) {
     if (this.shareBtn) this.shareBtn.style.display = visible ? '' : 'none';
+    // Stage 10 — download menu visibility tracks the share button.
+    // Both are "you have something loaded that you can act on" affordances.
+    if (this.downloadMenu) this.downloadMenu.style.display = visible ? '' : 'none';
   }
 
   _showNotFound(publicationNumber) {

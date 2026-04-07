@@ -243,6 +243,33 @@ export class QueryEditor {
     const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
     this.runQueryButton.disabled = error ? true : !query.trim();
+    this._updateFormatDropdownVisibility(query);
+  }
+
+  /**
+   * Stage 10 — toggle the Results Format dropdown based on the query
+   * type. SELECT and ASK use the dropdown (HTML/JSON/CSV/...) to
+   * choose how the result is rendered on the Query Results tab.
+   * CONSTRUCT and DESCRIBE go to the Explore tab where the format
+   * choice is meaningless (the tab does its own tree/turtle/backlinks
+   * rendering), so the dropdown is hidden.
+   *
+   * On parse failure or empty query, the dropdown is left in its
+   * previous state — toggling on every keystroke would flicker.
+   * @private
+   */
+  _updateFormatDropdownVisibility(query) {
+    const wrapper = document.getElementById('format-wrapper');
+    if (!wrapper) return;
+    let queryType;
+    try {
+      queryType = new SparqlJs.Parser().parse(query)?.queryType;
+    } catch {
+      return; // Parse error — keep last state.
+    }
+    if (queryType === undefined) return; // Empty query — keep last state.
+    const isGraphQuery = queryType === 'CONSTRUCT' || queryType === 'DESCRIBE';
+    wrapper.style.display = isGraphQuery ? 'none' : '';
   }
 
   /**

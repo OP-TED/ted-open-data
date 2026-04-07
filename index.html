@@ -245,7 +245,14 @@
                     </div>
                 </div>
 
-                <div class="form-floating mb-3">
+                <!-- Format dropdown — Stage 10 wraps this in #format-wrapper
+                     so QueryEditor.onEditorChange can hide it for
+                     CONSTRUCT/DESCRIBE queries (which render on the Explore
+                     tab and don't need a format choice for viewing). The
+                     SELECT/ASK formats stay visible; the RDF formats stay
+                     in the list as a fallback for the rare case the
+                     dropdown is forced visible (e.g. unparseable query). -->
+                <div id="format-wrapper" class="form-floating mb-3">
                     <select id="format" name="format" class="form-select">
                         <option value="text/html" selected>HTML</option>
                         <option value="application/sparql-results+json">JSON</option>
@@ -371,7 +378,7 @@
                     </div>
                 </div>
 
-                <!-- Page title with inline share button -->
+                <!-- Page title with inline share button + Stage 10 download menu -->
                 <div class="d-flex align-items-center gap-2 mt-3 mb-3">
                     <h5 id="data-card-title" class="mb-0"></h5>
                     <button type="button" id="data-share-btn"
@@ -379,6 +386,25 @@
                             title="Copy shareable URL" style="display: none;">
                         <i class="bi bi-share"></i>
                     </button>
+                    <!-- Stage 10 — Download menu for the loaded RDF graph.
+                         Visible whenever the data card itself is visible
+                         (handled by DataView). Three formats: Turtle (the
+                         best fidelity, served from the rawTurtle already in
+                         memory), N-Triples (re-fetched), RDF/XML (re-fetched). -->
+                    <div class="dropdown" id="data-download-menu" style="display: none;">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary border-0 rounded-circle data-share-btn"
+                                id="data-download-btn"
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                title="Download as…">
+                            <i class="bi bi-download"></i>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="data-download-btn">
+                            <li><a class="dropdown-item" href="#" data-download-format="text/turtle">Turtle</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="application/rdf+xml">RDF/XML</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="application/n-triples">N-Triples</a></li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div id="data-loading" class="loading-overlay" style="display: none;">
