@@ -471,26 +471,67 @@
                     <div class="col-lg-8">
                         <h2>Help</h2>
                         <p>
-                            The TED Open Data Service allows you to extract custom datasets from the entire collection of public procurement data published by the Publications Office. 
-                            This is made possible with Semantic Web technologies, specifically the SPARQL query language which allows you to specify the data you want to retrieve to meet the specific needs of your application.
+                            The TED Open Data Service lets you explore the entire collection of public procurement data
+                            published by the Publications Office of the EU. You can look up individual notices and inspect
+                            their full RDF graph, or write SPARQL queries to extract custom datasets across many notices.
+                            Both flows use the same Linked Open Data backend and the same eProcurement Ontology (ePO).
                         </p>
                         <p>
-                            To use this tool you will need to develop some familiarity with the logic and syntax of SPARQL as well as the concepts defined in the eProcurement Ontology. 
-                            For detailed information and guidance on these topics, please visit our <a href="https://docs.ted.europa.eu/" target="_blank" rel="noopener noreferrer">documentation website</a>.</p>
+                            For a broader introduction to TED Open Data, ePO, and SPARQL, visit our
+                            <a href="https://docs.ted.europa.eu/" target="_blank" rel="noopener noreferrer">documentation website</a>.
                         </p>
-                        <h3>How to use this tool</h3>
+
+                        <h3>Looking up a notice</h3>
+                        <ul>
+                            <li>Use the <b>Search</b> tab to look up a notice by its publication number (e.g. <code>00676595-2024</code>).</li>
+                            <li>Click <b>pick a random notice</b> to explore a recent notice chosen at random.</li>
+                            <li>Results appear in the <b>Query Results</b> tab as a collapsible tree of RDF triples.</li>
+                            <li>Use <b>Tree</b> view for a hierarchical, navigable structure.</li>
+                            <li>Use <b>Turtle</b> view to see the raw RDF serialization.</li>
+                            <li>Use <b>Backlinks</b> view to see which other resources reference the current one.</li>
+                            <li>Click the <i class="bi bi-clock-history"></i> history button in the Search tab to revisit a past search; click <b>Clear history</b> at the bottom of that menu to wipe the list.</li>
+                        </ul>
+
+                        <h4>Navigating the tree</h4>
+                        <ul>
+                            <li>Click any <span class="badge text-info-emphasis bg-info-subtle">type</span> badge to drill into that resource. Badge text reads "Type identifier" (e.g. "Lot LOT-0001", "SettledContract CON-0001") or just "Type" when the resource has no identifier.</li>
+                            <li>Your path is shown as a breadcrumb at the top of the Query Results tab. Click any step to jump back.</li>
+                            <li>Each nested card shows a subject (e.g. a Lot, an Organization) with its properties.</li>
+                            <li>Click the <i class="bi bi-house-door"></i> icon in the breadcrumb to return to the notice you started with.</li>
+                        </ul>
+
+                        <h4>Procedure timeline</h4>
                         <p>
-                            <ul>
-                                <li>Use the <b>Query Library</b> tab to explore suggested SPARQL queries. These will help you get started.</li>
-                                <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
-                                <li>To test your query use the <b>Run Query</b> button.</li>
-                                <li>The results will be displayed in the <b>Query Results</b> tab.</li>
-                                <li>You can get a URL that directly runs your query by clicking on the <b>Copy URL</b> button in the <b>Query Results</b> tab.<br/> 
-                                    You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
-                                <li>To download a copy of the data retrieved by your query you can use the <b>Download</b> button in the <b>Query Results</b> tab.</li>
-                            </ul>
+                            When you search a notice, its procedure timeline is shown as a collapsible mini-card above the tree.
+                            Every notice within the same procedure is listed with colour-coded cards:
+                            <span class="text-success">green</span> for the original publication,
+                            <span class="text-warning">yellow</span> for subsequent amendments
+                            (marked with a <code>v2</code>, <code>v3</code>, … badge next to the publication number).
+                            Cards are ordered oldest-first; same-day amendments are broken by version.
+                            Click any notice in the timeline to navigate to it.
                         </p>
-                        <h3>Autocomplete feature</h3>
+
+                        <h4>Sharing a notice view</h4>
+                        <p>
+                            Click the <i class="bi bi-share"></i> share button next to the notice title to copy a URL
+                            that loads the current notice or sub-resource directly. Paste it into an email, a ticket, or
+                            another browser tab to share your exploration. Click the <i class="bi bi-download"></i>
+                            download button to export the RDF data as Turtle, RDF/XML, or N-Triples.
+                        </p>
+
+                        <h3>Writing SPARQL queries</h3>
+                        <ul>
+                            <li>Use the <b>Query Library</b> tab to explore suggested SPARQL queries. These will help you get started.</li>
+                            <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
+                            <li>To test your query use the <b>Run Query</b> button.</li>
+                            <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table.</li>
+                            <li>CONSTRUCT and DESCRIBE results are displayed in the <b>Query Results</b> tab as an RDF graph (the same tree/turtle/backlinks view used by notice lookup).</li>
+                            <li>For SELECT queries you can get a URL that runs the query directly by clicking on the <b>Copy URL</b> button.<br/>
+                                You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
+                            <li>To download a copy of the data retrieved by a SELECT query, use the <b>Download</b> button.</li>
+                        </ul>
+
+                        <h4>Autocomplete in the editor</h4>
                         <p>The query editor provides autocomplete suggestions as you type:</p>
                         <ul>
                             <li>Type <code>PREFIX </code> to see available namespace prefixes</li>
@@ -501,14 +542,14 @@
                         </ul>
                         <p class="small text-muted">Autocomplete is based on the eProcurement Ontology (ePO) v4.2.0.</p>
 
-                        <h3>Query Library</h3>
+                        <h4>Query Library</h4>
                         <p>
                             The Query Library provides example SPARQL queries to help you get started.
                             If you'd like to contribute new queries, improve existing ones, or add comments to make them clearer,
                             see the <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer">contributing guide</a>.
                         </p>
 
-                        <h3>Questions & feedback</h3>
+                        <h3>Questions &amp; feedback</h3>
                         <p>
                             For questions and feedback, please visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> forum.
                         </p>
@@ -545,8 +586,23 @@
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
+                                        <strong>codemirror-lang-turtle</strong> (v0.0.2)
+                                        <br><small class="text-muted">Turtle syntax highlighting for CodeMirror</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
                                         <strong>sparqljs</strong> (v3.7.4)
                                         <br><small class="text-muted">SPARQL query parser and generator</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>N3.js</strong> (v1.23.1)
+                                        <br><small class="text-muted">RDF / Turtle parser used by the notice browser</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>Zod</strong> (v4)
+                                        <br><small class="text-muted">Runtime validation for shareable URL parameters</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
