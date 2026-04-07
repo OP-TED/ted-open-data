@@ -435,3 +435,336 @@ main {
     background-color: #daf7a6;
     margin-bottom: 0;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Explorer-derived rules — Stage 5 port
+   ─────────────────────────────────────────────────────────────────
+   Brought over from ted-open-data-explorer/src/assets/style.css to
+   support the new Search and Explore tab content. Selectors are
+   unique to the explorer port; nothing here clobbers existing
+   ted-open-data styling.
+
+   Skipped from the explorer CSS:
+     - Unscoped `.cm-editor` rules — ted-open-data has its own that
+       must keep applying to the Query Editor tab.
+     - `#panel-sparql` rules — that element does not exist in the
+       merged app (decision §3.2: only one editor).
+   ───────────────────────────────────────────────────────────────── */
+
+/* ── Search hero (notice search input + history + lucky link) ── */
+
+.search-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+.search-hero-top,
+.search-hero-bottom {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.search-hero-title-lane,
+.search-hero-input-lane {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.search-hero-title-lane {
+  flex: 34 1 0;
+  justify-content: center;
+}
+.search-hero-input-lane {
+  flex: 66 1 0;
+  justify-content: flex-start;
+}
+.search-hero-inner {
+  width: 100%;
+  max-width: 700px;
+}
+.search-hero-prompt {
+  font-size: 1.05rem;
+}
+.search-hero-input {
+  flex: 1;
+}
+.search-hero-btn {
+  background: #fff;
+  border: 1px solid #ced4da;
+  color: #6c757d;
+}
+.search-hero-btn:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  color: #495057;
+}
+.search-hero-btn:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  border-color: #86b7fe;
+}
+.search-hero #notice-results {
+  width: fit-content;
+  max-width: calc(100% - 40px);
+  margin: 0 20px;
+  align-self: center;
+}
+
+.lucky-hint {
+  font-size: 0.85rem;
+  color: #6c757d;
+  text-align: center;
+}
+.lucky-hint a {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+.lucky-hint a:hover {
+  color: #0a58ca;
+}
+
+/* ── Procedure timeline ── */
+
+.procedure-timeline {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 1rem 1.25rem 0.5rem 1.25rem;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #ced4da transparent;
+}
+.procedure-timeline::-webkit-scrollbar { height: 6px; }
+.procedure-timeline::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 3px;
+}
+.procedure-timeline::-webkit-scrollbar-track { background: transparent; }
+.procedure-timeline::-webkit-scrollbar-button { display: none; }
+
+.timeline-item {
+  position: relative;
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  background: white;
+  transition: background 0.15s;
+}
+.timeline-item:hover { background: #f0f7ff; }
+.timeline-item.success { border-left: 3px solid #2c862d; }
+.timeline-item.warning { border-left: 3px solid #ffc107; }
+.timeline-item.current { background: #e8f4fd; border-color: #0d6efd; }
+
+.timeline-item .pub-number { font-weight: 600; }
+.timeline-item .pub-date { color: #666; font-size: 0.75rem; }
+.timeline-item .pub-date-segment + .pub-date-segment { margin-left: 0.75rem; }
+.timeline-item .notice-meta { color: #777; font-size: 0.75rem; }
+.timeline-item .ted-link { font-size: 0.7rem; }
+
+.timeline-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  color: #999;
+}
+
+/* ── Explore tab ── */
+
+.data-sticky-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 0 0 8px 0;
+  margin: 0 !important;
+  border-bottom: 1px solid #e9ecef;
+}
+.data-sticky-header::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  bottom: 100%;
+  height: 0.5rem;
+  background: #fff;
+  pointer-events: none;
+}
+
+#data-breadcrumb {
+  font-size: 0.85rem;
+}
+#data-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+  content: "›";
+}
+
+/* Inline share-the-current-view button next to the data card title. */
+.data-share-btn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+}
+.data-share-btn:hover,
+.data-share-btn:focus {
+  background-color: #e9ecef;
+  color: #212529;
+}
+
+.explorer-procedure-chevron {
+  transition: transform 0.2s;
+}
+[aria-expanded="true"] .explorer-procedure-chevron {
+  transform: rotate(90deg);
+}
+
+/* ── Tree view ── */
+
+.tree-view {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+}
+.tree-node { padding: 1px 0; }
+.tree-card {
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+.tree-card-header {
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 500;
+}
+.tree-card-header .predicate { text-decoration: none; }
+.tree-card-header .predicate:hover { text-decoration: underline; }
+.tree-card-body { padding: 4px 8px 4px 16px; }
+
+.tree-toggle {
+  cursor: pointer;
+  user-select: none;
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+}
+.tree-toggle:hover { color: #0d6efd; }
+
+.tree-type-badge {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  margin-left: 4px;
+  text-decoration: none !important;
+}
+
+.tree-node .predicate { color: #0d6efd; }
+.tree-node .literal { color: #2a00ff; }
+.tree-node .datatype { font-size: 0.75em; opacity: 0.6; margin-left: 2px; }
+.tree-node .language { font-size: 0.75em; opacity: 0.6; margin-left: 2px; }
+.tree-node .uri-link {
+  color: #7f0055;
+  cursor: pointer;
+  text-decoration: none;
+}
+.tree-node .uri-link:hover { text-decoration: underline; }
+
+.tree-node .predicate .uri-link,
+.tree-node .predicate.uri-link {
+  color: #0d6efd;
+  text-decoration: none;
+}
+.tree-node .predicate .uri-link:hover,
+.tree-node .predicate.uri-link:hover {
+  color: #0a58ca;
+  text-decoration: underline;
+}
+
+/* ── Backlinks view ── */
+
+.backlink-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.backlink-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.backlink-subject {
+  cursor: pointer;
+  text-decoration: none !important;
+}
+.backlink-relation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.backlink-arrow {
+  display: inline-block;
+  width: 30px;
+  height: 2px;
+  background: #999;
+  position: relative;
+  vertical-align: middle;
+}
+.backlink-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border-left: 6px solid #999;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+/* The Turtle editor inside the Explore tab grows to fit its content
+   rather than scrolling internally. Scoped to #turtle-container so it
+   does NOT affect the Query Editor tab's CodeMirror, which keeps the
+   ted-open-data .cm-editor styling. */
+#turtle-container .cm-editor { height: auto; }
+#turtle-container .cm-editor .cm-scroller {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible;
+}
+
+/* ── Loading overlay (Explore tab) ── */
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .backlink-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .backlink-subjects {
+    justify-content: center;
+  }
+}

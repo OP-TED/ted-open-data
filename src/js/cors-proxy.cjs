@@ -79,6 +79,39 @@ app.all('/proxy', async (req, res) => {
   }
 });
 
+// /sparql route — added by Stage 6 of the explorer integration so the
+// ported sparqlService.js can hit a same-origin URL in dev. Forwards
+// the request body verbatim to the real SPARQL endpoint and proxies
+// the response back, preserving the Accept header (Turtle for
+// CONSTRUCT/DESCRIBE, sparql-results+json for SELECT). The existing
+// /proxy?url=... route above is unchanged and continues to serve the
+// ted-open-data Query Editor's SELECT path.
+const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
+app.all('/sparql', async (req, res) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': req.headers.accept || 'text/turtle',
+    };
+    const body = req.method === 'POST'
+      ? new URLSearchParams(req.body).toString()
+      : undefined;
+    const url = req.method === 'GET'
+      ? `${SPARQL_ENDPOINT}?${new URLSearchParams(req.query)}`
+      : SPARQL_ENDPOINT;
+    const response = await fetch(url, {
+      method: req.method === 'GET' ? 'GET' : 'POST',
+      headers,
+      body,
+    });
+    const text = await response.text();
+    res.set('Content-Type', response.headers.get('Content-Type') || 'text/turtle');
+    res.status(response.status).send(text);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
 // Serve static files from the project root
 app.use(express.static('.'));
 

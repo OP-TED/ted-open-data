@@ -16,6 +16,18 @@ import { QueryLibrary } from './QueryLibrary.js';
 import { HomeTab } from './HomeTab.js';
 import { QueryResults } from './QueryResults.js';
 
+// Explorer port — Stage 6 wiring. These classes drive the new Search +
+// Explore tabs added in Stage 5. They run alongside the existing
+// ted-open-data classes above and use a separate execution path
+// (worker-based, via services/sparqlService.js) until Stage 7 unifies
+// the SPARQL execution into a single pipeline.
+import { BacklinksView } from './BacklinksView.js';
+import { DataView } from './DataView.js';
+import { ExplorerController } from './ExplorerController.js';
+import { NoticeView } from './NoticeView.js';
+import { SearchPanel } from './SearchPanel.js';
+import { setController } from './TermRenderer.js';
+
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
 
@@ -30,6 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const queryResults = new QueryResults(queryEditor, SPARQL_ENDPOINT);
   queryEditor.setQueryResults(queryResults);
   const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
+
+  // ── Explorer port (Stage 6) ──
+  // Wire up the new Search + Explore tabs. The ExplorerController is
+  // the model layer; SearchPanel/NoticeView/DataView/BacklinksView bind
+  // to the HTML scaffolding added in Stage 5. None of this touches the
+  // ted-open-data classes above — the Query Editor lane and the Search
+  // lane run in parallel until Stage 7 unifies the SPARQL execution.
+  bootstrapExplorer();
 
   // Initialize all Bootstrap tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -77,3 +97,46 @@ SELECT ?earliestDate ?latestDate WHERE {
     })
     .catch(() => {});
 });
+
+// ── Explorer bootstrap (Stage 6) ──
+// Instantiates the explorer controller + views and wires them to the
+// HTML scaffolding from Stage 5. Mirrors ted-open-data-explorer's old
+// app.js, minus the SparqlPanel (decision §3.2: only one editor),
+// minus the progress-bar/stop-button wiring (those use explorer's own
+// element IDs that don't exist in ted-open-data; Stage 7 will unify
+// progress feedback into ted-open-data's existing footer), and minus
+// loadDataPeriod (the existing script.js block above already does it).
+function bootstrapExplorer() {
+  const controller = new ExplorerController();
+  setController(controller);
+
+  // Switch to the Explore tab. Called only by direct user gestures
+  // (Search button, Enter, lucky link, timeline click, history pick).
+  // Resets view mode to Tree and expands the procedure mini-card so the
+  // user lands in a consistent state regardless of where they came from.
+  function showExplorerTab() {
+    const treeRadio = document.getElementById('view-tree');
+    if (treeRadio && !treeRadio.checked) {
+      treeRadio.checked = true;
+      treeRadio.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const procedureBody = document.getElementById('explorer-procedure-body');
+    if (procedureBody) {
+      bootstrap.Collapse.getOrCreateInstance(procedureBody, { toggle: false }).show();
+    }
+    const tabBtn = document.getElementById('app-tab-explorer');
+    if (tabBtn) new bootstrap.Tab(tabBtn).show();
+  }
+
+  const searchPanel = new SearchPanel(controller, { showExplorerTab });
+  new NoticeView(controller, {
+    showExplorerTab,
+    setSearchInput: (v) => searchPanel.setInputValue(v),
+  });
+  new DataView(controller, {
+    pickRandom: () => searchPanel.pickRandom(),
+  });
+  new BacklinksView(controller);
+
+  searchPanel.init();
+}

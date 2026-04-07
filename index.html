@@ -65,6 +65,11 @@
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
                     type="button" role="tab" aria-controls="home-tab-content" aria-selected="true">Home</button>
             </li>
+            <!-- Search tab — instance lane input. Always visible. -->
+            <li class="nav-item" role="presentation" id="app-tab-search-item">
+                <button class="nav-link" id="app-tab-search" data-bs-toggle="tab" data-bs-target="#app-search"
+                    type="button" role="tab" aria-controls="app-search" aria-selected="false">Search</button>
+            </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="query-library-tab" data-bs-toggle="tab" data-bs-target="#query-library"
                     type="button" role="tab" aria-controls="query-library" aria-selected="false">Query Library</button>
@@ -73,9 +78,17 @@
                 <button class="nav-link" id="query-editor-tab" data-bs-toggle="tab" data-bs-target="#query-editor"
                     type="button" role="tab" aria-controls="query-editor" aria-selected="false">Query Editor</button>
             </li>
-            <li class="nav-item" role="presentation">
+            <!-- Query Results — set lane output. Stage 7+ will hide it on cold load
+                 by toggling this <li>'s display. The id makes it findable. -->
+            <li class="nav-item" role="presentation" id="query-results-tab-item">
                 <button class="nav-link" id="query-results-tab" data-bs-toggle="tab" data-bs-target="#query-results"
                     type="button" role="tab" aria-controls="query-results" aria-selected="false">Query Results</button>
+            </li>
+            <!-- Explore tab — instance lane output. Hidden until a CONSTRUCT/DESCRIBE
+                 result lands. DataView._onFacetChanged toggles this <li>'s display. -->
+            <li class="nav-item" role="presentation" id="app-tab-explorer-item" style="display: none;">
+                <button class="nav-link" id="app-tab-explorer" data-bs-toggle="tab" data-bs-target="#app-explorer"
+                    type="button" role="tab" aria-controls="app-explorer" aria-selected="false">Explore</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
@@ -114,6 +127,70 @@
                 <button id="start-tour" class="btn btn-primary">Write your own query</button>
             </div>
         </div> <!-- Close home-tab-content div -->
+
+        <!-- ═══ SEARCH TAB ═══ -->
+        <!-- Notice search input + history dropdown + lucky link.
+             Trimmed from explorer's index.html: the SPARQL mode toggle and
+             the panel-sparql wrapper are removed because the merged app
+             has only one editor (in the Query Editor tab). -->
+        <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-search" role="tabpanel" aria-labelledby="app-tab-search">
+            <div id="panel-notice" class="search-hero">
+
+                <!-- Top half: search area, split into title-lane + input-lane -->
+                <div class="search-hero-top">
+                    <div class="search-hero-title-lane">
+                        <div class="search-hero-inner search-hero-prompt text-center text-muted">
+                            Look up a notice to see how the eProcurement Ontology represents it
+                        </div>
+                    </div>
+                    <div class="search-hero-input-lane">
+                        <div class="search-hero-inner d-flex align-items-center gap-2">
+                            <label for="search-input" class="visually-hidden">Publication number</label>
+                            <input type="text" id="search-input" class="form-control form-control-lg search-hero-input"
+                                   placeholder="Enter publication number" list="search-history" autocomplete="off">
+                            <datalist id="search-history"></datalist>
+                            <button id="search-btn" class="btn btn-lg search-hero-btn" title="Search">
+                                <i class="bi bi-search"></i>
+                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-lg search-hero-btn dropdown-toggle" type="button"
+                                        id="history-btn" data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Recent items">
+                                    <i class="bi bi-clock-history"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" id="history-menu"
+                                    style="max-height: 300px; overflow-y: auto; min-width: 280px;">
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="search-hero-inner mt-2 lucky-hint">
+                            or <a href="#" id="lucky-link">click here to pick a random notice</a>
+                        </div>
+
+                        <!-- Surfaced when a shared ?facet= URL fails to parse or validate. -->
+                        <div id="url-load-error" class="search-hero-inner alert alert-warning alert-dismissible fade show mt-3" role="alert" style="display: none;">
+                            <span id="url-load-error-text"></span>
+                            <button type="button" class="btn-close" aria-label="Close" id="url-load-error-close"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom half: procedure preview card (populated by NoticeView after a search) -->
+                <div class="search-hero-bottom">
+                    <div id="notice-results" class="card shadow-sm" style="display: none;">
+                        <div class="card-header" id="procedure-card-title"></div>
+                        <div class="card-body p-0">
+                            <div id="notice-loading" class="text-center text-muted py-2" style="display: none;">
+                                <span class="spinner-border spinner-border-sm"></span> Loading...
+                            </div>
+                            <div id="notice-error" class="alert alert-danger py-2 m-2" style="display: none;"></div>
+                            <div id="procedures-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Query Library -->
         <div class="tab-pane w-100 h-100 fade position-absolute" id="query-library" role="tabpanel" aria-labelledby="query-library-tab">
@@ -249,6 +326,104 @@
                 <p class="text-muted">Query results will appear here...</p>
             </div>
         </div> <!-- Close query-results div -->
+
+        <!-- ═══ EXPLORE TAB ═══ -->
+        <!-- Instance-lane output: tree/turtle/backlinks rendering of an
+             RDF graph (a single notice or a custom CONSTRUCT/DESCRIBE
+             result). The tab itself is hidden via #app-tab-explorer-item
+             above until DataView._onFacetChanged reveals it. -->
+        <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-explorer" role="tabpanel" aria-labelledby="app-tab-explorer">
+
+            <div id="data-card" style="display: none;">
+                <!-- Top row: breadcrumb on the left, view mode radios on the right -->
+                <div class="d-flex align-items-center justify-content-between mb-2 data-sticky-header">
+                    <nav aria-label="breadcrumb">
+                        <ol id="data-breadcrumb" class="breadcrumb mb-0 small"></ol>
+                    </nav>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="view-mode" id="view-tree" value="tree" checked>
+                        <label class="btn btn-outline-secondary" for="view-tree">
+                            <i class="bi bi-diagram-3"></i> Tree
+                        </label>
+                        <input type="radio" class="btn-check" name="view-mode" id="view-turtle" value="turtle">
+                        <label class="btn btn-outline-secondary" for="view-turtle">
+                            <i class="bi bi-code-slash"></i> Turtle
+                        </label>
+                        <input type="radio" class="btn-check" name="view-mode" id="view-backlinks" value="backlinks">
+                        <label class="btn btn-outline-secondary" for="view-backlinks">
+                            <i class="bi bi-box-arrow-in-left"></i> Backlinks
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Procedure timeline (collapsible, collapsed by default) -->
+                <div id="explorer-procedure-mini" class="card shadow-sm mb-3" style="display: none;">
+                    <div class="card-header py-1 small d-flex align-items-center" style="cursor: pointer;"
+                         data-bs-toggle="collapse" data-bs-target="#explorer-procedure-body" role="button"
+                         aria-expanded="false" aria-controls="explorer-procedure-body">
+                        <i class="bi bi-chevron-right me-2 explorer-procedure-chevron"></i>
+                        <span id="explorer-procedure-title"></span>
+                    </div>
+                    <div class="collapse" id="explorer-procedure-body">
+                        <div class="card-body p-0">
+                            <div id="explorer-procedures-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page title with inline share button -->
+                <div class="d-flex align-items-center gap-2 mt-3 mb-3">
+                    <h5 id="data-card-title" class="mb-0"></h5>
+                    <button type="button" id="data-share-btn"
+                            class="btn btn-sm btn-outline-secondary border-0 rounded-circle data-share-btn"
+                            title="Copy shareable URL" style="display: none;">
+                        <i class="bi bi-share"></i>
+                    </button>
+                </div>
+
+                <div id="data-loading" class="loading-overlay" style="display: none;">
+                    <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+                <div id="data-error" class="alert alert-danger py-2" style="display: none;"></div>
+
+                <div id="tree-container" class="tree-view"></div>
+                <div id="turtle-container" style="display: none;"></div>
+                <div id="backlinks-container" style="display: none;">
+                    <div id="backlinks-loading" class="text-center text-muted py-2" style="display: none;">
+                        <span class="spinner-border spinner-border-sm"></span> Loading backlinks...
+                    </div>
+                    <div id="backlinks-content"></div>
+                </div>
+
+                <!-- Shown when a notice-number search returns zero triples. Replaces
+                     the empty tree view with a clear "not found" message so the
+                     user doesn't have to interpret "0 triples" as "doesn't exist". -->
+                <div id="data-not-found" class="text-center py-5" style="display: none;">
+                    <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">Notice not found</h5>
+                    <p class="text-muted mb-0">
+                        No notice with publication number
+                        <code id="data-not-found-pub"></code>
+                        was found in the dataset.
+                    </p>
+                    <p class="text-muted small mt-3 mb-0">
+                        Double-check the publication number, or
+                        <a href="#" id="data-not-found-lucky">click here to pick a random notice</a>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Safety-net placeholder. Normally unreachable because the
+                 Explore tab itself is hidden when there's no current facet,
+                 but kept as a fallback in case the tab is ever shown without
+                 loaded content. -->
+            <div id="data-placeholder" class="text-center text-muted py-5 fst-italic">
+                Use the Search tab to select a notice; search results will
+                appear here.
+            </div>
+        </div> <!-- Close app-explorer div -->
 
         <!-- Help -->
         <div class="tab-pane w-100 fade position-absolute" id="help" role="tabpanel" aria-labelledby="help-tab">
@@ -421,6 +596,13 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- N3 (Turtle parser) — used by the ported explorer modules
+         (sparqlService.js parses CONSTRUCT/DESCRIBE results into quads).
+         Loaded as a global from a CDN rather than bundled, matching how
+         the standalone explorer ships it. The script exposes `window.N3`
+         which sparqlService asserts on use. -->
+    <script src="https://cdn.jsdelivr.net/npm/n3@1.23.1/browser/n3.min.js"></script>
 
     <!-- JavaScript File -->
     <script src="src/js/script.js" type="module" defer></script>
