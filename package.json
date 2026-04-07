@@ -10,6 +10,7 @@
     "test": "node --test test/"
   },
   "dependencies": {
+    "codemirror-lang-turtle": "^0.0.2",
     "cors": "^2.8.6",
     "express": "^4.17.1",
     "https-proxy-agent": "^7.0.5",

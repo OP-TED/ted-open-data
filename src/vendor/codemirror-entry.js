@@ -40,5 +40,8 @@ export {linter, lintGutter, lintKeymap} from '@codemirror/lint';
 // SPARQL language
 export {sparql} from 'codemirror-lang-sparql';
 
+// Turtle language (for the Explore tab's Turtle view mode)
+export {turtle} from 'codemirror-lang-turtle';
+
 // Lezer highlight (for theme)
 export {tags} from '@lezer/highlight';
