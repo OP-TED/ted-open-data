@@ -170,6 +170,22 @@ export class QueryEditor {
   }
 
   /**
+   * Wire the explorer routing — Stage 7. When set, queries with type
+   * CONSTRUCT or DESCRIBE are routed to the ExplorerController for
+   * tree/turtle/backlinks rendering on the Explore tab, instead of
+   * being fetched and rendered as text on the Query Results tab.
+   * SELECT and ASK queries continue to use the existing fetch path.
+   *
+   * @param {ExplorerController} explorerController
+   * @param {() => void} showExplorerTab — switches the active Bootstrap
+   *   tab to the Explore tab and resets its view mode to Tree.
+   */
+  setExplorerRouting(explorerController, showExplorerTab) {
+    this.explorerController = explorerController;
+    this.showExplorerTab = showExplorerTab;
+  }
+
+  /**
    * Get the current query text.
    * @returns {string} - The current query text.
    */
@@ -217,6 +233,52 @@ export class QueryEditor {
   async onSubmit(event) {
     event.preventDefault();
     if (this.isQueryRunning) return;
+
+    // Stage 7 — auto-route by query type. CONSTRUCT and DESCRIBE
+    // queries return RDF graphs, which the Explore tab is built to
+    // render (tree / turtle / backlinks). SELECT and ASK return
+    // tabular bindings, which the existing Query Results path below
+    // handles. ASK with no result tab support yet falls through to
+    // SELECT (the user sees the boolean as a one-row table).
+    //
+    // The routing only kicks in when setExplorerRouting() has been
+    // called from the bootstrap (script.js), which is always true in
+    // the merged app but kept optional so QueryEditor can still be
+    // used standalone if anyone needs to.
+    if (this.explorerController && this.showExplorerTab) {
+      const queryText = this.getQuery();
+      let queryType;
+      try {
+        queryType = new SparqlJs.Parser().parse(queryText)?.queryType;
+      } catch {
+        // Parse error: fall through to the existing SELECT path which
+        // surfaces the error message via its own error handling. Run
+        // is normally disabled when there's a syntax error, so this
+        // branch is mostly defensive.
+      }
+      if (queryType === 'CONSTRUCT' || queryType === 'DESCRIBE') {
+        // Hand the raw query to the ExplorerController. It re-runs
+        // the query through its own worker-backed sparqlService, parses
+        // the Turtle into quads, and emits results-changed for DataView
+        // to render. Then we switch tabs.
+        try {
+          await this.explorerController.search({ type: 'query', query: queryText });
+          this.showExplorerTab();
+        } catch (error) {
+          // Surface controller-side errors to the user via the existing
+          // alert UI in the Query Editor tab so they aren't lost. The
+          // user is on the Editor tab when they click Run, so showing
+          // the error there (rather than on the Explore tab) keeps
+          // attention where it already is.
+          this.copyUrlAlert.classList.remove('d-none', 'alert-info');
+          this.copyUrlAlert.classList.add('d-flex', 'alert-danger');
+          this.alertMessage.textContent = `Error: ${error.message}`;
+          this.openUrlButton.classList.add('d-none');
+        }
+        return;
+      }
+    }
+
     this.queryResults.setResponseData(null, null);
     const progressBar = document.querySelector('.progress-bar');
     const submitButton = this.queryForm.querySelector('button[type="submit"]');

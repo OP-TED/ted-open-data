@@ -43,13 +43,14 @@ document.addEventListener('DOMContentLoaded', function () {
   queryEditor.setQueryResults(queryResults);
   const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
 
-  // ── Explorer port (Stage 6) ──
+  // ── Explorer port (Stages 6-7) ──
   // Wire up the new Search + Explore tabs. The ExplorerController is
   // the model layer; SearchPanel/NoticeView/DataView/BacklinksView bind
-  // to the HTML scaffolding added in Stage 5. None of this touches the
-  // ted-open-data classes above — the Query Editor lane and the Search
-  // lane run in parallel until Stage 7 unifies the SPARQL execution.
-  bootstrapExplorer();
+  // to the HTML scaffolding added in Stage 5. Stage 7 also wires the
+  // Query Editor to route CONSTRUCT/DESCRIBE queries to this controller
+  // (so they render on the Explore tab) while leaving SELECT/ASK on
+  // ted-open-data's existing tabular path.
+  bootstrapExplorer(queryEditor);
 
   // Initialize all Bootstrap tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -106,14 +107,16 @@ SELECT ?earliestDate ?latestDate WHERE {
 // element IDs that don't exist in ted-open-data; Stage 7 will unify
 // progress feedback into ted-open-data's existing footer), and minus
 // loadDataPeriod (the existing script.js block above already does it).
-function bootstrapExplorer() {
+function bootstrapExplorer(queryEditor) {
   const controller = new ExplorerController();
   setController(controller);
 
   // Switch to the Explore tab. Called only by direct user gestures
-  // (Search button, Enter, lucky link, timeline click, history pick).
-  // Resets view mode to Tree and expands the procedure mini-card so the
-  // user lands in a consistent state regardless of where they came from.
+  // (Search button, Enter, lucky link, timeline click, history pick,
+  // and — added in Stage 7 — running a CONSTRUCT/DESCRIBE in the
+  // Query Editor). Resets view mode to Tree and expands the procedure
+  // mini-card so the user lands in a consistent state regardless of
+  // where they came from.
   function showExplorerTab() {
     const treeRadio = document.getElementById('view-tree');
     if (treeRadio && !treeRadio.checked) {
@@ -126,6 +129,13 @@ function bootstrapExplorer() {
     }
     const tabBtn = document.getElementById('app-tab-explorer');
     if (tabBtn) new bootstrap.Tab(tabBtn).show();
+  }
+
+  // Stage 7 — let QueryEditor route CONSTRUCT/DESCRIBE queries to
+  // this controller. SELECT/ASK queries continue to use ted-open-data's
+  // existing fetch-based path on the Query Results tab.
+  if (queryEditor?.setExplorerRouting) {
+    queryEditor.setExplorerRouting(controller, showExplorerTab);
   }
 
   const searchPanel = new SearchPanel(controller, { showExplorerTab });
