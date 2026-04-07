@@ -298,6 +298,17 @@ class SearchPanel {
       if (facet?.type === 'notice-number') {
         this.input.value = facet.value;
       }
+      // Stage 9 — also drop the canned query into the SPARQL editor
+      // as a side effect, mirroring the Stage 8 behaviour for typed
+      // searches. Anyone landing on the merged app via a shared
+      // ?facet= URL sees the same editor + Explore state they would
+      // have seen if they'd typed the search themselves.
+      try {
+        const query = getQuery(facet);
+        if (query) this.loadEditorText(query);
+      } catch {
+        // Best-effort — never break URL loading on editor reflection.
+      }
       // Fresh navigation from a shared link carries explicit intent: the
       // recipient was sent here to look at a notice, so jump straight to
       // the Explore tab. Reloads (F5/⌘R) preserve the current tab so the
