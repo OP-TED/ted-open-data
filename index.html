@@ -33,6 +33,11 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <!-- Driver.js — per-tab guided tours. Loaded as CSS+ESM; the JS
+         module is imported dynamically by src/js/tours/*.js on first
+         tour invocation, so there is no up-front cost for users who
+         never click a tour icon. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
 </head>
 
 <body class="bg-light">
@@ -246,6 +251,12 @@
                     <div class="search-hero-title-lane">
                         <div class="search-hero-inner tab-prompt">
                             Look up a notice to see how the eProcurement Ontology represents it
+                            <button type="button" class="tour-trigger" id="inspect-tour-trigger"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Take a quick tour of this tab"
+                                    aria-label="Take a quick tour of this tab">
+                                <i class="bi bi-play-circle"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="search-hero-input-lane">
@@ -315,6 +326,12 @@
                                title="Want to contribute a query? See the contributing guide.">
                                 <i class="bi bi-info-circle"></i> Contribute a query
                             </a>
+                            <a href="#" id="explore-tour-trigger"
+                               class="small text-muted text-decoration-none"
+                               data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="A short walkthrough of this tab">
+                                <i class="bi bi-play-circle"></i> Take a quick tour
+                            </a>
                         </div>
                     </div>
                     <div class="col-md-8 d-flex flex-column" id="query-library-display">
@@ -350,6 +367,12 @@
                     <div class="form-group flex-grow-1 d-flex flex-column">
                         <div class="tab-prompt mb-1">
                             <label id="query-label" for="query" class="mb-0">Compose or refine your query in SPARQL</label>
+                            <button type="button" class="tour-trigger" id="customize-tour-trigger"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Take a quick tour of this tab"
+                                    aria-label="Take a quick tour of this tab">
+                                <i class="bi bi-play-circle"></i>
+                            </button>
                         </div>
                         <div id="query" class="flex-grow-1" role="textbox" aria-labelledby="query-label" aria-multiline="true"></div>
                         <div id="syntax-error" class="text-danger mt-2" style="display: none;"></div> <!-- Syntax error display -->
@@ -427,6 +450,12 @@
                 <span id="alert-message" class="results-toolbar-hint tab-prompt"
                       title="Here are the results of your query.">
                     Here are the results of your query.
+                    <button type="button" class="tour-trigger" id="reuse-select-tour-trigger"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Take a quick tour of this tab"
+                            aria-label="Take a quick tour of this tab">
+                        <i class="bi bi-play-circle"></i>
+                    </button>
                 </span>
                 <div class="results-toolbar-actions">
                     <button id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
@@ -476,6 +505,12 @@
             <div id="data-card" style="display: none;">
                 <div class="tab-prompt mb-2">
                     Here are your results as a linked-data graph
+                    <button type="button" class="tour-trigger" id="reuse-graph-tour-trigger"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Take a quick tour of this tab"
+                            aria-label="Take a quick tour of this tab">
+                        <i class="bi bi-play-circle"></i>
+                    </button>
                 </div>
                 <!-- Top row: breadcrumb on the left, view mode radios on the right -->
                 <div class="d-flex align-items-center justify-content-between mb-2 data-sticky-header">

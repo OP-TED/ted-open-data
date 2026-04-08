@@ -1,0 +1,125 @@
+/*
+ * Copyright 2024 European Union
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
+ * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
+ * compliance with the Licence. You may obtain a copy of the Licence at:
+ * https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence
+ * is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the Licence for the specific language governing permissions and limitations under
+ * the Lic
+ */
+
+/**
+ * Interactive guided tour for the Reuse tab — graph lane.
+ *
+ * This lane is shown when the current view is a linked-data graph,
+ * either a single notice looked up from the Inspect tab or the
+ * output of a CONSTRUCT/DESCRIBE query. The tour walks through the
+ * navigation chrome (breadcrumb, view-mode toggle, procedure
+ * timeline) and the two reuse actions (Share view and Download as…).
+ *
+ * No priming is needed — the tour trigger only exists inside the
+ * data card, which is hidden until a graph has actually loaded. By
+ * the time the user can click the trigger, every element targeted
+ * by a step is guaranteed to exist.
+ */
+
+let driverPromise = null;
+
+/**
+ * Lazy-load driver.js on first use. Shared with the other tour
+ * modules via a module-level cache.
+ * @returns {Promise<Function>}
+ */
+function loadDriver() {
+  if (!driverPromise) {
+    driverPromise = import('https://cdn.jsdelivr.net/npm/driver.js@1.3.1/+esm')
+      .then(mod => mod.driver);
+  }
+  return driverPromise;
+}
+
+/**
+ * Start the Reuse (graph lane) tour.
+ * Caller ensures the graph lane of the Reuse tab is currently
+ * active — the trigger only exists inside that pane.
+ */
+export async function startReuseGraphTour() {
+  const driver = await loadDriver();
+
+  const tour = driver({
+    showProgress: true,
+    allowClose: true,
+    overlayOpacity: 0,
+    stagePadding: 6,
+    stageRadius: 6,
+    progressText: '{{current}} of {{total}}',
+    nextBtnText: 'Next →',
+    prevBtnText: '← Back',
+    doneBtnText: 'Got it',
+    steps: [
+      {
+        element: '#data-breadcrumb',
+        popover: {
+          title: 'Where you are',
+          description:
+            'The breadcrumb trail shows the path you have taken through the graph. Click any step ' +
+            'to jump back to an earlier resource.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '.btn-group[role="group"]',
+        popover: {
+          title: 'Three ways to look at the same data',
+          description:
+            '<strong>Tree</strong> presents the graph as a clickable outline. ' +
+            '<strong>Turtle</strong> shows the raw RDF serialisation, for when you want to read ' +
+            'the underlying statements. <strong>Backlinks</strong> lists the other resources in ' +
+            'the dataset that reference the one you are currently looking at.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        element: '#data-share-btn',
+        popover: {
+          title: 'Share this view',
+          description:
+            'Copies a URL that reproduces exactly what you are looking at right now — the same ' +
+            'resource, the same view mode, the same breadcrumb. Save it for later or send it to ' +
+            'a colleague; when they open it, they will see what you see.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        element: '#data-download-btn',
+        popover: {
+          title: 'Download the graph',
+          description:
+            'Save the whole graph as a file, in the RDF serialisation of your choice: Turtle, ' +
+            'RDF/XML or N-Triples.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        // Centered modal — points at the other tabs as next steps.
+        popover: {
+          title: 'Want to see something else?',
+          description:
+            'Head to the <strong>Inspect</strong> tab to look up a different notice, or to ' +
+            '<strong>Explore</strong> for a library of ready-made queries that produce graph ' +
+            'results like this one.',
+        },
+      },
+    ],
+  });
+
+  tour.drive();
+}

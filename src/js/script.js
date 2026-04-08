@@ -55,6 +55,36 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialize all Bootstrap tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
+  // Per-tab guided tours. The tour modules are imported dynamically
+  // on first click so no cost is paid for users who never take a tour.
+  // Each tour anchors to real elements on its own tab; clicking the
+  // trigger icon on any given tab assumes that tab is currently active
+  // (which it is, because the icon only exists inside that tab's pane).
+  document.getElementById('inspect-tour-trigger')?.addEventListener('click', async () => {
+    const { startInspectTour } = await import('./tours/inspectTour.js');
+    startInspectTour();
+  });
+  document.getElementById('explore-tour-trigger')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const { startExploreTour } = await import('./tours/exploreTour.js');
+    startExploreTour();
+  });
+  document.getElementById('customize-tour-trigger')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const { startCustomizeTour } = await import('./tours/customizeTour.js');
+    startCustomizeTour();
+  });
+  document.getElementById('reuse-select-tour-trigger')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const { startReuseSelectTour } = await import('./tours/reuseSelectTour.js');
+    startReuseSelectTour();
+  });
+  document.getElementById('reuse-graph-tour-trigger')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const { startReuseGraphTour } = await import('./tours/reuseGraphTour.js');
+    startReuseGraphTour();
+  });
+
   // Ensure CM6 editors re-measure when their Bootstrap tabs become visible
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
     tab.addEventListener('shown.bs.tab', () => {

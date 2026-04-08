@@ -1017,9 +1017,123 @@ main {
   background-color: var(--ted-primary, #2c862d);
 }
 
-/* Library footer row — "Contribute a query" link lives in a muted
-   grey row below the accordion. On hover it picks up TED green,
-   matching the rest of the app's interaction vocabulary. */
+/* ──────────────────────────────────────────────────────────────
+   Per-tab guided tours
+   ──────────────────────────────────────────────────────────────
+   A small play-circle icon at the end of each tab's hint sentence
+   is the entry point to that tab's Driver.js tour. Style is
+   deliberately quiet: muted grey at rest, TED green on hover, no
+   border/background — it should look like part of the sentence,
+   not a button competing with it. */
+.tour-trigger {
+  background: none;
+  border: none;
+  padding: 0 0 0 0.35rem;
+  color: #9aa0a6;
+  font-size: 1.05rem;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.tour-trigger:hover,
+.tour-trigger:focus {
+  color: var(--ted-primary, #2c862d);
+  outline: none;
+}
+.tour-trigger:focus-visible {
+  outline: 2px solid var(--ted-primary, #2c862d);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Library footer row — "Contribute a query" and "Take a quick tour"
+   links live side by side in a muted grey row below the accordion.
+   Both are secondary meta-actions about the library as a whole and
+   should read as a quiet pair, not competing with the library
+   content above. On hover they pick up TED green, matching the rest
+   of the app's interaction vocabulary. */
 .library-footer a.text-muted:hover {
   color: var(--ted-primary, #2c862d) !important;
+}
+
+/* Driver.js popover — override the library's default dark theme
+   with a TED-green accent on the Next button and a soft shadow so
+   the popover feels like part of this app, not a library drop-in. */
+.driver-popover.ted-tour {
+  /* placeholder — reserved in case we need per-tour theming. The
+     base styles below apply to all driver.js popovers since the
+     app only uses driver.js for tours. */
+}
+.driver-popover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  max-width: 360px;
+  border: 1px solid #dee2e6;
+}
+
+/* The popover arrow is drawn as a square rotated 45deg with just
+   a background colour — so box-shadow does not carry over and the
+   arrow visually detaches from the popover on light backgrounds.
+   Matching the popover's hairline border on the two outward-facing
+   edges of each arrow orientation pulls it back into the silhouette. */
+.driver-popover-arrow-side-top {
+  border-bottom: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+.driver-popover-arrow-side-bottom {
+  border-top: 1px solid #dee2e6;
+  border-left: 1px solid #dee2e6;
+}
+.driver-popover-arrow-side-left {
+  border-top: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+.driver-popover-arrow-side-right {
+  border-bottom: 1px solid #dee2e6;
+  border-left: 1px solid #dee2e6;
+}
+.driver-popover-title {
+  font-weight: 600;
+  color: #212529;
+}
+.driver-popover-description {
+  color: #495057;
+  line-height: 1.5;
+}
+.driver-popover-description code {
+  background: #f1f3f5;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.driver-popover-next-btn {
+  background: var(--ted-primary, #2c862d) !important;
+  color: #fff !important;
+  border: 1px solid var(--ted-primary, #2c862d) !important;
+  text-shadow: none !important;
+  font-weight: 500;
+}
+.driver-popover-next-btn:hover {
+  background: #236b24 !important;
+  border-color: #236b24 !important;
+}
+.driver-popover-prev-btn {
+  color: #6c757d !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  text-shadow: none !important;
+}
+.driver-popover-prev-btn:hover {
+  color: #495057 !important;
+}
+.driver-popover-close-btn {
+  color: #adb5bd !important;
+}
+.driver-popover-close-btn:hover {
+  color: #495057 !important;
+}
+.driver-popover-progress-text {
+  color: #adb5bd;
+  font-size: 0.8rem;
 }
