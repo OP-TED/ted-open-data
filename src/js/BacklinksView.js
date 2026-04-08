@@ -16,6 +16,7 @@
 // button when more results may be available.
 
 import { doSPARQL as defaultDoSPARQL } from './services/sparqlService.js';
+import { isSafeUri } from './facets.js';
 import { renderSubjectBadge, renderTerm } from './TermRenderer.js';
 
 const BATCH_SIZE = 100;
@@ -76,6 +77,22 @@ class BacklinksView {
     const token = this._batchToken;
     const uri = this.currentUri;
     const offset = this.currentOffset;
+
+    // Defence-in-depth: the URI is about to be interpolated into a
+    // SPARQL CONSTRUCT via <${uri}>, so reject anything that contains
+    // characters which could break out of the IRI (`>`, whitespace,
+    // control chars). Matches the same boundary check facets.js
+    // enforces on its own interpolation sites. In practice URIs come
+    // from parsed RDF and are safe, but a malicious or malformed
+    // dataset should never be able to inject SPARQL.
+    if (!isSafeUri(uri)) {
+      if (isFirst) {
+        this.content.innerHTML = '';
+        this._appendLoadError(new Error('Invalid URI — cannot load backlinks.'));
+      }
+      this.loadingEl.style.display = 'none';
+      return;
+    }
 
     if (isFirst) {
       this.loadingEl.style.display = '';

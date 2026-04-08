@@ -481,8 +481,23 @@ class NoticeView {
     const el = document.createElement('div');
     el.className = 'ted-link';
 
+    // Validate the URL from the TED API response before assigning it to
+    // `href`. The TED API is trusted today, but any compromise or bug
+    // returning a `javascript:` / `data:` / non-http scheme must not
+    // produce a live link. An unparseable or unsafe URL simply drops
+    // the link silently — the timeline item itself still navigates.
+    let safeHref = null;
+    try {
+      const parsed = new URL(notice.html);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        safeHref = parsed.href;
+      }
+    } catch { /* invalid URL — leave safeHref null and render nothing */ }
+
+    if (!safeHref) return el;
+
     const a = document.createElement('a');
-    a.href = notice.html;
+    a.href = safeHref;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.className = 'text-muted';

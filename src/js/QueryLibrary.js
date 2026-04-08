@@ -109,31 +109,67 @@ export class QueryLibrary {
         categories.get(query.category).push(query);
       });
 
-      // Create accordion items for each category and populate with queries
+      // Create accordion items for each category and populate with queries.
+      // All text is set via textContent and all identifiers are safely
+      // slugified, so a query title or category name containing quotes,
+      // angle brackets or HTML entities cannot escape the markup. The
+      // source YAML is trusted (OP-TED/ted-rdf-docs), but defence in depth
+      // is cheap here and prevents future supply-chain or typo issues.
+      let categoryCounter = 0;
       categories.forEach((queries, category) => {
-        const categoryId = `category-${category.replace(/\s+/g, '-')}`;
+        const categoryId = `category-${categoryCounter++}`;
+
         const categoryItem = document.createElement('div');
         categoryItem.className = 'accordion-item';
 
-        categoryItem.innerHTML = `
-          <h2 class="query-library-accordion-header" id="${categoryId}-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${categoryId}" aria-expanded="false" aria-controls="${categoryId}">
-              ${category}
-            </button>
-          </h2>
-          <div id="${categoryId}" class="accordion-collapse collapse" aria-labelledby="${categoryId}-header" data-bs-parent="#queryAccordion">
-            <div class="accordion-body p-0">
-              <ul class="list-group list-group-flush">
-                ${queries.map(query => `
-                  <li class="list-group-item list-group-item-action query-library-item" data-query-title="${query.title}" data-query-file="${query.sparql}">
-                    <i class="bi bi-file-earmark-code query-library-item-icon"></i>
-                    <span>${query.title}</span>
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-          </div>
-        `;
+        const header = document.createElement('h2');
+        header.className = 'query-library-accordion-header';
+        header.id = `${categoryId}-header`;
+
+        const headerButton = document.createElement('button');
+        headerButton.className = 'accordion-button collapsed';
+        headerButton.type = 'button';
+        headerButton.setAttribute('data-bs-toggle', 'collapse');
+        headerButton.setAttribute('data-bs-target', `#${categoryId}`);
+        headerButton.setAttribute('aria-expanded', 'false');
+        headerButton.setAttribute('aria-controls', categoryId);
+        headerButton.textContent = category;
+        header.appendChild(headerButton);
+
+        const collapse = document.createElement('div');
+        collapse.id = categoryId;
+        collapse.className = 'accordion-collapse collapse';
+        collapse.setAttribute('aria-labelledby', `${categoryId}-header`);
+        collapse.setAttribute('data-bs-parent', '#queryAccordion');
+
+        const body = document.createElement('div');
+        body.className = 'accordion-body p-0';
+
+        const list = document.createElement('ul');
+        list.className = 'list-group list-group-flush';
+
+        for (const query of queries) {
+          const li = document.createElement('li');
+          li.className = 'list-group-item list-group-item-action query-library-item';
+          li.dataset.queryTitle = query.title;
+          li.dataset.queryFile = query.sparql;
+
+          const icon = document.createElement('i');
+          icon.className = 'bi bi-file-earmark-code query-library-item-icon';
+
+          const label = document.createElement('span');
+          label.textContent = query.title;
+
+          li.appendChild(icon);
+          li.appendChild(label);
+          list.appendChild(li);
+        }
+
+        body.appendChild(list);
+        collapse.appendChild(body);
+
+        categoryItem.appendChild(header);
+        categoryItem.appendChild(collapse);
 
         this.queryAccordion.appendChild(categoryItem);
       });

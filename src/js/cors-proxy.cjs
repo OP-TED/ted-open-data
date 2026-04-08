@@ -24,6 +24,29 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const app = express();
 const port = 8080;
 
+// ── SSRF allowlist for /proxy ──
+// /proxy?url=… accepts an arbitrary URL to fetch. Without an allowlist
+// this is an open relay: any page the dev visits can force the proxy
+// (which has network access the browser does not, including corporate
+// intranet via HTTP_PROXY) to fetch arbitrary URLs via a simple
+// cross-origin form POST or DNS rebinding. The allowlist restricts
+// target hostnames to the TED SPARQL endpoint and a handful of
+// documentation/raw-content hosts actually used by the app.
+const PROXY_HOST_ALLOWLIST = new Set([
+  'publications.europa.eu',
+  'data.europa.eu',
+]);
+
+function isAllowedProxyTarget(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'https:') return false;
+    return PROXY_HOST_ALLOWLIST.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
@@ -77,6 +100,10 @@ app.all('/proxy', async (req, res) => {
   const targetUrl = req.query.url;
   if (!targetUrl) {
     return res.status(400).send('URL is required');
+  }
+  if (!isAllowedProxyTarget(targetUrl)) {
+    console.warn(`[proxy] rejected non-allowlisted target: ${targetUrl}`);
+    return res.status(403).send('Target host is not on the proxy allowlist.');
   }
 
   console.log(`Proxying request to: ${targetUrl}`);

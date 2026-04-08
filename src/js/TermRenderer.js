@@ -64,9 +64,26 @@ function _guessTermType(term) {
   return 'Literal';
 }
 
+// A URI is navigable only if it carries a safe http(s) scheme. Anything
+// else (javascript:, data:, vbscript:, blank-node-like identifiers without
+// a scheme) is rendered as plain text with no href, so middle-click /
+// "open in new tab" / "copy link" cannot be tricked into evaluating a
+// hostile URL that the click handler's preventDefault would otherwise
+// neutralise.
+function _isNavigableHref(value) {
+  return typeof value === 'string'
+    && (value.startsWith('http://') || value.startsWith('https://'));
+}
+
 function _renderNamedNode(term, clickable, onClick) {
   const el = document.createElement('a');
-  el.href = term.value;
+  // Only set href when the value is a navigable http(s) URL. Setting it
+  // unconditionally would briefly expose a `javascript:` URI to the DOM
+  // even though _attachNavigationHandler later strips it — enough to be
+  // copied or middle-clicked before the handler runs.
+  if (_isNavigableHref(term.value)) {
+    el.href = term.value;
+  }
   el.className = 'uri-link';
   el.textContent = shortLabel(term.value);
   el.title = term.value;
@@ -85,7 +102,7 @@ function _renderNamedNode(term, clickable, onClick) {
 // Wires up the click behaviour for a NamedNode element. Blank-node-like
 // identifiers (no http scheme) render as non-clickable plain text.
 function _attachNavigationHandler(el, term, clickable, onClick) {
-  const isNavigable = term.value.startsWith('http://') || term.value.startsWith('https://');
+  const isNavigable = _isNavigableHref(term.value);
 
   if (!isNavigable || !clickable) {
     el.style.cursor = 'default';
@@ -157,7 +174,11 @@ function renderSubjectBadge(subjectUri, options = {}) {
   badge.textContent = shortLabel(subjectUri);
 
   if (clickable) {
-    badge.href = subjectUri;
+    // Only assign href when the URI has a safe http(s) scheme; see
+    // _isNavigableHref rationale in _renderNamedNode above.
+    if (_isNavigableHref(subjectUri)) {
+      badge.href = subjectUri;
+    }
     _attachNavigationHandler(badge, term, /* clickable */ true, onClick);
   }
 

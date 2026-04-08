@@ -169,6 +169,7 @@ function validateFacet(data) {
 }
 
 export {
+  _isSafeUri as isSafeUri,
   addUnique,
   createPublicationNumberFacet,
   facetEquals,
