@@ -68,6 +68,7 @@ export class QueryLibrary {
       parent: document.getElementById("querySparql")
     });
     this.tryQueryButton = document.getElementById('tryQueryButton');
+    this.customiseQueryButton = document.getElementById('customiseQueryButton');
     this.selectedQueryElement = null;
     this.queries = [];
 
@@ -77,11 +78,13 @@ export class QueryLibrary {
 
   /**
    * Initialize event listeners.
-   * Sets up event listeners for the query accordion and the try query button.
+   * Sets up event listeners for the query accordion and the try
+   * query / customise buttons.
    */
   initEventListeners() {
     this.queryAccordion.addEventListener('click', this.onQueryClick.bind(this));
     this.tryQueryButton.addEventListener('click', this.onTryQuery.bind(this));
+    this.customiseQueryButton?.addEventListener('click', this.onCustomise.bind(this));
   }
 
   /**
@@ -122,8 +125,9 @@ export class QueryLibrary {
             <div class="accordion-body p-0">
               <ul class="list-group list-group-flush">
                 ${queries.map(query => `
-                  <li class="list-group-item list-group-item-action" data-query-title="${query.title}" data-query-file="${query.sparql}">
-                    ${query.title}
+                  <li class="list-group-item list-group-item-action query-library-item" data-query-title="${query.title}" data-query-file="${query.sparql}">
+                    <i class="bi bi-file-earmark-code query-library-item-icon"></i>
+                    <span>${query.title}</span>
                   </li>
                 `).join('')}
               </ul>
@@ -158,8 +162,13 @@ export class QueryLibrary {
    * @async
    */
   async onQueryClick(event) {
-    if (event.target.matches('.list-group-item')) {
-      const selectedQuery = this.queries.find(query => query.title === event.target.dataset.queryTitle);
+    // Use .closest() so clicks on the icon or the <span> inside the
+    // list item still resolve to the <li>. .matches('.list-group-item')
+    // on its own fails because event.target is whichever inner node
+    // the user actually clicked on.
+    const item = event.target.closest('.list-group-item');
+    if (item) {
+      const selectedQuery = this.queries.find(query => query.title === item.dataset.queryTitle);
 
       if (selectedQuery) {
         const queryFileResponse = await fetch(`${this.remoteQueriesUrl}${selectedQuery.sparql}`);
@@ -169,19 +178,21 @@ export class QueryLibrary {
         this.queryDescription.textContent = selectedQuery.description;
         this.setSparqlEditorValue(querySparqlText);
         this.tryQueryButton.disabled = false;
+        if (this.customiseQueryButton) this.customiseQueryButton.disabled = false;
         this.queryCard.classList.remove('d-none');
         this.selectQueryMessage.classList.add('d-none');
 
         if (this.selectedQueryElement) {
           this.selectedQueryElement.classList.remove('active');
         }
-        event.target.classList.add('active');
-        this.selectedQueryElement = event.target;
+        item.classList.add('active');
+        this.selectedQueryElement = item;
       } else {
         this.queryTitle.textContent = 'Query Title';
         this.queryDescription.textContent = 'Select a query to see its description.';
         this.setSparqlEditorValue('SPARQL query will be displayed here.');
         this.tryQueryButton.disabled = true;
+        if (this.customiseQueryButton) this.customiseQueryButton.disabled = true;
         this.queryCard.classList.add('d-none');
         this.selectQueryMessage.classList.remove('d-none');
       }
@@ -189,11 +200,29 @@ export class QueryLibrary {
   }
 
   /**
-   * Handle try query button click event.
-   * This method is triggered when the "Try this query" button is clicked.
-   * It sets the selected query in the main query editor and switches to the query editor tab.
+   * Handle "Try this query" click: load the query into the editor
+   * and immediately run it. The user lands on the Data tab (via
+   * QueryEditor's auto-routing) without a detour through the Editor
+   * tab — this is for users who want to see the result, not to
+   * modify the query. Customise is the separate path for editing.
    */
   onTryQuery() {
+    const queryText = this.querySparqlEditor.state.doc.toString();
+    this.queryEditor.setValue(queryText);
+    // Submit the form programmatically. The Editor's onSubmit handler
+    // takes care of everything: syntax check, POST, auto-route to
+    // either the SELECT or graph lane of the Data tab.
+    document.getElementById('queryForm')?.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+  }
+
+  /**
+   * Handle "Customise" click: load the query into the editor and
+   * switch to the Editor tab so the user can edit it before running.
+   * This is the old Try-this-query behaviour, now a separate path.
+   */
+  onCustomise() {
     const queryText = this.querySparqlEditor.state.doc.toString();
     this.queryEditor.setValue(queryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));

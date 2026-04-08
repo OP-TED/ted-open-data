@@ -25,6 +25,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 import {epoCompletionSource, getEpoData} from './epo-completion.js';
+import {classifyError} from './errorMessages.js';
 
 /**
  * Class representing the Query Editor.
@@ -43,7 +44,12 @@ export class QueryEditor {
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.alertMessage = document.getElementById('alert-message');
-    this.openUrlButton = document.getElementById('open-url-button');
+    // Friendly error state on the Data tab (SELECT lane). Replaces the
+    // old red alert-danger banner with an empty-state view. The
+    // container wraps icon + title + message; we populate only the
+    // #results-error-message slot and toggle the wrapper's visibility.
+    this.resultsErrorState = document.getElementById('results-error-state');
+    this.resultsErrorMessage = document.getElementById('results-error-message');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.stopQueryButton = document.getElementById('stopQueryButton');
     this.queryResults = null;
@@ -247,33 +253,6 @@ export class QueryEditor {
     const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
     this.runQueryButton.disabled = error ? true : !query.trim();
-    this._updateFormatDropdownVisibility(query);
-  }
-
-  /**
-   * Stage 10 — toggle the Results Format dropdown based on the query
-   * type. SELECT and ASK use the dropdown (HTML/JSON/CSV/...) to
-   * choose how the result is rendered on the Query Results tab.
-   * CONSTRUCT and DESCRIBE go to the Explore tab where the format
-   * choice is meaningless (the tab does its own tree/turtle/backlinks
-   * rendering), so the dropdown is hidden.
-   *
-   * On parse failure or empty query, the dropdown is left in its
-   * previous state — toggling on every keystroke would flicker.
-   * @private
-   */
-  _updateFormatDropdownVisibility(query) {
-    const wrapper = document.getElementById('format-wrapper');
-    if (!wrapper) return;
-    let queryType;
-    try {
-      queryType = new SparqlJs.Parser().parse(query)?.queryType;
-    } catch {
-      return; // Parse error — keep last state.
-    }
-    if (queryType === undefined) return; // Empty query — keep last state.
-    const isGraphQuery = queryType === 'CONSTRUCT' || queryType === 'DESCRIBE';
-    wrapper.style.display = isGraphQuery ? 'none' : '';
   }
 
   /**
@@ -319,15 +298,12 @@ export class QueryEditor {
           this.setActiveResultTab('graph');
           this.showExplorerTab();
         } catch (error) {
-          // Surface controller-side errors to the user via the existing
-          // alert UI in the Query Editor tab so they aren't lost. The
-          // user is on the Editor tab when they click Run, so showing
-          // the error there (rather than on the Explore tab) keeps
-          // attention where it already is.
-          this.copyUrlAlert.classList.remove('d-none', 'alert-info');
-          this.copyUrlAlert.classList.add('d-flex', 'alert-danger');
-          this.alertMessage.textContent = `Error: ${error.message}`;
-          this.openUrlButton.classList.add('d-none');
+          // Defensive: ExplorerController already catches worker
+          // errors internally and routes them to DataView's graph
+          // lane error state, so this branch is mostly unreachable.
+          // If something slips through, log it rather than leaving
+          // the user with no feedback.
+          console.error('Explorer controller error:', error);
         }
         return;
       }
@@ -351,16 +327,23 @@ export class QueryEditor {
       queryTimer.textContent = `${elapsed}s`;
     }, 1000);
 
+    // Reset the results toolbar and the friendly error state to a
+    // clean start before the new run. The toolbar is revealed on
+    // success via QueryResults.displayJsonResults; the error state
+    // only appears if the fetch or rendering fails.
     this.copyUrlAlert.classList.add('d-none');
-    this.copyUrlAlert.classList.remove('d-flex', 'alert-danger');
-    this.copyUrlAlert.classList.add('alert-info');
-    this.alertMessage.textContent = 'You can run this query directly from Excel or any other application by using its URL.';
-    this.openUrlButton.classList.remove('d-none');
+    this.resultsErrorState.style.display = 'none';
+    this.resultsErrorMessage.textContent = '';
     this.resultsDiv.innerHTML = '';
 
     try {
       const query = this.getQuery();
-      const format = document.getElementById("format").value || "application/sparql-results+json";
+      // The editor always requests SPARQL Results JSON — QueryResults
+      // renders its own consistent table from the structured payload
+      // (drops language tags, unwraps quoted literals, formats dates).
+      // Format choice for export has moved to the Data tab's
+      // "Download as…" menu and no longer affects what the editor runs.
+      const format = "application/sparql-results+json";
       const defaultGraphUri = document.getElementById("default-graph-uri").value;
       const timeout = document.getElementById("timeout").value;
       const strict = document.getElementById("strict").checked ? "true" : "false";
@@ -373,9 +356,6 @@ export class QueryEditor {
         + `&strict=${encodeURIComponent(strict)}`
         + `&debug=${encodeURIComponent(debug)}`
         + `&report=${encodeURIComponent(report)}`;
-
-      console.log(`Request body: ${body}`);
-      console.log(`Sending request to: ${this.sparqlEndpoint}`);
 
       const response = await fetch(this.sparqlEndpoint, {
         method: "POST",
@@ -395,65 +375,52 @@ export class QueryEditor {
       const responseText = await response.text();
       this.queryResults.setResponseData(responseText, contentType);
 
-      if (contentType.includes('json')) {
+      // The request is always JSON, but a misconfigured endpoint could
+      // still return an unexpected content type — parse defensively.
+      try {
         const result = JSON.parse(responseText);
         this.queryResults.displayJsonResults(result);
-      } else if (contentType.includes('html') ||
-                 format === 'text/html' ||
-                 format === 'text/x-html+tr' ||
-                 format === 'application/vnd.ms-excel') {
-        this.resultsDiv.innerHTML = responseText;
-
-        const table = this.resultsDiv.querySelector('table');
-        if (table) {
-          const firstRow = table.querySelector('tr');
-          if (firstRow && firstRow.querySelectorAll('th').length > 0) {
-            if (!table.querySelector('thead')) {
-              const thead = document.createElement('thead');
-              thead.appendChild(firstRow);
-              table.insertBefore(thead, table.firstChild);
-            }
-          }
-
-          table.querySelectorAll('td pre').forEach(pre => {
-            pre.style.whiteSpace = 'pre-wrap';
-            pre.style.wordBreak = 'break-word';
-            pre.style.overflowX = 'hidden';
-          });
-        }
-
-        this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
-      } else if (contentType.includes('xml')) {
-        this.queryResults.displayTextResults(responseText, 'xml');
-      } else if (contentType.includes('csv')) {
-        this.queryResults.displayTextResults(responseText, 'csv');
-      } else {
+      } catch (parseError) {
         this.queryResults.displayTextResults(responseText, 'text');
       }
+      this.copyUrlAlert.classList.remove('d-none');
+      this.copyUrlAlert.classList.add('d-flex');
     } catch (error) {
-      let message;
-      if (error.name === 'AbortError') {
-        message = 'Query cancelled.';
-      } else if (error.message.includes('Status: 400')) {
-        message = 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.';
-      } else if (error.message.includes('Status: 500')) {
-        message = 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.';
-      } else if (error.message.includes('Status: 504') || error.message.includes('timeout')) {
-        message = 'The query timed out. Try simplifying your query or adding more specific filters to reduce the result set.';
-      } else {
-        message = `Error: ${error.message}`;
+      // Classify via the shared helper (lane='select') so the SELECT
+      // and graph lanes present errors with the same vocabulary and
+      // visual shape. The classifier can also hand back an optional
+      // inline action (e.g. "copy the query URL" on timeout).
+      const { friendly, detail, action } = classifyError(error, 'select');
+      // Wipe the message slot (and any previous inline link) before
+      // re-rendering.
+      this.resultsErrorMessage.textContent = friendly;
+      if (action?.kind === 'copy-select-url') {
+        // Append a space + inline link + period to the friendly
+        // sentence. Clicking the link calls the existing Copy URL
+        // handler on QueryResults so the user gets the same toast
+        // and the same JSON-format URL we offer from the toolbar.
+        this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = action.label;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.queryResults?.onCopyUrl();
+        });
+        this.resultsErrorMessage.appendChild(link);
+        this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
       }
-      this.alertMessage.textContent = message;
-      if (error.serverMessage) {
-        const details = document.createElement('pre');
-        details.className = 'mt-2 mb-0 small';
-        details.style.whiteSpace = 'pre-wrap';
-        details.textContent = error.serverMessage;
-        this.alertMessage.appendChild(details);
+      // Remove any previous details block before adding a new one.
+      this.resultsErrorState.querySelector('pre')?.remove();
+      if (detail) {
+        const pre = document.createElement('pre');
+        pre.className = 'mt-3 mb-0 small text-muted text-center';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.textContent = detail;
+        this.resultsErrorState.appendChild(pre);
       }
-      this.copyUrlAlert.classList.remove('d-none', 'alert-info');
-      this.copyUrlAlert.classList.add('d-flex', 'alert-danger');
-      this.openUrlButton.classList.add('d-none');
+      this.resultsErrorState.style.display = '';
+      this.copyUrlAlert.classList.add('d-none');
     } finally {
       clearInterval(this.timerInterval);
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
@@ -490,7 +457,12 @@ export class QueryEditor {
   onCopyUrl() {
     const query = this.getQuery();
     const minifiedQuery = this.minifySparqlQuery(query);
-    const format = document.getElementById("format").value || "application/sparql-results+json";
+    // Copy URL emits a SPARQL Results JSON URL. Anyone pasting this
+    // into Excel, Power BI, or a custom app gets the same structured
+    // JSON the editor consumes — which is the most machine-friendly
+    // SELECT/ASK format. Format choice for on-disk export lives in
+    // the Data tab's "Download as…" menu, not here.
+    const format = "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
     const strict = document.getElementById("strict").checked ? "true" : "false";
@@ -499,7 +471,6 @@ export class QueryEditor {
 
     const url = `${this.sparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
 
-    console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
       const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
       toast.show();

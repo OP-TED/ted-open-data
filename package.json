@@ -1,8 +1,7 @@
 {
-  "name": "ted-sparql-editor",
-  "version": "1.0.0",
-  "description": "TED SPARQL Query Editor",
-  "main": "index.js",
+  "name": "ted-open-data",
+  "version": "2.0.0",
+  "description": "TED Open Data Service — SPARQL playground and notice browser for the European public procurement dataset",
   "type": "module",
   "scripts": {
     "start": "node src/js/cors-proxy.cjs",

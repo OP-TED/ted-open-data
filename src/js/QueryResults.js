@@ -27,18 +27,16 @@ export class QueryResults {
     this.originalSparqlEndpoint = originalSparqlEndpoint;
     this.resultsDiv = document.getElementById("results");
     this.copyUrlButton = document.getElementById('copy-url-button');
-    this.openUrlButton = document.getElementById('open-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
-
-    this.lastResponseData = null;
-    this.lastResponseType = null;
 
     this.initEventListeners();
   }
 
   /**
-   * Store the raw response data for download.
+   * Store the raw response data for reference (legacy API — the
+   * download path now re-fetches from the endpoint so this cache
+   * is only kept for potential future uses).
    * @param {string} data - The raw response text.
    * @param {string} contentType - The response content type.
    */
@@ -49,21 +47,32 @@ export class QueryResults {
 
   /**
    * Initialize event listeners.
-   * Sets up event listeners for the copy URL button and the open URL button.
+   * Wires the Copy URL button and every dropdown item in the
+   * "Download as…" menu. Each download item carries a
+   * data-download-format attribute with the MIME type to request.
    */
   initEventListeners() {
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
-    this.openUrlButton.addEventListener('click', this.onOpenUrl.bind(this));
+
+    document.querySelectorAll('#copy-url-alert [data-download-format]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.downloadAs(item.dataset.downloadFormat);
+      });
+    });
   }
 
   /**
-   * Generate the URL for the current query.
+   * Generate a shareable URL for the current query.
+   * Always emits a SPARQL Results JSON URL — that's the most
+   * machine-friendly format for Excel, Power BI and custom apps,
+   * and matches what the editor renders on screen.
    * @returns {string} - The generated URL.
    */
   generateUrl() {
     const query = this.queryEditor.getQuery();
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
-    const format = document.getElementById("format").value || "application/sparql-results+json";
+    const format = "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
     const strict = document.getElementById("strict").checked ? "true" : "false";
@@ -82,7 +91,7 @@ export class QueryResults {
 
     if (data.results && data.results.bindings.length > 0) {
       const table = document.createElement("table");
-      table.className = "table sparql monospace";
+      table.className = "table table-striped sparql monospace";
 
       const thead = table.createTHead();
       const headerRow = thead.insertRow();
@@ -144,9 +153,13 @@ export class QueryResults {
    */
   onCopyUrl() {
     const url = this.generateUrl();
-    
-    console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
+      // Populate the shared toast with a SELECT-lane-specific
+      // explanation: this URL is a JSON endpoint, consumable by
+      // Excel / Power BI / any HTTP client.
+      document.getElementById('copyUrlToastTitle').textContent = 'Query URL copied';
+      document.getElementById('copyUrlToastBody').textContent =
+        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.';
       const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
       toast.show();
     }).catch(err => {
@@ -155,36 +168,99 @@ export class QueryResults {
   }
 
   /**
-   * Handle open URL button click event.
-   * Downloads the last query response as a file.
+   * Download the current query's result in the requested format.
+   *
+   * Re-fetches the endpoint with the chosen `format` parameter rather
+   * than reusing the cached editor response — the editor always runs
+   * JSON, but the user might want a CSV or an Excel file on disk.
+   *
+   * The returned payload is wrapped in a Blob with MIME type
+   * application/octet-stream so the browser always triggers a file
+   * download instead of opening HTML/XML/CSV content inline. The
+   * `download` attribute on the anchor element provides the actual
+   * filename and extension.
+   *
+   * @param {string} format - The SPARQL result MIME type to request
+   *   (e.g. "text/csv", "application/sparql-results+json").
+   * @async
    */
-  onOpenUrl() {
-    if (this.lastResponseData == null) return;
+  async downloadAs(format) {
+    const query = this.queryEditor.getQuery();
+    if (!query || !query.trim()) return;
 
-    const extensions = {
+    // Build the same POST body the editor uses, but with the chosen
+    // format instead of the always-JSON one.
+    const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
+    const defaultGraphUri = document.getElementById("default-graph-uri").value;
+    const timeout = document.getElementById("timeout").value;
+    const strict = document.getElementById("strict").checked ? "true" : "false";
+    const debug = document.getElementById("debug").checked ? "true" : "false";
+    const report = document.getElementById("report").checked ? "true" : "false";
+    const body = `query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}`
+      + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
+      + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
+      + `&strict=${encodeURIComponent(strict)}`
+      + `&debug=${encodeURIComponent(debug)}`
+      + `&report=${encodeURIComponent(report)}`;
+
+    try {
+      const response = await fetch(this.queryEditor.sparqlEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": format,
+        },
+        body,
+      });
+      if (!response.ok) {
+        console.error('Download failed:', response.status, await response.text());
+        return;
+      }
+      const text = await response.text();
+
+      // Force the browser to treat this as a file download by using
+      // application/octet-stream in the Blob — regardless of what the
+      // endpoint returned (HTML, XML, CSV, JSON), an opaque octet
+      // stream + a download attribute makes every browser save
+      // rather than render.
+      const blob = new Blob([text], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `query-results${QueryResults._extensionFor(format)}`;
+      document.body.appendChild(link);
+      link.click();
+      // Revoke the blob URL AFTER the browser has had a chance to
+      // hand the download off to the OS. Revoking synchronously
+      // (as the previous version did) races with Chromium's async
+      // download pipeline: the browser reads the blob URL a moment
+      // after .click() returns, and if we've already revoked it,
+      // it falls back to saving the file with a GUID filename and
+      // no extension. A 100ms defer is generous enough for every
+      // browser we care about.
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  }
+
+  /**
+   * Map a SPARQL result MIME type to a file extension.
+   * @param {string} format
+   * @returns {string}
+   * @private
+   */
+  static _extensionFor(format) {
+    const map = {
       'application/sparql-results+json': '.json',
       'application/sparql-results+xml': '.xml',
-      'text/html': '.html',
       'application/vnd.ms-excel': '.xls',
       'text/csv': '.csv',
       'text/tab-separated-values': '.tsv',
-      'text/turtle': '.ttl',
-      'application/rdf+xml': '.rdf',
-      'text/plain': '.nt',
-      'application/javascript': '.js',
     };
-
-    const requestedFormat = document.getElementById("format").value;
-    const baseType = this.lastResponseType?.split(';')[0]?.trim();
-    const ext = extensions[requestedFormat] || extensions[baseType] || '.txt';
-    const blob = new Blob([this.lastResponseData], { type: this.lastResponseType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `query-results${ext}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    return map[format] || '.txt';
   }
 }

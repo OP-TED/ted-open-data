@@ -29,7 +29,51 @@ app.use(express.urlencoded({ extended: true }));
 
 const proxyUrl = process.env.http_proxy || process.env.HTTP_PROXY;
 
+// ── Dev error simulation ──
+// Start the proxy with SIMULATE=<kind> to force every /proxy and
+// /sparql request to fail in a canned way, so the friendly error
+// states on the Data tab can be evaluated without needing to break
+// a real query. Supported kinds:
+//   400      → Virtuoso-shaped parser error
+//   500      → Virtuoso-shaped internal error
+//   504      → Gateway timeout
+//   network  → connection reset (socket destroyed)
+// Any other value is ignored. When SIMULATE is unset the proxy
+// behaves normally.
+const SIMULATE = process.env.SIMULATE;
+if (SIMULATE) {
+  console.log(`[dev] SIMULATE=${SIMULATE} — all /proxy and /sparql requests will return canned failures`);
+}
+
+function applySimulation(req, res) {
+  if (!SIMULATE) return false;
+  if (SIMULATE === '400') {
+    res.status(400).set('Content-Type', 'text/plain').send(
+      "Virtuoso 37000 Error SP030: SPARQL compiler, line 1: syntax error at 'BROKEN' before 'WHERE'"
+    );
+    return true;
+  }
+  if (SIMULATE === '500') {
+    res.status(500).set('Content-Type', 'text/plain').send(
+      'Virtuoso 42000 Error The query was killed'
+    );
+    return true;
+  }
+  if (SIMULATE === '504') {
+    res.status(504).set('Content-Type', 'text/plain').send('Gateway Timeout');
+    return true;
+  }
+  if (SIMULATE === 'network') {
+    // Close the socket without a response — the browser sees a
+    // "Failed to fetch" TypeError from the fetch API.
+    req.socket.destroy();
+    return true;
+  }
+  return false;
+}
+
 app.all('/proxy', async (req, res) => {
+  if (applySimulation(req, res)) return;
   const targetUrl = req.query.url;
   if (!targetUrl) {
     return res.status(400).send('URL is required');
@@ -88,6 +132,7 @@ app.all('/proxy', async (req, res) => {
 // ted-open-data Query Editor's SELECT path.
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 app.all('/sparql', async (req, res) => {
+  if (applySimulation(req, res)) return;
   try {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',

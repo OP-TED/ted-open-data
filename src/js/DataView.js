@@ -41,6 +41,7 @@ import {
 } from '../vendor/codemirror-bundle.js';
 import { eclipseHighlightStyle, eclipseTheme } from './cm-theme.js';
 import { copyToClipboard } from './clipboardCopy.js';
+import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
@@ -59,7 +60,12 @@ class DataView {
     this.titleEl = document.getElementById('data-card-title');
     this.shareBtn = document.getElementById('data-share-btn');
     this.loadingEl = document.getElementById('data-loading');
-    this.errorEl = document.getElementById('data-error');
+    // Friendly error state on the Data tab (graph lane). Replaces
+    // the old red alert-danger banner with an empty-state view in
+    // the same register as #data-not-found: centred icon + title +
+    // message. We populate the message slot and toggle the wrapper.
+    this.errorStateEl = document.getElementById('data-error-state');
+    this.errorMessageEl = document.getElementById('data-error-message');
     this.placeholderEl = document.getElementById('data-placeholder');
     this.treeContainer = document.getElementById('tree-container');
     this.turtleContainer = document.getElementById('turtle-container');
@@ -119,27 +125,26 @@ class DataView {
   }
 
   // Copy the shareable URL for the currently focused facet to the
-  // clipboard, mirroring the Search tab's share button. Lives here too
-  // so users can share whatever they're actually looking at — including
-  // deep named-node states that the Search-tab button can't represent.
+  // clipboard and show the shared toast with an explanation of what
+  // the URL is for. Mirrors the SELECT-lane Copy URL flow — same
+  // toast DOM element, different title/body text per lane.
   async _share() {
     const url = this.controller.getShareableUrl();
     if (!url) return;
     const copied = await copyToClipboard(url);
-    this._flashShareIcon(copied);
-  }
-
-  _flashShareIcon(success) {
-    if (!this.shareBtn) return;
-    const original = '<i class="bi bi-share"></i>';
-    this.shareBtn.innerHTML = success
-      ? '<i class="bi bi-check"></i>'
-      : '<i class="bi bi-x text-danger"></i>';
-    if (!success) this.shareBtn.title = 'Could not copy to clipboard';
-    setTimeout(() => {
-      this.shareBtn.innerHTML = original;
-      this.shareBtn.title = 'Copy shareable URL';
-    }, 1500);
+    if (copied) {
+      document.getElementById('copyUrlToastTitle').textContent = 'Link copied';
+      document.getElementById('copyUrlToastBody').textContent =
+        'Save this link to come back to the same view later, or share it with a colleague — they will see exactly what you see now.';
+      bootstrap.Toast.getOrCreateInstance(document.getElementById('copyUrlToast')).show();
+    } else {
+      // Fallback: brief visual signal on the button itself when the
+      // clipboard API is blocked (rare, but possible in some
+      // embedded-browser contexts).
+      const original = this.shareBtn.innerHTML;
+      this.shareBtn.innerHTML = '<i class="bi bi-x text-danger"></i> Copy failed';
+      setTimeout(() => { this.shareBtn.innerHTML = original; }, 1500);
+    }
   }
 
   /**
@@ -195,15 +200,25 @@ class DataView {
       : facet.type === 'named-node'
         ? 'resource'
         : 'query-result';
-    const blob = new Blob([body], { type: format });
+    // application/octet-stream forces browsers to save the file
+    // instead of opening it inline (RDF/XML and N-Triples would
+    // otherwise render as text in a new tab). The download attribute
+    // provides the real extension.
+    const blob = new Blob([body], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${stem}.${extension}`;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Defer the revoke so Chromium's async download pipeline has a
+    // chance to read the blob URL before we destroy it. Revoking
+    // synchronously after .click() results in files being saved
+    // with a GUID filename and no extension.
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
   }
 
   _listen() {
@@ -239,6 +254,10 @@ class DataView {
 
     this.card.style.display = '';
     this.placeholderEl.style.display = 'none';
+    // Hide any lingering error state from a previous failed run so
+    // the new facet renders cleanly.
+    this.errorStateEl.style.display = 'none';
+    this.errorMessageEl.textContent = '';
     // Reveal the Explore tab now that there's something to explore.
     // SearchPanel / NoticeView may call showExplorerTab() after this to
     // switch to it; the tab needs to be visible first for Bootstrap's
@@ -268,13 +287,33 @@ class DataView {
     // "nothing loaded yet" affordance and is tied to facet presence, not
     // results presence. Touching it here caused the cold-load bug where
     // clearing results flashed the placeholder inside a still-hidden card.
-    this.errorEl.style.display = 'none';
+    this.errorStateEl.style.display = 'none';
+    this.errorMessageEl.textContent = '';
     this._hideNotFound();
     this._setShareBtnVisible(false);
 
     if (error) {
-      this.errorEl.textContent = error.message || 'Query failed';
-      this.errorEl.style.display = '';
+      // Hide the entire data card (breadcrumb, timeline, view-mode
+      // radios, title) so the error state stands alone at tab level,
+      // the same way the cold-load placeholder does. The error view
+      // lives outside the card in the DOM.
+      this.card.style.display = 'none';
+      this.placeholderEl.style.display = 'none';
+      // Classify via the shared helper (lane='graph') so the graph
+      // lane shows the same friendly + detail shape as the SELECT
+      // lane, with lane-appropriate copy where it matters (e.g.
+      // timeout advice differs between the two).
+      const { friendly, detail } = classifyError(error, 'graph');
+      this.errorMessageEl.textContent = friendly;
+      this.errorStateEl.querySelector('pre')?.remove();
+      if (detail) {
+        const pre = document.createElement('pre');
+        pre.className = 'mt-3 mb-0 small text-muted text-center';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.textContent = detail;
+        this.errorStateEl.appendChild(pre);
+      }
+      this.errorStateEl.style.display = '';
       this._clearViews();
       return;
     }

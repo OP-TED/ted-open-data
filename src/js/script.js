@@ -97,6 +97,7 @@ SELECT ?earliestDate ?latestDate WHERE {
       }
     })
     .catch(() => {});
+
 });
 
 // ── Explorer bootstrap (Stage 6) ──

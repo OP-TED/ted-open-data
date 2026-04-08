@@ -52,7 +52,11 @@ async function _runSparqlQuery(query, endpoint) {
     });
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      // Include the HTTP status in the error message so the shared
+      // classifier in errorMessages.js can match it the same way it
+      // matches errors from the SELECT lane.
+      const body = await response.text();
+      throw new Error(`HTTP error. Status: ${response.status}\n${body}`);
     }
 
     return await response.text();

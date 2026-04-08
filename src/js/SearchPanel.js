@@ -88,6 +88,10 @@ class SearchPanel {
     if (!value) return;
     const facet = createPublicationNumberFacet(value);
     if (!facet) return;
+    // Clear any lingering lucky-link error from a previous failed
+    // random pick — otherwise the red text stays under the input
+    // indefinitely once shown.
+    this._clearLuckyError();
     // Stage 8 — drop the canned CONSTRUCT into the SPARQL editor as a
     // side effect, so the Query Editor tab shows the underlying query
     // when the user navigates there. Wraps in a try because the
@@ -239,6 +243,8 @@ class SearchPanel {
       } catch {
         // Best-effort.
       }
+      // Clear any lingering lucky-link error from a previous run.
+      this._clearLuckyError();
       this.controller.selectFromHistory(facet);
       // Stage 12 — graph lane wins.
       this.setActiveResultTab('graph');

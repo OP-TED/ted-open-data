@@ -35,6 +35,22 @@ export class HomeTab {
 
   /**
    * Initialize event listeners.
+   *
+   * There are two sets of CTA buttons on the Home tab:
+   *   - The slide-specific buttons on carousel slides 2-4 (IDs:
+   *     lookup-notice, try-query-library, start-tour) — these are
+   *     the original Stage 11 buttons that work when a user flips
+   *     to the relevant slide.
+   *   - The "all three at once" CTAs on slide 1 (IDs:
+   *     home-cta-lookup, home-cta-library, home-cta-editor) — these
+   *     guarantee a user who never interacts with the carousel still
+   *     has every entry point visible.
+   *
+   * Both sets share the same handlers. Slide-1 buttons are wired
+   * here with direct document.getElementById lookups because they
+   * weren't captured in the constructor (the constructor's field
+   * assignments pre-date the slide-1 addition; this keeps the
+   * diff localised to initEventListeners).
    */
   initEventListeners() {
     this.startTourButton.addEventListener('click', this.onStartTour.bind(this));
@@ -42,6 +58,31 @@ export class HomeTab {
     if (this.lookupNoticeButton && this.searchTab) {
       this.lookupNoticeButton.addEventListener('click', this.onLookupNotice.bind(this));
     }
+
+    // Slide 1 CTAs are NOT shortcuts to the destination tabs — they
+    // advance the carousel to the matching feature slide instead. This
+    // turns slide 1 into a table of contents: the user clicks the
+    // headline they're interested in, reads the slide that explains
+    // it, then clicks the "real" CTA on that slide. The destination
+    // tab is reached in two steps, not one.
+    //
+    // Slide indices: 1 = lookup, 2 = library, 3 = editor.
+    const carouselEl = document.getElementById('homeCarousel');
+    const goToSlide = (index) => {
+      if (!carouselEl) return;
+      bootstrap.Carousel.getOrCreateInstance(carouselEl).to(index);
+    };
+    document.getElementById('home-cta-lookup')?.addEventListener('click', () => goToSlide(1));
+    document.getElementById('home-cta-library')?.addEventListener('click', () => goToSlide(2));
+    document.getElementById('home-cta-editor')?.addEventListener('click', () => goToSlide(3));
+
+    // Slide 5 "Get started →" — send the user straight to the Search
+    // tab. Slide 5 is the end of the narrative ("use the data"), so the
+    // CTA is a direct jump to the first real action, not a carousel
+    // advance.
+    document.getElementById('home-cta-get-started')?.addEventListener(
+      'click', () => this.searchTab?.show(),
+    );
   }
 
   /**

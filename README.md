@@ -33,7 +33,7 @@ Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of th
 1. Clone the repository:
     ```bash
     git clone https://github.com/OP-TED/ted-open-data.git
-    cd ted-sparql-editor
+    cd ted-open-data
     ```
 
 2. Install dependencies:

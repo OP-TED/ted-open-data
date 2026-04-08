@@ -32,6 +32,7 @@
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
 </head>
 
 <body class="bg-light">
@@ -65,37 +66,41 @@
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
                     type="button" role="tab" aria-controls="home-tab-content" aria-selected="true">Home</button>
             </li>
-            <!-- Search tab — instance lane input. Always visible. -->
+            <!-- Search tab — instance lane input. Always visible.
+                 Icon mirrors carousel slide 2 (look inside a notice). -->
             <li class="nav-item" role="presentation" id="app-tab-search-item">
                 <button class="nav-link" id="app-tab-search" data-bs-toggle="tab" data-bs-target="#app-search"
-                    type="button" role="tab" aria-controls="app-search" aria-selected="false">Search</button>
+                    type="button" role="tab" aria-controls="app-search" aria-selected="false"><i class="bi bi-search"></i> Inspect</button>
             </li>
+            <!-- Library tab — icon mirrors carousel slide 3. -->
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="query-library-tab" data-bs-toggle="tab" data-bs-target="#query-library"
-                    type="button" role="tab" aria-controls="query-library" aria-selected="false">Query Library</button>
+                    type="button" role="tab" aria-controls="query-library" aria-selected="false"><i class="bi bi-collection"></i> Explore</button>
             </li>
+            <!-- Editor tab — icon mirrors carousel slide 4. -->
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="query-editor-tab" data-bs-toggle="tab" data-bs-target="#query-editor"
-                    type="button" role="tab" aria-controls="query-editor" aria-selected="false">Query Editor</button>
+                    type="button" role="tab" aria-controls="query-editor" aria-selected="false"><i class="bi bi-code-square"></i> Customize</button>
             </li>
-            <!-- Query Results — tabular SELECT results lane. Hidden on cold load
+            <!-- Data — tabular SELECT results lane. Hidden on cold load
                  (both result tabs are mutually exclusive — see Stage 12 "mutual
                  exclusion" rule: at any time, at most ONE of the two result tabs
-                 is visible, determined by the last query's type). -->
+                 is visible, determined by the last query's type).
+                 Icon mirrors carousel slide 5 (use the data). -->
             <li class="nav-item" role="presentation" id="query-results-tab-item" style="display: none;">
                 <button class="nav-link" id="query-results-tab" data-bs-toggle="tab" data-bs-target="#query-results"
-                    type="button" role="tab" aria-controls="query-results" aria-selected="false">Query Results</button>
+                    type="button" role="tab" aria-controls="query-results" aria-selected="false"><i class="bi bi-download"></i> Reuse</button>
             </li>
-            <!-- Query Results — graph (CONSTRUCT/DESCRIBE) results lane. Same
+            <!-- Data — graph (CONSTRUCT/DESCRIBE) results lane. Same
                  visible label as the SELECT lane above so the user sees one
-                 conceptual "Query Results" tab whose contents auto-pick the
-                 right rendering based on the query type. The element ID stays
+                 conceptual "Data" tab whose contents auto-pick the right
+                 rendering based on the query type. The element ID stays
                  #app-tab-explorer for JS stability — only the label changes.
                  Hidden on cold load; revealed by DataView._onFacetChanged or
                  by the QueryEditor SELECT/CONSTRUCT routing branch. -->
             <li class="nav-item" role="presentation" id="app-tab-explorer-item" style="display: none;">
                 <button class="nav-link" id="app-tab-explorer" data-bs-toggle="tab" data-bs-target="#app-explorer"
-                    type="button" role="tab" aria-controls="app-explorer" aria-selected="false">Query Results</button>
+                    type="button" role="tab" aria-controls="app-explorer" aria-selected="false"><i class="bi bi-download"></i> Reuse</button>
             </li>
             <!-- Stage 12 — push Help to the right side of the nav,
                  mirroring the standalone explorer's nav layout. -->
@@ -111,31 +116,120 @@
     <main class="tab-content h-100">
 
         <!-- Home -->
+        <!-- Carousel layout. Each slide highlights one capability of the
+             merged app. Manual navigation only (no auto-rotation) so
+             institutional copy has reading time. Slides 2-4 reuse the
+             existing button IDs (lookup-notice, try-query-library,
+             start-tour) so HomeTab.js wires them up unchanged. -->
         <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
-            <div class="jumbotron">
-                <h1 class="display-4">TED Open Data</h1>
-                <p class="lead">Explore and download TED Open Data using SPARQL queries.</p>
-                <hr class="my-4">
-                <p>
-                    The public procurement data collected by the Publications Office is available as Linked Open Data in the TED Open Data Service.
-                </p>
-                <p>
-                    This tool allows you to explore and download TED Open Data using SPARQL queries. 
-                    You can use it to compose your queries, test them, and customise the dataset that you want to retrieve. 
-                    You can then use these queries to retrieve live data directly into your applications. 
-                    See the Help tab for more information or writing queries and examples on how to connect Excel and other applications with TED Open Data, for further analysis and reporting.
-                </p>
-                <p>
-                    This application is developed by the Publications Office of the EU and is available as open
-                    source on <a href="https://github.com/OP-TED/ted-sparql-editor">GitHub</a>. 
-                    We welcome your feedback, suggestions for improvement as well as your contributions to the project. 
-                    Visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> forum to share your ideas and feedback.
-                </p>
-                <button id="try-query-library" class="btn btn-primary">Try our query library</button>
-                <button id="start-tour" class="btn btn-primary">Write your own query</button>
-                <!-- Stage 11 — third CTA: jump to the Search tab to look up
-                     an existing notice. Mirrors the two existing buttons. -->
-                <button id="lookup-notice" class="btn btn-primary">Look up an existing notice</button>
+            <div id="homeCarousel" class="carousel slide home-carousel" data-bs-ride="false" data-bs-interval="false">
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Welcome"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="1" aria-label="Look inside a notice"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="2" aria-label="Curated queries"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="3" aria-label="Write your own query"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="4" aria-label="Take the data anywhere"></button>
+                </div>
+
+                <div class="carousel-inner">
+                    <!-- Slide 1: Intro — includes the three CTAs so a user
+                         who doesn't flip the carousel still has every entry
+                         point visible. The buttons duplicate the ones on
+                         slides 2-4 but with unique IDs (home-cta-*) so the
+                         JS can wire them up alongside the slide-specific
+                         ones without ID collisions. -->
+                    <div class="carousel-item active">
+                        <div class="home-carousel-slide">
+                            <h1 class="display-4">TED Open Data</h1>
+                            <p class="lead">Explore our data&ensp;—&ensp;Understand it&ensp;—&ensp;Use it</p>
+                            <p class="home-carousel-body mb-2">
+                                TED notices hold a wealth of information on EU public procurement.
+                                We organise this information as a knowledge graph and publish it
+                                for analysis and re-use.
+                            </p>
+                            <p class="home-carousel-body">
+                                We invite you to explore, understand and use this information in your
+                                research and applications.
+                            </p>
+                            <div class="home-carousel-cta-row mt-4">
+                                <button id="home-cta-lookup" class="btn btn-outline-secondary"><i class="bi bi-1-circle"></i> Look inside a notice</button>
+                                <button id="home-cta-library" class="btn btn-outline-secondary"><i class="bi bi-2-circle"></i> Try our query library</button>
+                                <button id="home-cta-editor" class="btn btn-outline-secondary"><i class="bi bi-3-circle"></i> Write your own query</button>
+                            </div>
+                            <p class="home-carousel-body small mt-4 mb-0" style="color: #9ba3ab;">
+                                Tenders Electronic Daily (TED) is the Supplement to the Official Journal
+                                of the European Union,<br/> managed by the Publications Office of the European Union.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Look inside a notice — see how ePO represents one notice -->
+                    <div class="carousel-item">
+                        <div class="home-carousel-slide">
+                            <i class="bi bi-search home-carousel-icon"></i>
+                            <h2 class="display-5 mt-3">Look inside a notice</h2>
+                            <p class="home-carousel-body lead mt-3">
+                                Begin by looking at how the eProcurement Ontology represents a single notice.
+                                Enter a publication number to select a real notice and explore its knowledge graph.
+                            </p>
+                            <button id="lookup-notice" class="btn btn-primary mt-3">Try it now →</button>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: Curated queries — learn from worked examples -->
+                    <div class="carousel-item">
+                        <div class="home-carousel-slide">
+                            <i class="bi bi-collection home-carousel-icon"></i>
+                            <h2 class="display-5 mt-3">Try our query library</h2>
+                            <p class="home-carousel-body lead mt-3">
+                                Move from a single notice to the whole dataset. Our query library gathers
+                                worked examples organised by topic — notices, tenders, procedures, organisations
+                                — that you can read, run and adapt to learn how the data is queried in practice.
+                            </p>
+                            <button id="try-query-library" class="btn btn-primary mt-3">Try it now →</button>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Write your own — experiment freely -->
+                    <div class="carousel-item">
+                        <div class="home-carousel-slide">
+                            <i class="bi bi-code-square home-carousel-icon"></i>
+                            <h2 class="display-5 mt-3">Write your own query</h2>
+                            <p class="home-carousel-body lead mt-3">
+                                Once you know your way around, the editor lets you experiment with your own
+                                queries against the entire dataset. Autocomplete and syntax checking based on
+                                the eProcurement Ontology help you build what you need, one question at a time.
+                            </p>
+                            <button id="start-tour" class="btn btn-primary mt-3">Try it now →</button>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5: Use the data — retrieve, share, build with it -->
+                    <div class="carousel-item">
+                        <div class="home-carousel-slide">
+                            <i class="bi bi-download home-carousel-icon"></i>
+                            <h2 class="display-5 mt-3">Use the data</h2>
+                            <p class="home-carousel-body lead mt-3">
+                                When you find what you need, take it home. Look for the
+                                <strong style="white-space: nowrap;"><i class="bi bi-download"></i>&nbsp;Download</strong>
+                                button to get the results in the format that fits your work. Look for the
+                                <strong style="white-space: nowrap;"><i class="bi bi-rocket-takeoff"></i>&nbsp;Copy endpoint URL</strong>
+                                button to call the same query from your own application and keep it up
+                                to date with live data all the time.
+                            </p>
+                            <button type="button" id="home-cta-get-started" class="btn btn-outline-primary mt-3">Get started →</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
             </div>
         </div> <!-- Close home-tab-content div -->
 
@@ -150,7 +244,7 @@
                 <!-- Top half: search area, split into title-lane + input-lane -->
                 <div class="search-hero-top">
                     <div class="search-hero-title-lane">
-                        <div class="search-hero-inner search-hero-prompt text-center text-muted">
+                        <div class="search-hero-inner tab-prompt">
                             Look up a notice to see how the eProcurement Ontology represents it
                         </div>
                     </div>
@@ -213,16 +307,19 @@
                                 <!-- Categories and queries will be populated here -->
                             </div>
                         </div>
-                        <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
-                           class="small text-muted text-decoration-none mt-2 align-self-start"
-                           data-bs-toggle="tooltip" data-bs-placement="right"
-                           title="Want to contribute a query? See the contributing guide.">
-                            <i class="bi bi-info-circle"></i> Contribute a query
-                        </a>
+                        <div class="library-footer mt-2 d-flex align-items-center gap-3">
+                            <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
+                               id="contribute-query-link"
+                               class="small text-muted text-decoration-none"
+                               data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="Want to contribute a query? See the contributing guide.">
+                                <i class="bi bi-info-circle"></i> Contribute a query
+                            </a>
+                        </div>
                     </div>
-                    <div class="col-md-8 d-flex flex-column">
+                    <div class="col-md-8 d-flex flex-column" id="query-library-display">
                         <div id="selectQueryMessage" class="d-flex align-items-center justify-content-center flex-grow-1">
-                            <p class="text-muted">Select a query from the available categories on the left.</p>
+                            <p class="tab-prompt">Select a query from the available categories on the left.</p>
                         </div>
                         <div class="card flex-grow-1 border-0 m-0 p-0 d-none" id="queryCard">
                             <div class="card-body d-flex flex-column p-0">
@@ -230,7 +327,8 @@
                                 <div id="queryDetails" class="p-3">
                                     <h5 id="queryTitle" class="mt-3">Query Title</h5>
                                     <p id="queryDescription">Select a query to see its description.</p>
-                                    <div class="d-flex justify-content-end mt-3">
+                                    <div id="queryActionButtons" class="d-flex justify-content-end mt-3 gap-2">
+                                        <button id="customiseQueryButton" class="btn btn-outline-secondary" disabled>Customise</button>
                                         <button id="tryQueryButton" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
                                 </div>
@@ -250,37 +348,25 @@
             <form id="queryForm" class="d-flex flex-column h-100">
                 <div class="mb-3 flex-grow-1 d-flex flex-column">
                     <div class="form-group flex-grow-1 d-flex flex-column">
-                        <label id="query-label" class="form-label">SPARQL Query</label>
+                        <div class="tab-prompt mb-1">
+                            <label id="query-label" for="query" class="mb-0">Compose or refine your query in SPARQL</label>
+                        </div>
                         <div id="query" class="flex-grow-1" role="textbox" aria-labelledby="query-label" aria-multiline="true"></div>
                         <div id="syntax-error" class="text-danger mt-2" style="display: none;"></div> <!-- Syntax error display -->
                     </div>
                 </div>
 
-                <!-- Format dropdown — Stage 10 wraps this in #format-wrapper
-                     so QueryEditor.onEditorChange can hide it for
-                     CONSTRUCT/DESCRIBE queries (which render on the Explore
-                     tab and don't need a format choice for viewing). The
-                     SELECT/ASK formats stay visible; the RDF formats stay
-                     in the list as a fallback for the rare case the
-                     dropdown is forced visible (e.g. unparseable query). -->
-                <div id="format-wrapper" class="form-floating mb-3">
-                    <select id="format" name="format" class="form-select">
-                        <option value="text/html" selected>HTML</option>
-                        <option value="application/sparql-results+json">JSON</option>
-                        <option value="text/csv">CSV</option>
-                        <option value="text/tab-separated-values">TSV</option>
-                        <option value="application/vnd.ms-excel">Spreadsheet</option>
-                        <option value="application/sparql-results+xml">XML</option>
-                        <option value="text/turtle">Turtle</option>
-                        <option value="application/rdf+xml">RDF/XML</option>
-                        <option value="text/plain">N-Triples</option>
-                        <option value="application/javascript">Javascript</option>
-                    </select>
-                    <label for="format">Results Format</label>
-                </div>
+                <!-- Results format dropdown removed: the editor now always
+                     requests SPARQL Results JSON and QueryResults renders its
+                     own consistent table. Format choice has moved to the
+                     "Download as…" button on the Data tab, where it is a
+                     download concern rather than a view concern. -->
 
-                <div class="mb-3 d-flex justify-content-between">
-                    <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#optionsCollapse" aria-expanded="false" aria-controls="optionsCollapse">
+
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <button class="btn btn-secondary" type="button" id="optionsButton"
+                            data-bs-toggle="collapse" data-bs-target="#optionsCollapse"
+                            aria-expanded="false" aria-controls="optionsCollapse">
                         Options
                     </button>
                     <button type="submit" class="btn btn-primary" id="runQueryButton" disabled>Run Query</button>
@@ -329,16 +415,51 @@
             </form>
         </div> <!-- Close query-editor div -->
 
-        <!-- Query Results -->
+        <!-- Query Results (SELECT lane) -->
         <div class="tab-pane w-100 fade position-absolute" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
-            <!-- Copy URL Alert Box -->
-            <div class="alert alert-info justify-content-between align-items-center mb-2 d-none" id="copy-url-alert">
-                <span id="alert-message">You can run this query directly from Excel or any other application by using its URL.</span>
-                <div>
-                    <button id="copy-url-button" class="btn btn-secondary me-2">Copy URL</button>
-                    <button id="open-url-button" class="btn btn-secondary">Download</button>
+            <!-- Slim results toolbar — hint on the left, Copy URL +
+                 Download as… on the right. Mirrors the visual weight
+                 of the breadcrumb bar on the graph lane: flat, a
+                 single thin bottom border, no fill. Toggled via
+                 #copy-url-alert (the id is kept for JS back-compat,
+                 the class has changed from `alert` to a custom bar). -->
+            <div id="copy-url-alert" class="results-toolbar d-none">
+                <span id="alert-message" class="results-toolbar-hint tab-prompt"
+                      title="Here are the results of your query.">
+                    Here are the results of your query.
+                </span>
+                <div class="results-toolbar-actions">
+                    <button id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
+                    <div class="dropdown d-inline-block">
+                        <button id="download-as-button" class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-download"></i> Download as…
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="download-as-button">
+                            <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+json">JSON</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="text/csv">CSV</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="text/tab-separated-values">TSV</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="application/vnd.ms-excel">Spreadsheet</a></li>
+                            <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+xml">XML</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
+
+            <!-- Friendly error state — shown when a SELECT query fails.
+                 Replaces the previous red alert-danger banner with a
+                 calmer empty-state view in the same register as the
+                 graph lane's #data-not-found: centred icon + title +
+                 message. The message slot is populated at runtime by
+                 QueryEditor.js with a user-readable explanation. -->
+            <div id="results-error-state" class="text-center py-5" style="display: none;">
+                <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
+                    <i class="bi bi-exclamation-circle"></i>
+                </div>
+                <h5 class="text-muted mb-2">Something went wrong</h5>
+                <p id="results-error-message" class="text-muted mb-0"></p>
+            </div>
+
             <!-- Results Section -->
             <div id="results">
                 <p class="text-muted">Query results will appear here...</p>
@@ -353,6 +474,9 @@
         <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-explorer" role="tabpanel" aria-labelledby="app-tab-explorer">
 
             <div id="data-card" style="display: none;">
+                <div class="tab-prompt mb-2">
+                    Here are your results as a linked-data graph
+                </div>
                 <!-- Top row: breadcrumb on the left, view mode radios on the right -->
                 <div class="d-flex align-items-center justify-content-between mb-2 data-sticky-header">
                     <nav aria-label="breadcrumb">
@@ -389,13 +513,18 @@
                     </div>
                 </div>
 
-                <!-- Page title with inline share button + Stage 10 download menu -->
+                <!-- Page title with inline Copy URL + Download as… buttons.
+                     Rectangular outline-secondary buttons matching the
+                     SELECT-lane results toolbar styling so the two lanes
+                     of the Data tab feel visually consistent. The buttons
+                     sit right-aligned on the same row as the title via
+                     ms-auto. -->
                 <div class="d-flex align-items-center gap-2 mt-3 mb-3">
                     <h5 id="data-card-title" class="mb-0"></h5>
                     <button type="button" id="data-share-btn"
-                            class="btn btn-sm btn-outline-secondary border-0 rounded-circle data-share-btn"
+                            class="btn btn-sm btn-outline-secondary ms-auto"
                             title="Copy shareable URL" style="display: none;">
-                        <i class="bi bi-share"></i>
+                        <i class="bi bi-share"></i> Share view
                     </button>
                     <!-- Stage 10 — Download menu for the loaded RDF graph.
                          Visible whenever the data card itself is visible
@@ -404,13 +533,12 @@
                          memory), N-Triples (re-fetched), RDF/XML (re-fetched). -->
                     <div class="dropdown" id="data-download-menu" style="display: none;">
                         <button type="button"
-                                class="btn btn-sm btn-outline-secondary border-0 rounded-circle data-share-btn"
+                                class="btn btn-sm btn-outline-primary dropdown-toggle"
                                 id="data-download-btn"
-                                data-bs-toggle="dropdown" aria-expanded="false"
-                                title="Download as…">
-                            <i class="bi bi-download"></i>
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-download"></i> Download as…
                         </button>
-                        <ul class="dropdown-menu" aria-labelledby="data-download-btn">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="data-download-btn">
                             <li><a class="dropdown-item" href="#" data-download-format="text/turtle">Turtle</a></li>
                             <li><a class="dropdown-item" href="#" data-download-format="application/rdf+xml">RDF/XML</a></li>
                             <li><a class="dropdown-item" href="#" data-download-format="application/n-triples">N-Triples</a></li>
@@ -421,7 +549,6 @@
                 <div id="data-loading" class="loading-overlay" style="display: none;">
                     <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
                 </div>
-                <div id="data-error" class="alert alert-danger py-2" style="display: none;"></div>
 
                 <div id="tree-container" class="tree-view"></div>
                 <div id="turtle-container" style="display: none;"></div>
@@ -459,6 +586,18 @@
             <div id="data-placeholder" class="text-center text-muted py-5 fst-italic">
                 Use the Search tab to select a notice; search results will
                 appear here.
+            </div>
+
+            <!-- Friendly error state — lives at tab level (outside the
+                 data card) so the chrome — breadcrumb, timeline,
+                 view-mode radios, title — is hidden when the error is
+                 shown. Same register as #data-not-found. -->
+            <div id="data-error-state" class="text-center py-5" style="display: none;">
+                <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
+                    <i class="bi bi-exclamation-circle"></i>
+                </div>
+                <h5 class="text-muted mb-2">Something went wrong</h5>
+                <p id="data-error-message" class="text-muted mb-0"></p>
             </div>
         </div> <!-- Close app-explorer div -->
 
@@ -674,15 +813,18 @@
         </div>
     </footer>
 
-    <!-- Toast Container -->
+    <!-- Toast Container — one shared toast reused by both Copy URL
+         buttons (SELECT lane in the editor, graph lane on the data
+         card title). The title + body are set at call time so each
+         button can explain what its specific URL is for. -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="copyUrlToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
-                <strong class="me-auto">TED SPARQL Editor</strong>
+                <strong class="me-auto" id="copyUrlToastTitle">URL copied</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <div class="toast-body">
-                URL copied to clipboard
+            <div class="toast-body" id="copyUrlToastBody">
+                The URL is on your clipboard.
             </div>
         </div>
     </div>
