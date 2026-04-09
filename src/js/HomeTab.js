@@ -68,7 +68,7 @@ export class HomeTab {
     // tab is reached in two steps, not one.
     //
     // Slide indices: 1 = lookup, 2 = library, 3 = editor.
-    const carouselEl = document.getElementById('homeCarousel');
+    const carouselEl = document.getElementById('home-carousel');
     const goToSlide = (index) => {
       if (!carouselEl) return;
       bootstrap.Carousel.getOrCreateInstance(carouselEl).to(index);

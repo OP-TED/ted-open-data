@@ -91,7 +91,7 @@ function _formatDate(dateStr) {
   return tz ? `${friendly} (${tz})` : friendly;
 }
 
-class NoticeView {
+export class NoticeView {
   constructor(controller, { showExplorerTab, setSearchInput, loadEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
@@ -540,4 +540,3 @@ class NoticeView {
   }
 }
 
-export { NoticeView };

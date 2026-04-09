@@ -18,7 +18,7 @@
 // The module keeps a reference to the ExplorerController so that default
 // click handlers can navigate without the caller plumbing it through.
 
-import { shortLabel } from './namespaces.js';
+import { shortLabel } from './utils/namespaces.js';
 import { isLabelEligible, requestLabel } from './services/labelService.js';
 
 const BADGE_CLICKABLE = 'badge text-info-emphasis bg-info-subtle tree-type-badge';

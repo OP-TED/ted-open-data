@@ -41,7 +41,7 @@ let activeTour = null;
  */
 function primeCustomizeTab() {
   return new Promise(resolve => {
-    const panel = document.getElementById('optionsCollapse');
+    const panel = document.getElementById('options-collapse');
     if (!panel) {
       resolve();
       return;
@@ -111,7 +111,7 @@ export async function startCustomizeTour() {
       },
     },
     {
-      element: '#optionsCollapse',
+      element: '#options-collapse',
       popover: {
         title: 'Options',
         description:
@@ -124,7 +124,7 @@ export async function startCustomizeTour() {
       },
     },
     {
-      element: '#runQueryButton',
+      element: '#run-query-button',
       popover: {
         title: 'Run your query',
         description:

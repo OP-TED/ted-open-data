@@ -22,12 +22,12 @@
 // outer tree renders. This keeps the initial render fast even for notices
 // with tens of thousands of triples.
 
-import { ns } from './namespaces.js';
+import { ns } from './utils/namespaces.js';
 import { renderSubjectBadge, renderTerm } from './TermRenderer.js';
 
 const RDF_TYPE = ns.rdf + 'type';
 
-class TreeRenderer {
+export class TreeRenderer {
   constructor(container) {
     this.container = container;
     this.subjectIndex = null; // Map<subject, Map<predicate, object[]>>
@@ -228,4 +228,3 @@ class TreeRenderer {
   }
 }
 
-export { TreeRenderer };

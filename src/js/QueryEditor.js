@@ -23,9 +23,9 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         searchKeymap, highlightSelectionMatches,
         linter, lintGutter, lintKeymap,
         sparql} from '../vendor/codemirror-bundle.js';
-import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
-import {epoCompletionSource, getEpoData} from './epo-completion.js';
-import {classifyError} from './errorMessages.js';
+import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
+import {epoCompletionSource, getEpoData} from './epoCompletion.js';
+import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 
 /**
@@ -39,8 +39,8 @@ export class QueryEditor {
    */
   constructor(sparqlEndpoint) {
     this.sparqlEndpoint = sparqlEndpoint;
-    this.runQueryButton = document.getElementById('runQueryButton');
-    this.queryForm = document.getElementById('queryForm');
+    this.runQueryButton = document.getElementById('run-query-button');
+    this.queryForm = document.getElementById('query-form');
     this.resultsDiv = document.getElementById("results");
     // Friendly error state on the Reuse tab's SELECT lane
     // (`#query-results`). Replaces the old red alert-danger banner
@@ -51,7 +51,7 @@ export class QueryEditor {
     this.resultsErrorMessage = document.getElementById('results-error-message');
     this.resultsErrorDetail = document.getElementById('results-error-detail');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
-    this.stopQueryButton = document.getElementById('stopQueryButton');
+    this.stopQueryButton = document.getElementById('stop-query-button');
     this.queryResults = null;
     this.abortController = null;
     this.isQueryRunning = false;

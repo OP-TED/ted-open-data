@@ -315,33 +315,33 @@ main {
     padding: 20px;
 }
 
-#queryForm {
+#query-form {
     flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-#queryForm .form-label {
+#query-form .form-label {
     margin-bottom: 0;
 }
 
-#optionsCollapse {
+#options-collapse {
     margin-top: 10px;
 }
 
-#optionsCollapse .form-check {
+#options-collapse .form-check {
     flex: 1 1 auto;
 }
 
-#queryForm .mb-3.flex-grow-1 {
+#query-form .mb-3.flex-grow-1 {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-#queryForm .form-group {
+#query-form .form-group {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -413,7 +413,7 @@ main {
 }
 
 /* Adjust query editor container for CodeMirror */
-#queryForm .form-group {
+#query-form .form-group {
     min-height: 200px;
 }
 
@@ -462,18 +462,18 @@ main {
     color: #fff;
 }
 
-#queryCard {
+#query-card {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-#querySparql {
+#query-sparql {
     flex-grow: 1;
     overflow-y: auto;
 }
 
-#queryDetails {
+#query-details {
     flex-shrink: 0;
 }
 

@@ -26,7 +26,7 @@ const NO_SELECTION_MESSAGE =
 const NO_BACKLINKS_MESSAGE =
   '<div class="text-muted fst-italic">No backlinks found</div>';
 
-class BacklinksView {
+export class BacklinksView {
   // The `doSPARQL` option lets tests inject a stub; production callers
   // (app.js) pass no arguments and get the real worker-backed service.
   constructor(controller, { doSPARQL = defaultDoSPARQL } = {}) {
@@ -262,4 +262,3 @@ WHERE {
   }
 }
 
-export { BacklinksView };

@@ -19,7 +19,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ns, shortLabel, shrink, resolvePrefix } from '../src/js/namespaces.js';
+import { ns, shortLabel, shrink, resolvePrefix } from '../src/js/utils/namespaces.js';
 
 // Real URIs drawn from TED notice 00172531-2026's description.
 const EPO_NOTICE_CLASS     = 'http://data.europa.eu/a4g/ontology#Notice';

@@ -72,6 +72,26 @@ The editors use a self-hosted CodeMirror v6 bundle (`src/vendor/codemirror-bundl
 3. Run `npm run build:codemirror`
 4. Commit the updated bundle
 
+### Simulating Server Errors
+
+The CORS proxy supports a `SIMULATE` environment variable that forces every `/proxy` and `/sparql` request to return a canned failure. This is useful for evaluating the friendly error states in the app without needing to craft a broken query or wait for an endpoint outage.
+
+```bash
+# Virtuoso-shaped 400 parser error
+SIMULATE=400 npm start
+
+# Virtuoso-shaped 500 internal error
+SIMULATE=500 npm start
+
+# 504 Gateway Timeout
+SIMULATE=504 npm start
+
+# Network failure (connection reset)
+SIMULATE=network npm start
+```
+
+Any other value is ignored and the proxy behaves normally. The active simulation mode is logged at startup.
+
 ### Corporate Proxy Configuration
 
 If you're behind a corporate proxy:

@@ -33,7 +33,7 @@
 // observable bug.
 
 import { isSafeUri } from '../facets.js';
-import { ns } from '../namespaces.js';
+import { ns } from '../utils/namespaces.js';
 import { doSPARQL as defaultDoSPARQL } from './sparqlService.js';
 
 const BATCH_SIZE = 20;

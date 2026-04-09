@@ -21,7 +21,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyError } from '../src/js/errorMessages.js';
+import { classifyError } from '../src/js/utils/errorMessages.js';
 
 // ── Null / falsy input ─────────────────────────────────────────────
 

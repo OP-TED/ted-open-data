@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
         await mod[fn]();
       } catch (err) {
         console.error(`Failed to load tour ${id}:`, err);
-        const { showToast } = await import('./toast.js').catch(() => ({ showToast: null }));
+        const { showToast } = await import('./utils/toast.js').catch(() => ({ showToast: null }));
         if (showToast) {
           showToast(
             'Could not load the tour',

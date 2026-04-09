@@ -44,7 +44,7 @@ import {
 
 const STORAGE_KEY = 'explorer-facets-v3';
 
-class ExplorerController extends EventTarget {
+export class ExplorerController extends EventTarget {
   // The `doSPARQL` and `cancelAllSparqlRequests` options let tests inject
   // stubs; production callers (app.js) pass no arguments and get the real
   // worker-backed service.
@@ -515,4 +515,3 @@ function _stripFacetForSharing(facet) {
   return null;
 }
 
-export { ExplorerController };

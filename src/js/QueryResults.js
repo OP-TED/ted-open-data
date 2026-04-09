@@ -12,11 +12,11 @@
  * the Licence.
  */
 
-import { copyToClipboard } from './clipboardCopy.js';
-import { triggerBlobDownload } from './download.js';
-import { classifyError } from './errorMessages.js';
+import { copyToClipboard } from './utils/clipboardCopy.js';
+import { triggerBlobDownload } from './utils/download.js';
+import { classifyError } from './utils/errorMessages.js';
 import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
-import { showToast } from './toast.js';
+import { showToast } from './utils/toast.js';
 
 /**
  * Class representing the Query Results.

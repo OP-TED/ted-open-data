@@ -22,7 +22,7 @@
 //
 // Each also carries a `timestamp` field used for ordering and uniqueness.
 
-import { shortLabel } from './namespaces.js';
+import { shortLabel } from './utils/namespaces.js';
 
 // ── Publication number normalisation ──
 

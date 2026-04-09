@@ -19,8 +19,8 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         bracketMatching, foldGutter, foldKeymap,
         syntaxHighlighting, defaultHighlightStyle,
         sparql} from '../vendor/codemirror-bundle.js';
-import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
-import { showToast } from './toast.js';
+import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
+import { showToast } from './utils/toast.js';
 
 /**
  * Class representing the Query Library.
@@ -37,11 +37,11 @@ export class QueryLibrary {
     this.sparqlEndpoint = sparqlEndpoint;
     this.queryEditor = queryEditor;
     this.remoteQueriesUrl = remoteQueriesUrl;
-    this.queryAccordion = document.getElementById('queryAccordion');
-    this.selectQueryMessage = document.getElementById('selectQueryMessage');
-    this.queryCard = document.getElementById('queryCard');
-    this.queryTitle = document.getElementById('queryTitle');
-    this.queryDescription = document.getElementById('queryDescription');
+    this.queryAccordion = document.getElementById('query-accordion');
+    this.selectQueryMessage = document.getElementById('select-query-message');
+    this.queryCard = document.getElementById('query-card');
+    this.queryTitle = document.getElementById('query-title');
+    this.queryDescription = document.getElementById('query-description');
     this.querySparqlEditor = new EditorView({
       state: EditorState.create({
         doc: "",
@@ -66,10 +66,10 @@ export class QueryLibrary {
           ]),
         ]
       }),
-      parent: document.getElementById("querySparql")
+      parent: document.getElementById("query-sparql")
     });
-    this.tryQueryButton = document.getElementById('tryQueryButton');
-    this.customiseQueryButton = document.getElementById('customiseQueryButton');
+    this.tryQueryButton = document.getElementById('try-query-button');
+    this.customiseQueryButton = document.getElementById('customise-query-button');
     this.selectedQueryElement = null;
     this.queries = [];
 
@@ -156,7 +156,7 @@ export class QueryLibrary {
         collapse.id = categoryId;
         collapse.className = 'accordion-collapse collapse';
         collapse.setAttribute('aria-labelledby', `${categoryId}-header`);
-        collapse.setAttribute('data-bs-parent', '#queryAccordion');
+        collapse.setAttribute('data-bs-parent', '#query-accordion');
 
         const body = document.createElement('div');
         body.className = 'accordion-body p-0';
@@ -334,7 +334,7 @@ export class QueryLibrary {
     // care of everything: syntax check, POST, auto-route to either
     // the SELECT lane (`#query-results`) or the graph lane
     // (`#app-tab-explorer`) of the Reuse tab.
-    document.getElementById('queryForm')?.dispatchEvent(
+    document.getElementById('query-form')?.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );
   }

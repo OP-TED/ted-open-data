@@ -39,16 +39,16 @@ import {
   syntaxHighlighting,
   turtle,
 } from '../vendor/codemirror-bundle.js';
-import { eclipseHighlightStyle, eclipseTheme } from './cm-theme.js';
-import { copyToClipboard } from './clipboardCopy.js';
-import { triggerBlobDownload } from './download.js';
-import { classifyError } from './errorMessages.js';
+import { eclipseHighlightStyle, eclipseTheme } from './utils/cmTheme.js';
+import { copyToClipboard } from './utils/clipboardCopy.js';
+import { triggerBlobDownload } from './utils/download.js';
+import { classifyError } from './utils/errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
 import { getEndpoint } from './services/sparqlService.js';
-import { showToast } from './toast.js';
+import { showToast } from './utils/toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
-class DataView {
+export class DataView {
   // `pickRandom` is an optional callback wired from app.js to
   // SearchPanel.pickRandom(). It fires when the user clicks the
   // "pick a random notice" link inside the not-found state.
@@ -149,10 +149,10 @@ class DataView {
     if (!url) return;
     const copied = await copyToClipboard(url);
     if (copied) {
-      document.getElementById('copyUrlToastTitle').textContent = 'Link copied';
-      document.getElementById('copyUrlToastBody').textContent =
+      document.getElementById('copy-url-toast-title').textContent = 'Link copied';
+      document.getElementById('copy-url-toast-body').textContent =
         'Save this link to come back to the same view later, or share it with a colleague — they will see exactly what you see now.';
-      bootstrap.Toast.getOrCreateInstance(document.getElementById('copyUrlToast')).show();
+      bootstrap.Toast.getOrCreateInstance(document.getElementById('copy-url-toast')).show();
     } else {
       // Fallback: brief visual signal on the button itself when the
       // clipboard API is blocked (rare, but possible in some
@@ -531,4 +531,3 @@ class DataView {
   }
 }
 
-export { DataView };

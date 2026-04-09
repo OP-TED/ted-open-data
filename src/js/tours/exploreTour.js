@@ -41,7 +41,7 @@ let activeTour = null;
  * Returns once the preview card is visible.
  */
 async function primeExploreTab() {
-  const firstBtn = document.querySelector('#queryAccordion .accordion-button');
+  const firstBtn = document.querySelector('#query-accordion .accordion-button');
   if (firstBtn && firstBtn.classList.contains('collapsed')) {
     firstBtn.click();
   }
@@ -54,10 +54,10 @@ async function primeExploreTab() {
   // Click the first query in the first category. onQueryClick is
   // async (it fetches the .sparql file) but does its DOM mutation
   // synchronously right after; wait until #queryCard is visible.
-  const firstQuery = document.querySelector('#queryAccordion .list-group-item');
+  const firstQuery = document.querySelector('#query-accordion .list-group-item');
   if (firstQuery) {
     firstQuery.click();
-    await waitForElementVisible('#queryCard', 1500);
+    await waitForElementVisible('#query-card', 1500);
   }
 }
 
@@ -106,7 +106,7 @@ export async function startExploreTour() {
       // and near the top of the accordion, so `side: 'right'` +
       // `align: 'start'` sits compactly next to it without blocking
       // the preview panel the copy asks the user to look at.
-      element: '#queryAccordion .list-group-item.active',
+      element: '#query-accordion .list-group-item.active',
       popover: {
         title: 'A library of ready-made queries',
         description:
@@ -122,7 +122,7 @@ export async function startExploreTour() {
       // the card itself either goes off-screen or lands over the
       // accordion. The buttons sit at the bottom-right, leaving
       // plenty of room for a popover anchored above them.
-      element: '#queryActionButtons',
+      element: '#query-action-buttons',
       popover: {
         title: 'Preview and action',
         description:

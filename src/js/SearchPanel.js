@@ -34,7 +34,7 @@ function _formatShortDate(dateStr) {
   return `${parseInt(m[3])} ${SHORT_MONTHS[parseInt(m[2]) - 1]} ${m[1]}`;
 }
 
-class SearchPanel {
+export class SearchPanel {
   constructor(controller, { showExplorerTab, loadEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
@@ -419,4 +419,3 @@ class SearchPanel {
   }
 }
 
-export { SearchPanel };

@@ -22,9 +22,9 @@
 // flows, so we reuse it for error toasts too instead of adding a
 // second toast element to index.html.
 
-const TOAST_ID = 'copyUrlToast';
-const TOAST_TITLE_ID = 'copyUrlToastTitle';
-const TOAST_BODY_ID = 'copyUrlToastBody';
+const TOAST_ID = 'copy-url-toast';
+const TOAST_TITLE_ID = 'copy-url-toast-title';
+const TOAST_BODY_ID = 'copy-url-toast-body';
 
 const VARIANT_CLASSES = {
   success: [],
