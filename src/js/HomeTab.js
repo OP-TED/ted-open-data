@@ -76,6 +76,7 @@ export class HomeTab {
     document.getElementById('home-cta-lookup')?.addEventListener('click', () => goToSlide(1));
     document.getElementById('home-cta-library')?.addEventListener('click', () => goToSlide(2));
     document.getElementById('home-cta-editor')?.addEventListener('click', () => goToSlide(3));
+    document.getElementById('home-cta-reuse')?.addEventListener('click', () => goToSlide(4));
 
     // Slide 5 "Get started →" — send the user straight to the Search
     // tab. Slide 5 is the end of the narrative ("use the data"), so the

@@ -149,7 +149,7 @@
                             <p class="lead">Explore our data&ensp;—&ensp;Understand it&ensp;—&ensp;Use it</p>
                             <p class="home-carousel-body mb-2">
                                 TED notices hold a wealth of information on EU public procurement.
-                                We organise this information as a knowledge graph and publish it
+                                <br/>We organise this information as a knowledge graph and publish it
                                 for analysis and re-use.
                             </p>
                             <p class="home-carousel-body">
@@ -160,6 +160,7 @@
                                 <button type="button" id="home-cta-lookup" class="btn btn-outline-secondary"><i class="bi bi-1-circle"></i> Look inside a notice</button>
                                 <button type="button" id="home-cta-library" class="btn btn-outline-secondary"><i class="bi bi-2-circle"></i> Try our query library</button>
                                 <button type="button" id="home-cta-editor" class="btn btn-outline-secondary"><i class="bi bi-3-circle"></i> Write your own query</button>
+                                <button type="button" id="home-cta-reuse" class="btn btn-outline-secondary"><i class="bi bi-4-circle"></i> Get your data</button>
                             </div>
                             <p class="home-carousel-body small mt-4 mb-0" style="color: #9ba3ab;">
                                 Tenders Electronic Daily (TED) is the Supplement to the Official Journal
@@ -187,9 +188,9 @@
                             <i class="bi bi-collection home-carousel-icon"></i>
                             <h2 class="display-5 mt-3">Try our query library</h2>
                             <p class="home-carousel-body lead mt-3">
-                                Move from a single notice to the whole dataset. Our query library gathers
-                                worked examples organised by topic — notices, tenders, procedures, organisations
-                                — that you can read, run and adapt to learn how the data is queried in practice.
+                                When you are familiar with the basic notice representation, move to learning how to query the entire dataset. 
+                                Our query library provides several examples organised by topic.
+                                <br/>You can run and customise them to learn how the data is queried in practice.
                             </p>
                             <button type="button" id="try-query-library" class="btn btn-primary mt-3">Try it now →</button>
                         </div>
@@ -201,8 +202,8 @@
                             <i class="bi bi-code-square home-carousel-icon"></i>
                             <h2 class="display-5 mt-3">Write your own query</h2>
                             <p class="home-carousel-body lead mt-3">
-                                Once you know your way around, the editor lets you experiment with your own
-                                queries against the entire dataset. Autocomplete and syntax checking based on
+                                Once you know your way around, our SPARQL editor lets you experiment with your own
+                                queries and of course customise the ones we provide. Autocomplete and syntax checking based on
                                 the eProcurement Ontology help you build what you need, one question at a time.
                             </p>
                             <button type="button" id="start-tour" class="btn btn-primary mt-3">Try it now →</button>
@@ -507,15 +508,6 @@
         <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-explorer" role="tabpanel" aria-labelledby="app-tab-explorer">
 
             <div id="data-card" style="display: none;">
-                <div class="tab-prompt mb-2">
-                    Here are your results as a linked-data graph
-                    <button type="button" class="tour-trigger" id="reuse-graph-tour-trigger"
-                            data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Take a quick tour of this tab"
-                            aria-label="Take a quick tour of this tab">
-                        <i class="bi bi-play-circle"></i>
-                    </button>
-                </div>
                 <!-- Top row: breadcrumb on the left, view mode radios on the right -->
                 <div class="d-flex align-items-center justify-content-between mb-2 data-sticky-header">
                     <nav aria-label="breadcrumb">
@@ -560,6 +552,12 @@
                      ms-auto. -->
                 <div class="d-flex align-items-center gap-2 mt-3 mb-3">
                     <h5 id="data-card-title" class="mb-0"></h5>
+                    <button type="button" class="tour-trigger" id="reuse-graph-tour-trigger"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Take a quick tour of this tab"
+                            aria-label="Take a quick tour of this tab">
+                        <i class="bi bi-play-circle"></i>
+                    </button>
                     <button type="button" id="data-share-btn"
                             class="btn btn-sm btn-outline-secondary ms-auto"
                             title="Copy shareable URL" style="display: none;">

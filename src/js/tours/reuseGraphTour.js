@@ -95,13 +95,21 @@ export async function startReuseGraphTour() {
       },
     },
     {
-      // Centered modal — points at the other tabs as next steps.
+      // Centered modal — explains how to read the tree, using
+      // colour references that match the actual CSS classes.
       popover: {
-        title: 'Want to see something else?',
+        title: 'Reading the results',
         description:
-          'Head to the <strong>Inspect</strong> tab to look up a different notice, or to ' +
-          '<strong>Explore</strong> for a library of ready-made queries that produce graph ' +
-          'results like this one.',
+          'Each card is a node in the graph — a notice, an organisation, a contract, or any other entity. ' +
+          'The contents of the card show you the node\'s properties and links to other nodes. ' +
+          'You can click on any element to dig deeper into the connected data. ' +
+          'Use the <span style="color:#000000; font-size:13.6px;">&#9654;</span> arrows to expand or collapse nested nodes. ' +
+          'The breadcrumb at the top tracks your path — click any step to go back.' +
+          '<br><br><b>Color coding:</b><br>' +
+          '<span style="color:#0d6efd; text-decoration:underline; font-weight:400;">link/property name</span><span style="font-weight:500;"> → </span><br>' +
+          '<span style="color:#7f0055; text-decoration:underline;">linked node</span><br>' +
+          '<span style="color:#2a00ff;">"property value"</span><br>' +
+          '<span class="badge text-info-emphasis bg-info-subtle" style="font-size:1em; font-weight:400;">linked node ID</span>',
       },
     },
   ]);

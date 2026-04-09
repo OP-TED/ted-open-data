@@ -955,7 +955,7 @@ main {
 
 .home-carousel-slide {
   text-align: center;
-  max-width: 720px;
+  max-width: 900px;
   margin: 0 auto;
   /* Asymmetric padding: more at the bottom so the centred content
      leaves a clear strip for the carousel indicators (~23px tall +
