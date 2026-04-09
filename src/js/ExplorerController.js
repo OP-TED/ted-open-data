@@ -247,13 +247,24 @@ class ExplorerController extends EventTarget {
     if (!stripped) return null;
     const url = new URL(window.location.href);
     url.searchParams.set('facet', JSON.stringify(stripped));
-    // For query facets, also serialise the SPARQL options so the
-    // recipient sees the same timeout / strict / debug / report /
-    // default-graph-uri the sender used. Notice-number and
-    // named-node facets use a canned query with no user-set
-    // options, so we skip the parameter to keep the URL shorter.
-    if (facet.type === 'query' && this._sparqlOptions && Object.keys(this._sparqlOptions).length) {
-      url.searchParams.set('opts', JSON.stringify(this._sparqlOptions));
+    // Serialise SPARQL options whenever the controller holds non-empty
+    // ones — not just for query facets. A user who ran a CONSTRUCT
+    // with custom options and then drilled into a named-node via the
+    // breadcrumb is still executing in the context of those options
+    // (the controller applies _sparqlOptions to every
+    // _executeCurrentQuery call). Dropping them on a named-node
+    // share link would silently replay the same resource against
+    // different endpoint behaviour.
+    if (this._sparqlOptions && Object.keys(this._sparqlOptions).length) {
+      // Only include keys that carry a non-empty value so the URL
+      // doesn't bloat with `"strict":"false","debug":"false"` etc.
+      const nonEmpty = {};
+      for (const [k, v] of Object.entries(this._sparqlOptions)) {
+        if (v && v !== 'false') nonEmpty[k] = v;
+      }
+      if (Object.keys(nonEmpty).length) {
+        url.searchParams.set('opts', JSON.stringify(nonEmpty));
+      }
     }
     return url.toString();
   }

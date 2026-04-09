@@ -45,7 +45,6 @@ import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
 import { getEndpoint } from './services/sparqlService.js';
-import { buildSparqlBody } from './sparqlRequest.js';
 import { showToast } from './toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
@@ -194,18 +193,28 @@ class DataView {
           showToast('Download failed', 'Could not build a download query for the current view.', { variant: 'danger' });
           return;
         }
+        // Build the POST body from the controller's stored options
+        // rather than from the live DOM form inputs. When a shared
+        // URL loads with `?opts=...`, those options go into the
+        // controller's `_sparqlOptions` but the Options panel form
+        // is NOT repopulated. Reading from the DOM would produce a
+        // download that diverges from what produced the current
+        // graph.
+        const opts = this.controller._sparqlOptions || {};
+        const params = new URLSearchParams({ query, format });
+        if (opts.defaultGraphUri) params.set('default-graph-uri', opts.defaultGraphUri);
+        if (opts.timeout) params.set('timeout', opts.timeout);
+        if (opts.strict) params.set('strict', opts.strict);
+        if (opts.debug) params.set('debug', opts.debug);
+        if (opts.report) params.set('report', opts.report);
+
         const response = await fetch(getEndpoint(), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': format,
           },
-          // Use buildSparqlBody so the download honours the same
-          // Options panel settings (timeout, strict, debug, report,
-          // default-graph-uri) that the original execution used.
-          // The format parameter is overridden to the requested RDF
-          // serialisation rather than the default JSON.
-          body: buildSparqlBody(query, format),
+          body: params.toString(),
         });
         if (!response.ok) {
           const detail = await response.text().catch(() => '');
