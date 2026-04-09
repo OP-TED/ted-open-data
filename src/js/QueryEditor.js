@@ -49,6 +49,7 @@ export class QueryEditor {
     // toggle the wrapper's visibility.
     this.resultsErrorState = document.getElementById('results-error-state');
     this.resultsErrorMessage = document.getElementById('results-error-message');
+    this.resultsErrorDetail = document.getElementById('results-error-detail');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.stopQueryButton = document.getElementById('stopQueryButton');
     this.queryResults = null;
@@ -452,14 +453,19 @@ export class QueryEditor {
       this.resultsErrorMessage.appendChild(link);
       this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
     }
-    // Remove any previous details block before adding a new one.
-    this.resultsErrorState.querySelector('pre')?.remove();
-    if (detail) {
-      const pre = document.createElement('pre');
-      pre.className = 'mt-3 mb-0 small text-muted text-center';
-      pre.style.whiteSpace = 'pre-wrap';
-      pre.textContent = detail;
-      this.resultsErrorState.appendChild(pre);
+    // Populate the dedicated detail slot. Using a stable element
+    // (rather than a generic `querySelector('pre')?.remove()`)
+    // means a future template addition of an unrelated <pre>
+    // inside the error-state wrapper cannot be accidentally
+    // trashed by the reset logic.
+    if (this.resultsErrorDetail) {
+      if (detail) {
+        this.resultsErrorDetail.textContent = detail;
+        this.resultsErrorDetail.style.display = '';
+      } else {
+        this.resultsErrorDetail.textContent = '';
+        this.resultsErrorDetail.style.display = 'none';
+      }
     }
     this.resultsErrorState.style.display = '';
     this.queryResults?.setToolbarVisible(false);

@@ -483,6 +483,14 @@
                 </div>
                 <h5 class="text-muted mb-2">Something went wrong</h5>
                 <p id="results-error-message" class="text-muted mb-0"></p>
+                <!-- Optional server-side detail block, populated at
+                     runtime by QueryEditor._renderSelectLaneError
+                     when classifyError returns a non-null detail.
+                     A dedicated element (not a generic querySelector
+                     on <pre>) means a future template addition of an
+                     unrelated <pre> cannot be trashed by the reset
+                     logic. -->
+                <pre id="results-error-detail" class="mt-3 mb-0 small text-muted text-center" style="white-space: pre-wrap; display: none;"></pre>
             </div>
 
             <!-- Results Section -->
@@ -615,8 +623,8 @@
                  but kept as a fallback in case the tab is ever shown without
                  loaded content. -->
             <div id="data-placeholder" class="text-center text-muted py-5 fst-italic">
-                Use the Search tab to select a notice; search results will
-                appear here.
+                Use the Inspect tab to select a notice; its graph
+                will appear here.
             </div>
 
             <!-- Friendly error state — lives at tab level (outside the
@@ -629,6 +637,9 @@
                 </div>
                 <h5 class="text-muted mb-2">Something went wrong</h5>
                 <p id="data-error-message" class="text-muted mb-0"></p>
+                <!-- Optional server-side detail block; see
+                     #results-error-detail for rationale. -->
+                <pre id="data-error-detail" class="mt-3 mb-0 small text-muted text-center" style="white-space: pre-wrap; display: none;"></pre>
             </div>
         </div> <!-- Close app-explorer div -->
 

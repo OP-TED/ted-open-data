@@ -34,8 +34,29 @@ const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
 
 document.addEventListener('DOMContentLoaded', function () {
+  // Fail loudly if the Bootstrap JS bundle did not load. Tabs,
+  // dropdowns, tooltips, collapse panels, carousel and toasts all
+  // depend on the global `bootstrap` object; losing it (CDN block,
+  // CSP violation, corporate firewall) makes every subsequent
+  // `new bootstrap.Tab(...)` throw synchronously inside a
+  // constructor, and the user sees a half-dead page with nothing
+  // pointing at the cause. Surfacing a single top-of-page banner
+  // here turns an invisible cascade of errors into one clear
+  // signal.
+  if (typeof bootstrap === 'undefined') {
+    const banner = document.createElement('div');
+    banner.className = 'alert alert-danger m-0 rounded-0';
+    banner.setAttribute('role', 'alert');
+    banner.textContent =
+      'A required script failed to load (Bootstrap). The app will not work correctly. ' +
+      'Check your network connection and content-security policy, then reload the page.';
+    document.body.insertAdjacentElement('afterbegin', banner);
+    console.error('[script] bootstrap global is undefined; aborting app initialisation.');
+    return;
+  }
+
   const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const sparqlEndpoint = isDevelopment 
+  const sparqlEndpoint = isDevelopment
     ? `http://localhost:8080/proxy?url=${encodeURIComponent(SPARQL_ENDPOINT)}`
     : SPARQL_ENDPOINT;
 

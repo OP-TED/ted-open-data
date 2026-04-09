@@ -69,6 +69,7 @@ class DataView {
     // the message slot and toggle the wrapper.
     this.errorStateEl = document.getElementById('data-error-state');
     this.errorMessageEl = document.getElementById('data-error-message');
+    this.errorDetailEl = document.getElementById('data-error-detail');
     this.placeholderEl = document.getElementById('data-placeholder');
     this.treeContainer = document.getElementById('tree-container');
     this.turtleContainer = document.getElementById('turtle-container');
@@ -92,12 +93,22 @@ class DataView {
   }
 
   _bindEvents() {
-    document.querySelectorAll('input[name="view-mode"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
+    // Delegate the view-mode change event on a stable ancestor
+    // (#data-view-mode-toggle) rather than querying every radio at
+    // construction time. The direct-query approach returned an
+    // empty NodeList if DataView was constructed before the radios
+    // were in the DOM (DOM-ready race), silently breaking view
+    // switching without any signal.
+    const viewModeToggle = document.getElementById('data-view-mode-toggle');
+    if (viewModeToggle) {
+      viewModeToggle.addEventListener('change', (e) => {
+        if (e.target?.name !== 'view-mode') return;
         this.viewMode = e.target.value;
         this._showCurrentView();
       });
-    });
+    } else {
+      console.warn('[DataView] #data-view-mode-toggle missing — view switching disabled.');
+    }
 
     // "Pick a random notice" link in the not-found state. Routes to
     // the same lucky flow as the Inspect tab's link (`#lucky-link`)
@@ -301,13 +312,18 @@ class DataView {
       // timeout advice differs between the two).
       const { friendly, detail } = classifyError(error, 'graph');
       this.errorMessageEl.textContent = friendly;
-      this.errorStateEl.querySelector('pre')?.remove();
-      if (detail) {
-        const pre = document.createElement('pre');
-        pre.className = 'mt-3 mb-0 small text-muted text-center';
-        pre.style.whiteSpace = 'pre-wrap';
-        pre.textContent = detail;
-        this.errorStateEl.appendChild(pre);
+      // Populate the dedicated detail slot (rather than generic
+      // querySelector('pre')?.remove() + appendChild) so a future
+      // template addition of an unrelated <pre> cannot be trashed
+      // by the reset.
+      if (this.errorDetailEl) {
+        if (detail) {
+          this.errorDetailEl.textContent = detail;
+          this.errorDetailEl.style.display = '';
+        } else {
+          this.errorDetailEl.textContent = '';
+          this.errorDetailEl.style.display = 'none';
+        }
       }
       this.errorStateEl.style.display = '';
       this._clearViews();

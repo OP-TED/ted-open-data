@@ -76,6 +76,19 @@ class SearchPanel {
       e.preventDefault();
       this._lucky();
     });
+
+    // Close button on the URL-load error banner. Bound once here
+    // (rather than inside _showUrlLoadError with { once: true })
+    // so repeated invalid shared links do not stack listeners on
+    // the same button. The banner is shown and hidden by toggling
+    // the display style.
+    const urlLoadErrorCloseBtn = document.getElementById('url-load-error-close');
+    const urlLoadErrorEl = document.getElementById('url-load-error');
+    if (urlLoadErrorCloseBtn && urlLoadErrorEl) {
+      urlLoadErrorCloseBtn.addEventListener('click', () => {
+        urlLoadErrorEl.style.display = 'none';
+      });
+    }
   }
 
   _listen() {
@@ -86,12 +99,27 @@ class SearchPanel {
 
   _search() {
     const value = this.input.value.trim();
-    if (!value) return;
+    if (!value) {
+      // Empty input is an intentional no-op, not an error — don't
+      // bother the user. But wipe any stale validation error so the
+      // next real search starts clean.
+      this._clearLuckyError();
+      return;
+    }
     const facet = createPublicationNumberFacet(value);
-    if (!facet) return;
-    // Clear any lingering lucky-link error from a previous failed
-    // random pick — otherwise the red text stays under the input
-    // indefinitely once shown.
+    if (!facet) {
+      // Publication number does not match the expected shape. Tell
+      // the user inline instead of silently doing nothing — a click
+      // on the search button that produces zero visible response is
+      // a confusing bug to chase.
+      this._showLuckyError(
+        'That does not look like a TED publication number. Expected format: 123456-2024.',
+      );
+      return;
+    }
+    // Clear any lingering error (lucky-link or inline validation)
+    // from a previous failed run — otherwise the red text stays
+    // under the input indefinitely once shown.
     this._clearLuckyError();
     // Stage 8 — drop the canned CONSTRUCT into the SPARQL editor as a
     // side effect, so the Query Editor tab shows the underlying query
@@ -100,8 +128,11 @@ class SearchPanel {
     try {
       const query = getQuery(facet);
       if (query) this.loadEditorText(query);
-    } catch {
-      // Ignore — editor reflection is best-effort, never blocks the search.
+    } catch (err) {
+      // Editor reflection is best-effort — a failure here must not
+      // block the search — but log a warning so a broken editor
+      // wiring is visible in the console instead of silently gone.
+      console.warn('[SearchPanel] editor reflection failed on _search:', err);
     }
     this.controller.search(facet);
     // Stage 12 — graph lane wins, hide the SELECT lane's result tab.
@@ -242,8 +273,10 @@ class SearchPanel {
       try {
         const query = getQuery(facet);
         if (query) this.loadEditorText(query);
-      } catch {
-        // Best-effort.
+      } catch (err) {
+        // Best-effort — log for diagnostics, never block history
+        // selection.
+        console.warn('[SearchPanel] editor reflection failed on history click:', err);
       }
       // Clear any lingering lucky-link error from a previous run.
       this._clearLuckyError();
@@ -331,8 +364,10 @@ class SearchPanel {
       try {
         const query = getQuery(facet);
         if (query) this.loadEditorText(query);
-      } catch {
-        // Best-effort — never break URL loading on editor reflection.
+      } catch (err) {
+        // Best-effort — never break URL loading on editor
+        // reflection, but log so a regression is visible.
+        console.warn('[SearchPanel] editor reflection failed on URL load:', err);
       }
       // Stage 12 — URL loading is always a graph lane gesture.
       this.setActiveResultTab('graph');
@@ -357,15 +392,18 @@ class SearchPanel {
   _showUrlLoadError(reason) {
     const el = document.getElementById('url-load-error');
     const textEl = document.getElementById('url-load-error-text');
-    const closeBtn = document.getElementById('url-load-error-close');
-    if (!el || !textEl) return;
+    if (!el || !textEl) {
+      console.error('[SearchPanel] url-load-error DOM missing; cannot surface reason:', reason);
+      return;
+    }
 
     const message = reason === 'parse'
       ? 'The shared link could not be loaded: the facet parameter is not valid JSON.'
       : 'The shared link could not be loaded: the facet does not match any supported shape.';
     textEl.textContent = message;
     el.style.display = '';
-    closeBtn?.addEventListener('click', () => { el.style.display = 'none'; }, { once: true });
+    // Close handler is wired once in _bindEvents; we only toggle
+    // visibility here.
   }
 }
 

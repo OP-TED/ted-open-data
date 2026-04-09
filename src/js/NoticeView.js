@@ -391,13 +391,16 @@ class NoticeView {
       // reflects "what's currently being looked at", matching the lucky
       // link and History dropdown behaviour.
       this.setSearchInput(notice.publicationNumber);
-      // Stage 8 — also drop the canned CONSTRUCT for this sibling into
-      // the SPARQL editor as a side effect, mirroring SearchPanel._search.
+      // Stage 8 — also drop the canned CONSTRUCT for this sibling
+      // into the SPARQL editor as a side effect, mirroring
+      // SearchPanel._search.
       try {
         const query = getQuery(facet);
         if (query) this.loadEditorText(query);
-      } catch {
-        // Best-effort — never block the navigation on editor reflection.
+      } catch (err) {
+        // Best-effort — never block the navigation on editor
+        // reflection, but log so a regression is visible.
+        console.warn('[NoticeView] editor reflection failed on timeline click:', err);
       }
       // Lateral navigation within an already-visible procedure: reset
       // the breadcrumb (we're switching notices) but don't add the
