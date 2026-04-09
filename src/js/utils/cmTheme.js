@@ -12,7 +12,7 @@
  * the Licence.
  */
 
-import {EditorView, HighlightStyle, syntaxHighlighting, tags} from '../vendor/codemirror-bundle.js';
+import {EditorView, HighlightStyle, syntaxHighlighting, tags} from '../../vendor/codemirror-bundle.js';
 
 /**
  * Eclipse-like light theme for the editor chrome (gutters, background, cursor, selection).
