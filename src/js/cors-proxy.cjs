@@ -86,6 +86,17 @@ function applySimulation(req, res) {
     res.status(504).set('Content-Type', 'text/plain').send('Gateway Timeout');
     return true;
   }
+  if (SIMULATE === 'maintenance') {
+    res.status(500).set('Content-Type', 'text/html').send(
+      '<html><head><title>Web Site Under Maintenance</title>' +
+      '<META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">' +
+      '<META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE"></head>' +
+      '<body><div style="font-weight: bold; font-size:18px; font-family: verdana;">' +
+      'The web-site you are currently trying to access is under maintenance at this time. <br/>' +
+      'We are sorry for any inconvenience this might cause.</div></body></html>'
+    );
+    return true;
+  }
   if (SIMULATE === 'network') {
     // Destroy the HTTP response rather than the raw socket.
     // req.socket.destroy() on HTTP/2 or keep-alive connections can

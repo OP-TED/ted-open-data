@@ -188,3 +188,26 @@ test('classifyError prefers error.serverMessage over the raw body extraction', (
   const r = classifyError(e);
   assert.equal(r.detail, 'Pre-extracted friendlier detail');
 });
+
+test('classifyError strips HTML from serverMessage (maintenance page on SELECT lane)', () => {
+  const html =
+    '<html><head><title>Web Site Under Maintenance</title></head>' +
+    '<body><div>The web-site is under maintenance.</div></body></html>';
+  const e = Object.assign(
+    new Error('HTTP error. Status: 500\n' + html),
+    { serverMessage: html },
+  );
+  const r = classifyError(e, 'select');
+  assert.ok(!r.detail.includes('<html>'), 'detail must not contain raw HTML tags');
+  assert.ok(r.detail.includes('maintenance'), 'detail should preserve the human-readable text');
+});
+
+test('classifyError strips HTML from raw body when no serverMessage is set (graph lane)', () => {
+  const html =
+    '<html><head><title>Web Site Under Maintenance</title></head>' +
+    '<body><div>The web-site is under maintenance.</div></body></html>';
+  const e = new Error('HTTP error. Status: 500\n' + html);
+  const r = classifyError(e, 'graph');
+  assert.ok(!r.detail.includes('<html>'), 'detail must not contain raw HTML tags');
+  assert.ok(r.detail.includes('maintenance'), 'detail should preserve the human-readable text');
+});

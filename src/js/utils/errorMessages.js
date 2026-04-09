@@ -87,7 +87,7 @@ export function classifyError(error, lane = 'select') {
   if (status === 400) {
     return {
       friendly: 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.',
-      detail: serverMessage || _extractServerDetail(raw),
+      detail: _sanitiseDetail(serverMessage) || _extractServerDetail(raw),
       action: null,
     };
   }
@@ -98,7 +98,7 @@ export function classifyError(error, lane = 'select') {
   if (status === 413) {
     return {
       friendly: 'The query is too large to send. Try shortening it or splitting it into smaller queries.',
-      detail: serverMessage || _extractServerDetail(raw),
+      detail: _sanitiseDetail(serverMessage) || _extractServerDetail(raw),
       action: null,
     };
   }
@@ -111,7 +111,7 @@ export function classifyError(error, lane = 'select') {
   if (status === 500 || status === 502 || status === 503) {
     return {
       friendly: 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.',
-      detail: serverMessage || _extractServerDetail(raw),
+      detail: _sanitiseDetail(serverMessage) || _extractServerDetail(raw),
       action: null,
     };
   }
@@ -165,6 +165,17 @@ function _extractStatus(raw) {
  * of disappearing.
  * @private
  */
+// Strip HTML tags and collapse whitespace when the body looks like
+// an HTML page (maintenance, reverse-proxy error, etc.).
+function _sanitiseDetail(text) {
+  if (!text) return null;
+  if (/^\s*<(!DOCTYPE|html|head)/i.test(text)) {
+    const clean = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return clean || null;
+  }
+  return text;
+}
+
 function _extractServerDetail(raw) {
   const virtuoso = raw.match(/Virtuoso\s+\d+\s+Error[\s\S]*/);
   if (virtuoso) return virtuoso[0].trim();
@@ -172,5 +183,5 @@ function _extractServerDetail(raw) {
   // Strip the "HTTP error. Status: NNN" prefix (optionally followed by
   // a newline) and return whatever remains, if anything.
   const stripped = raw.replace(/^HTTP error\.\s*Status:\s*\d+\s*\n?/, '').trim();
-  return stripped || null;
+  return _sanitiseDetail(stripped);
 }
