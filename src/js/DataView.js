@@ -45,6 +45,7 @@ import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
 import { getEndpoint } from './services/sparqlService.js';
+import { buildSparqlBody } from './sparqlRequest.js';
 import { showToast } from './toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
@@ -199,7 +200,12 @@ class DataView {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': format,
           },
-          body: `query=${encodeURIComponent(query)}`,
+          // Use buildSparqlBody so the download honours the same
+          // Options panel settings (timeout, strict, debug, report,
+          // default-graph-uri) that the original execution used.
+          // The format parameter is overridden to the requested RDF
+          // serialisation rather than the default JSON.
+          body: buildSparqlBody(query, format),
         });
         if (!response.ok) {
           const detail = await response.text().catch(() => '');

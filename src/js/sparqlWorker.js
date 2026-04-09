@@ -55,11 +55,13 @@ self.onmessage = async function(event) {
 
 async function _runSparqlQuery(query, endpoint, options = {}) {
   const controller = new AbortController();
-  // Use the timeout from the Options panel when available; otherwise
-  // fall back to the built-in upper bound.
-  const timeoutMs = options.timeout
-    ? Math.min(Number(options.timeout), SPARQL_CONSTRUCT_TIMEOUT_MS)
-    : SPARQL_CONSTRUCT_TIMEOUT_MS;
+  // Use the timeout from the Options panel when the user has
+  // explicitly set one; otherwise fall back to the built-in
+  // safety net. No clamping — if the user types 120000ms they
+  // know what they are doing, and capping silently at 60s would
+  // abort their query before the endpoint has a chance to finish.
+  const userTimeout = options.timeout ? Number(options.timeout) : 0;
+  const timeoutMs = userTimeout > 0 ? userTimeout : SPARQL_CONSTRUCT_TIMEOUT_MS;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     // Build the POST body with the same options the SELECT path
@@ -93,7 +95,7 @@ async function _runSparqlQuery(query, endpoint, options = {}) {
     return await response.text();
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error(`SPARQL query timed out after ${SPARQL_CONSTRUCT_TIMEOUT_MS}ms`);
+      throw new Error(`SPARQL query timed out after ${timeoutMs}ms`);
     }
     throw err;
   } finally {

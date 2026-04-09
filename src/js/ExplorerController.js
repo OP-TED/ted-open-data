@@ -247,6 +247,14 @@ class ExplorerController extends EventTarget {
     if (!stripped) return null;
     const url = new URL(window.location.href);
     url.searchParams.set('facet', JSON.stringify(stripped));
+    // For query facets, also serialise the SPARQL options so the
+    // recipient sees the same timeout / strict / debug / report /
+    // default-graph-uri the sender used. Notice-number and
+    // named-node facets use a canned query with no user-set
+    // options, so we skip the parameter to keep the URL shorter.
+    if (facet.type === 'query' && this._sparqlOptions && Object.keys(this._sparqlOptions).length) {
+      url.searchParams.set('opts', JSON.stringify(this._sparqlOptions));
+    }
     return url.toString();
   }
 
@@ -262,7 +270,8 @@ class ExplorerController extends EventTarget {
   // banner so the recipient of a broken shared link actually sees the
   // failure instead of a silently blank Inspect tab.
   initFromUrlParams() {
-    const facetParam = new URLSearchParams(window.location.search).get('facet');
+    const params = new URLSearchParams(window.location.search);
+    const facetParam = params.get('facet');
     if (!facetParam) return { status: 'absent' };
 
     let parsed;
@@ -276,13 +285,22 @@ class ExplorerController extends EventTarget {
     const validated = validateFacet(parsed);
     if (!validated) return { status: 'invalid', reason: 'shape' };
 
+    // Read optional SPARQL options that getShareableUrl serialises
+    // for query facets. If absent or malformed, fall back to an
+    // empty object so the query still runs with endpoint defaults.
+    let sparqlOptions = {};
+    const optsParam = params.get('opts');
+    if (optsParam) {
+      try { sparqlOptions = JSON.parse(optsParam); } catch { /* ignore — run with defaults */ }
+    }
+
     // Fire-and-forget the search but attach a .catch so any rejection
     // inside `_executeCurrentQuery` becomes a loud console.error
     // rather than a silent unhandled-promise-rejection at boot.
     // The result object is returned synchronously with `loaded` —
     // the caller (SearchPanel.init) only uses it to decide which
     // UI state to render, not to wait on the query.
-    this.search(validated).catch(err => {
+    this.search(validated, { sparqlOptions }).catch(err => {
       console.error('[ExplorerController] initFromUrlParams search failed:', err);
     });
     return { status: 'loaded' };
