@@ -92,19 +92,7 @@ function getWorker() {
         pending.reject(new Error(`Failed to parse SPARQL response: ${parseError.message}`));
       }
     } else if (type === 'error') {
-      // The worker posts `{message, name}` on error so the name can
-      // round-trip the structured-clone boundary. Rehydrate both
-      // fields here so downstream checks like
-      // `err?.name === 'AbortError'` behave the same whether the
-      // error came from the worker or from a direct fetch.
-      //
-      // Handle the legacy shape (bare string) for defence-in-depth
-      // in case the worker ever falls out of sync.
-      const msg = typeof error === 'string' ? error : (error?.message || 'SPARQL worker error');
-      const name = typeof error === 'object' ? (error?.name || 'Error') : 'Error';
-      const err = new Error(msg);
-      err.name = name;
-      pending.reject(err);
+      pending.reject(_rehydrateWorkerError(error));
     } else {
       // Unknown message type — reject explicitly instead of silently
       // leaking the promise. This guards against worker protocol drift
@@ -243,6 +231,31 @@ function cancelAllSparqlRequests() {
   worker = null;
 }
 
+/**
+ * Rehydrate a structured-clone-boundary error payload from the worker
+ * into a real Error with both `message` and `name` populated.
+ *
+ * The worker posts `{message, name}` on error. Handling the legacy
+ * bare-string shape is defence in depth: if the worker ever falls
+ * out of sync with the main thread, the caller still gets a sensible
+ * Error rather than a silent cast.
+ *
+ * @param {string | {message?: string, name?: string}} payload
+ * @returns {Error}
+ * @private
+ */
+function _rehydrateWorkerError(payload) {
+  const msg = typeof payload === 'string'
+    ? payload
+    : (payload?.message || 'SPARQL worker error');
+  const name = typeof payload === 'object' && payload !== null
+    ? (payload.name || 'Error')
+    : 'Error';
+  const err = new Error(msg);
+  err.name = name;
+  return err;
+}
+
 // Test-only hook: lets tests inspect pending request count and reset
 // the worker between tests. Production code never touches this.
 function __getPendingCountForTesting() {
@@ -261,6 +274,7 @@ export {
   doSPARQL,
   doSPARQLSelect,
   cancelAllSparqlRequests,
+  _rehydrateWorkerError,
   __getPendingCountForTesting,
   __resetWorkerForTesting,
 };

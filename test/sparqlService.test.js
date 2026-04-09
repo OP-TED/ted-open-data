@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 
 import {
   doSPARQL,
+  _rehydrateWorkerError,
   __getPendingCountForTesting,
   __resetWorkerForTesting,
 } from '../src/js/services/sparqlService.js';
@@ -66,4 +67,40 @@ test('doSPARQL handles repeated worker-creation failures without leaking entries
   }
   assert.equal(__getPendingCountForTesting(), 0,
     'no pending entries after 5 failed creations');
+});
+
+// ── _rehydrateWorkerError — structured-clone boundary ────────────
+//
+// The worker posts `{message, name}` so an AbortError can round-trip
+// the structured-clone boundary back into an Error instance with the
+// same `.name`. Without the rehydration, the main thread sees a
+// plain Error and the cancelled-query branch in errorMessages
+// cannot fire.
+
+test('_rehydrateWorkerError preserves name and message from object payload', () => {
+  const err = _rehydrateWorkerError({ message: 'The user aborted a request.', name: 'AbortError' });
+  assert.equal(err.message, 'The user aborted a request.');
+  assert.equal(err.name, 'AbortError');
+  assert.ok(err instanceof Error);
+});
+
+test('_rehydrateWorkerError defaults the name to "Error" when the payload omits it', () => {
+  const err = _rehydrateWorkerError({ message: 'Something exotic' });
+  assert.equal(err.message, 'Something exotic');
+  assert.equal(err.name, 'Error');
+});
+
+test('_rehydrateWorkerError handles the legacy bare-string shape', () => {
+  // Defence in depth: if the worker ever falls out of sync with the
+  // main thread and posts a plain string instead of {message, name},
+  // we still produce a sensible Error rather than crashing.
+  const err = _rehydrateWorkerError('legacy string payload');
+  assert.equal(err.message, 'legacy string payload');
+  assert.equal(err.name, 'Error');
+});
+
+test('_rehydrateWorkerError tolerates a null payload with a generic message', () => {
+  const err = _rehydrateWorkerError(null);
+  assert.equal(err.message, 'SPARQL worker error');
+  assert.equal(err.name, 'Error');
 });
