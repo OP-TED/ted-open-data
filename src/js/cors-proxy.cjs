@@ -87,9 +87,15 @@ function applySimulation(req, res) {
     return true;
   }
   if (SIMULATE === 'network') {
-    // Close the socket without a response — the browser sees a
-    // "Failed to fetch" TypeError from the fetch API.
-    req.socket.destroy();
+    // Destroy the HTTP response rather than the raw socket.
+    // req.socket.destroy() on HTTP/2 or keep-alive connections can
+    // manifest as a stall rather than the clean ECONNRESET /
+    // `Failed to fetch` we want to test against. res.destroy(err)
+    // produces a consistent abort the browser can recognise, and
+    // the log line makes the simulation visible to anyone paging
+    // through the proxy output trying to understand a dev issue.
+    console.log('[dev] SIMULATE=network: destroying response');
+    res.destroy(new Error('simulated network failure'));
     return true;
   }
   return false;
