@@ -12,7 +12,9 @@
  * the Licence.
  */
 
+import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
+import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
 import { showToast } from './toast.js';
 
 /**
@@ -34,18 +36,6 @@ export class QueryResults {
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
 
     this.initEventListeners();
-  }
-
-  /**
-   * Store the raw response data for reference (legacy API — the
-   * download path now re-fetches from the endpoint so this cache
-   * is only kept for potential future uses).
-   * @param {string} data - The raw response text.
-   * @param {string} contentType - The response content type.
-   */
-  setResponseData(data, contentType) {
-    this.lastResponseData = data;
-    this.lastResponseType = contentType;
   }
 
   /**
@@ -75,14 +65,25 @@ export class QueryResults {
   generateUrl() {
     const query = this.queryEditor.getQuery();
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
-    const format = "application/sparql-results+json";
-    const defaultGraphUri = document.getElementById("default-graph-uri").value;
-    const timeout = document.getElementById("timeout").value || 30000;
-    const strict = document.getElementById("strict").checked ? "true" : "false";
-    const debug = document.getElementById("debug").checked ? "true" : "false";
-    const report = document.getElementById("report").checked ? "true" : "false";
+    // Always emits a JSON URL — that's the most machine-friendly
+    // format for Excel, Power BI and custom apps. The `originalSparqlEndpoint`
+    // field is the public endpoint (not the dev-mode /proxy wrapper),
+    // so the copied URL is usable outside the app.
+    return buildSparqlUrl(this.originalSparqlEndpoint, minifiedQuery);
+  }
 
-    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
+  /**
+   * Show or hide the slim results toolbar (the strip above the table
+   * that holds the hint, the Copy endpoint URL button and the
+   * Download as… menu). Centralised here so every lane that needs to
+   * toggle it (displayJsonResults, displayTextResults, the SELECT
+   * submit paths in QueryEditor) goes through one place.
+   * @param {boolean} visible
+   */
+  setToolbarVisible(visible) {
+    if (!this.copyUrlAlert) return;
+    this.copyUrlAlert.classList.toggle('d-none', !visible);
+    this.copyUrlAlert.classList.toggle('d-flex', visible);
   }
 
   /**
@@ -116,10 +117,10 @@ export class QueryResults {
       });
 
       this.resultsDiv.appendChild(table);
-      this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
+      this.setToolbarVisible(true);
     } else {
       this.resultsDiv.textContent = "No results found.";
-      this.copyUrlAlert.classList.add('d-none'); this.copyUrlAlert.classList.remove('d-flex');
+      this.setToolbarVisible(false);
     }
   }
 
@@ -147,7 +148,7 @@ export class QueryResults {
     }
 
     this.resultsDiv.appendChild(pre);
-    this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
+    this.setToolbarVisible(true);
   }
 
   /**
@@ -197,17 +198,7 @@ export class QueryResults {
     // Build the same POST body the editor uses, but with the chosen
     // format instead of the always-JSON one.
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
-    const defaultGraphUri = document.getElementById("default-graph-uri").value;
-    const timeout = document.getElementById("timeout").value;
-    const strict = document.getElementById("strict").checked ? "true" : "false";
-    const debug = document.getElementById("debug").checked ? "true" : "false";
-    const report = document.getElementById("report").checked ? "true" : "false";
-    const body = `query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}`
-      + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
-      + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
-      + `&strict=${encodeURIComponent(strict)}`
-      + `&debug=${encodeURIComponent(debug)}`
-      + `&report=${encodeURIComponent(report)}`;
+    const body = buildSparqlBody(minifiedQuery, format);
 
     try {
       const response = await fetch(this.queryEditor.sparqlEndpoint, {
@@ -227,31 +218,7 @@ export class QueryResults {
         return;
       }
       const text = await response.text();
-
-      // Force the browser to treat this as a file download by using
-      // application/octet-stream in the Blob — regardless of what the
-      // endpoint returned (HTML, XML, CSV, JSON), an opaque octet
-      // stream + a download attribute makes every browser save
-      // rather than render.
-      const blob = new Blob([text], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `query-results${QueryResults._extensionFor(format)}`;
-      document.body.appendChild(link);
-      link.click();
-      // Revoke the blob URL AFTER the browser has had a chance to
-      // hand the download off to the OS. Revoking synchronously
-      // (as the previous version did) races with Chromium's async
-      // download pipeline: the browser reads the blob URL a moment
-      // after .click() returns, and if we've already revoked it,
-      // it falls back to saving the file with a GUID filename and
-      // no extension. A 100ms defer is generous enough for every
-      // browser we care about.
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      triggerBlobDownload(text, `query-results${QueryResults._extensionFor(format)}`);
     } catch (error) {
       console.error('Download failed:', error);
       const { friendly } = classifyError(error, 'select');

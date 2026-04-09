@@ -26,6 +26,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 import {epoCompletionSource, getEpoData} from './epo-completion.js';
 import {classifyError} from './errorMessages.js';
+import {buildSparqlBody} from './sparqlRequest.js';
 
 /**
  * Class representing the Query Editor.
@@ -41,9 +42,6 @@ export class QueryEditor {
     this.runQueryButton = document.getElementById('runQueryButton');
     this.queryForm = document.getElementById('queryForm');
     this.resultsDiv = document.getElementById("results");
-    this.copyUrlButton = document.getElementById('copy-url-button');
-    this.copyUrlAlert = document.getElementById('copy-url-alert');
-    this.alertMessage = document.getElementById('alert-message');
     // Friendly error state on the Data tab (SELECT lane). Replaces the
     // old red alert-danger banner with an empty-state view. The
     // container wraps icon + title + message; we populate only the
@@ -197,26 +195,6 @@ export class QueryEditor {
 
   /**
    * Replace the editor's content with the given text — Stage 8.
-   * Used by the Search tab when it generates a canned CONSTRUCT for a
-   * notice lookup: the query is shown in the editor (so the user can
-   * see, edit, and learn from it) while the actual execution is still
-   * routed via the controller's notice-number facet path so the title,
-   * procedure timeline, and history dropdown stay populated.
-   *
-   * Does NOT trigger Run. Callers that want to also run after loading
-   * the text should follow up with a separate call to onSubmit (or
-   * just dispatch a submit event on the form).
-   *
-   * @param {string} text
-   */
-  setQueryText(text) {
-    if (!this.editor || typeof text !== 'string') return;
-    this.editor.dispatch({
-      changes: { from: 0, to: this.editor.state.doc.length, insert: text },
-    });
-  }
-
-  /**
    * Get the current query text.
    * @returns {string} - The current query text.
    */
@@ -225,22 +203,39 @@ export class QueryEditor {
   }
 
   /**
-   * Set the query text.
+   * Replace the editor content with the given text.
+   *
+   * Used by:
+   *   - the Query Library to load a ready-made query ("Customise" /
+   *     "Try this query" buttons), and
+   *   - the Inspect tab when it generates a canned CONSTRUCT for a
+   *     notice lookup: the query is reflected in the editor (so the
+   *     user can see, edit, and learn from it) while the actual
+   *     execution is still routed via the controller's notice-number
+   *     facet path so the title, procedure timeline, and history
+   *     dropdown stay populated.
+   *
+   * Does NOT trigger Run. Callers that want to also run after loading
+   * the text should follow up with a separate call to onSubmit (or
+   * just dispatch a submit event on the form).
+   *
    * @param {string} text - The query text to set.
    */
   setValue(text) {
+    if (!this.editor || typeof text !== 'string') return;
     this.editor.dispatch({
-      changes: { from: 0, to: this.editor.state.doc.length, insert: text }
+      changes: { from: 0, to: this.editor.state.doc.length, insert: text },
     });
   }
 
   /**
    * Initialize event listeners.
-   * Sets up event listeners for form submission, copy URL button, and stop button.
+   * Sets up event listeners for form submission and the stop button.
+   * The Copy URL button is owned by `QueryResults`, which binds its
+   * own handler — we no longer double-bind here.
    */
   initEventListeners() {
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
-    this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
     this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
   }
 
@@ -307,28 +302,26 @@ export class QueryEditor {
 
         if (queryType === 'CONSTRUCT' || queryType === 'DESCRIBE') {
           // Hand the raw query to the ExplorerController. It re-runs
-          // the query through its own worker-backed sparqlService, parses
-          // the Turtle into quads, and emits results-changed for DataView
-          // to render. Then we switch tabs and enforce Stage 12 mutual
-          // exclusion (hide the SELECT lane's tab — graph lane wins).
-          try {
-            await this.explorerController.search({ type: 'query', query: queryText });
-            this.setActiveResultTab('graph');
-            this.showExplorerTab();
-          } catch (error) {
-            // Defensive: ExplorerController already catches worker
-            // errors internally and routes them to DataView's graph
-            // lane error state, so this branch is mostly unreachable.
-            // If something slips through, log it rather than leaving
-            // the user with no feedback.
-            console.error('Explorer controller error:', error);
-          }
+          // the query through its own worker-backed sparqlService,
+          // parses the Turtle into quads, and emits results-changed
+          // for DataView to render — including the friendly error
+          // state on failure. Then we switch tabs and enforce Stage
+          // 12 mutual exclusion (hide the SELECT lane's tab — graph
+          // lane wins).
+          //
+          // ExplorerController.search() catches worker / network
+          // errors internally and does not re-throw, so we do not
+          // need a try/catch here. If that contract ever changes
+          // the unhandled rejection will surface the regression
+          // immediately rather than being silently logged.
+          await this.explorerController.search({ type: 'query', query: queryText });
+          this.setActiveResultTab('graph');
+          this.showExplorerTab();
           return;
         }
       }
 
       // ── SELECT / ASK path ────────────────────────────────────────
-      this.queryResults.setResponseData(null, null);
       const progressBar = document.querySelector('.progress-bar');
       const submitButton = this.queryForm.querySelector('button[type="submit"]');
       const queryTimer = document.getElementById('query-timer');
@@ -347,9 +340,10 @@ export class QueryEditor {
 
       // Reset the results toolbar and the friendly error state to a
       // clean start before the new run. The toolbar is revealed on
-      // success via QueryResults.displayJsonResults; the error state
-      // only appears if the fetch or rendering fails.
-      this.copyUrlAlert.classList.add('d-none');
+      // success inside QueryResults.displayJsonResults /
+      // displayTextResults; the error state only appears if the
+      // fetch or rendering fails.
+      this.queryResults?.setToolbarVisible(false);
       this.resultsErrorState.style.display = 'none';
       this.resultsErrorMessage.textContent = '';
       this.resultsDiv.innerHTML = '';
@@ -361,19 +355,7 @@ export class QueryEditor {
         // (drops language tags, unwraps quoted literals, formats dates).
         // Format choice for export has moved to the Data tab's
         // "Download as…" menu and no longer affects what the editor runs.
-        const format = "application/sparql-results+json";
-        const defaultGraphUri = document.getElementById("default-graph-uri").value;
-        const timeout = document.getElementById("timeout").value;
-        const strict = document.getElementById("strict").checked ? "true" : "false";
-        const debug = document.getElementById("debug").checked ? "true" : "false";
-        const report = document.getElementById("report").checked ? "true" : "false";
-
-        const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
-          + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
-          + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
-          + `&strict=${encodeURIComponent(strict)}`
-          + `&debug=${encodeURIComponent(debug)}`
-          + `&report=${encodeURIComponent(report)}`;
+        const body = buildSparqlBody(query);
 
         const response = await fetch(this.sparqlEndpoint, {
           method: "POST",
@@ -389,20 +371,19 @@ export class QueryEditor {
           throw error;
         }
 
-        const contentType = response.headers.get('content-type');
         const responseText = await response.text();
-        this.queryResults.setResponseData(responseText, contentType);
 
         // The request is always JSON, but a misconfigured endpoint could
         // still return an unexpected content type — parse defensively.
+        // displayJsonResults / displayTextResults both toggle the
+        // toolbar visibility via setToolbarVisible, so no further
+        // d-none/d-flex management is needed here.
         try {
           const result = JSON.parse(responseText);
           this.queryResults.displayJsonResults(result);
         } catch (parseError) {
           this.queryResults.displayTextResults(responseText, 'text');
         }
-        this.copyUrlAlert.classList.remove('d-none');
-        this.copyUrlAlert.classList.add('d-flex');
 
         // Stage 12 — mutual exclusion: SELECT lane wins. Reveal the
         // SELECT result tab and hide the graph result tab. Only runs
@@ -475,7 +456,7 @@ export class QueryEditor {
       this.resultsErrorState.appendChild(pre);
     }
     this.resultsErrorState.style.display = '';
-    this.copyUrlAlert.classList.add('d-none');
+    this.queryResults?.setToolbarVisible(false);
   }
 
   /**
@@ -486,35 +467,6 @@ export class QueryEditor {
     if (this.abortController) {
       this.abortController.abort();
     }
-  }
-
-  /**
-   * Handle copy URL button click event.
-   * Generates a URL for the current query and copies it to the clipboard.
-   */
-  onCopyUrl() {
-    const query = this.getQuery();
-    const minifiedQuery = this.minifySparqlQuery(query);
-    // Copy URL emits a SPARQL Results JSON URL. Anyone pasting this
-    // into Excel, Power BI, or a custom app gets the same structured
-    // JSON the editor consumes — which is the most machine-friendly
-    // SELECT/ASK format. Format choice for on-disk export lives in
-    // the Data tab's "Download as…" menu, not here.
-    const format = "application/sparql-results+json";
-    const defaultGraphUri = document.getElementById("default-graph-uri").value;
-    const timeout = document.getElementById("timeout").value || 30000;
-    const strict = document.getElementById("strict").checked ? "true" : "false";
-    const debug = document.getElementById("debug").checked ? "true" : "false";
-    const report = document.getElementById("report").checked ? "true" : "false";
-
-    const url = `${this.sparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
-
-    navigator.clipboard.writeText(url).then(() => {
-      const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
-      toast.show();
-    }).catch(err => {
-      console.error('Failed to copy URL:', err);
-    });
   }
 
   /**

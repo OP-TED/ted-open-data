@@ -41,6 +41,7 @@ import {
 } from '../vendor/codemirror-bundle.js';
 import { eclipseHighlightStyle, eclipseTheme } from './cm-theme.js';
 import { copyToClipboard } from './clipboardCopy.js';
+import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
 import { showToast } from './toast.js';
@@ -210,25 +211,7 @@ class DataView {
       : facet.type === 'named-node'
         ? 'resource'
         : 'query-result';
-    // application/octet-stream forces browsers to save the file
-    // instead of opening it inline (RDF/XML and N-Triples would
-    // otherwise render as text in a new tab). The download attribute
-    // provides the real extension.
-    const blob = new Blob([body], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${stem}.${extension}`;
-    document.body.appendChild(a);
-    a.click();
-    // Defer the revoke so Chromium's async download pipeline has a
-    // chance to read the blob URL before we destroy it. Revoking
-    // synchronously after .click() results in files being saved
-    // with a GUID filename and no extension.
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+    triggerBlobDownload(body, `${stem}.${extension}`);
   }
 
   _listen() {

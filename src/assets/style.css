@@ -552,10 +552,6 @@ main {
   width: 100%;
   max-width: 700px;
 }
-.search-hero-prompt {
-  font-size: 1.05rem;
-}
-
 /* Canonical "main prompt" style shared across tabs.
    Every action tab (Inspect, Explore, Customize) has one short
    orienting sentence at the top; they must look identical regardless
@@ -673,7 +669,7 @@ main {
    edges — the toolbar's own horizontal padding is the only
    indentation on this lane. The error banner keeps the toolbar's
    horizontal alignment since it's a message, not data. */
-#query-results #results-error {
+#query-results #results-error-state {
   margin-left: 1rem;
   margin-right: 1rem;
 }

@@ -167,7 +167,7 @@ function bootstrapExplorer(queryEditor) {
   // notice-number facet path through the controller is unchanged; the
   // editor reflection is purely visual so the user can see the query
   // that produced what they are now looking at on the Explore tab.
-  const loadEditorText = (text) => queryEditor?.setQueryText?.(text);
+  const loadEditorText = (text) => queryEditor?.setValue?.(text);
 
   // Stage 12 — mutual exclusion of the two result tabs. Both share the
   // visible label "Query Results"; only one is shown at a time, based
