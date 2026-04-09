@@ -96,4 +96,21 @@ function _shortenEpoResource(uuidAndRest) {
   return typeAndId.slice(0, firstUnderscore) + ' ' + typeAndId.slice(firstUnderscore + 1);
 }
 
-export { ns, resolvePrefix, shortLabel, shrink };
+// Split an ePO resource URI into { type, id } — e.g.
+// ".../id_{uuid}_Lot_LOT-0008" → { type: "Lot", id: "LOT-0008" }.
+// Returns null for non-ePO URIs or URIs without both parts.
+function splitEpoResource(uri) {
+  if (!uri.startsWith(EPO_RESOURCE_PREFIX)) return null;
+  const uuidAndRest = uri.slice(EPO_RESOURCE_PREFIX.length);
+  const uuidEnd = uuidAndRest.indexOf('_');
+  if (uuidEnd === -1) return null;
+  const typeAndId = uuidAndRest.slice(uuidEnd + 1);
+  const firstUnderscore = typeAndId.indexOf('_');
+  if (firstUnderscore === -1) return null;
+  return {
+    type: typeAndId.slice(0, firstUnderscore),
+    id: typeAndId.slice(firstUnderscore + 1),
+  };
+}
+
+export { ns, resolvePrefix, shortLabel, shrink, splitEpoResource };

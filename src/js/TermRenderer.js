@@ -18,11 +18,11 @@
 // The module keeps a reference to the ExplorerController so that default
 // click handlers can navigate without the caller plumbing it through.
 
-import { shortLabel } from './utils/namespaces.js';
+import { shortLabel, splitEpoResource } from './utils/namespaces.js';
 import { isLabelEligible, requestLabel } from './services/labelService.js';
 
-const BADGE_CLICKABLE = 'badge text-info-emphasis bg-info-subtle tree-type-badge';
-const BADGE_READONLY = 'badge text-secondary-emphasis bg-secondary-subtle tree-type-badge';
+const BADGE_CLICKABLE = 'badge tree-type-badge tree-badge-solid';
+const BADGE_READONLY = 'badge tree-type-badge tree-badge-solid';
 
 let _controller = null;
 
@@ -169,23 +169,36 @@ function renderSubjectBadge(subjectUri, options = {}) {
 
   const term = { termType: 'NamedNode', value: subjectUri };
   const badge = document.createElement(clickable ? 'a' : 'span');
-  badge.className = badgeClass || (clickable ? BADGE_CLICKABLE : BADGE_READONLY);
   badge.title = subjectUri;
-  badge.textContent = shortLabel(subjectUri);
+
+  const parts = splitEpoResource(subjectUri);
+  if (parts) {
+    // Split badge: type (left, grey) + identifier (right, blue).
+    badge.className = 'split-badge' + (clickable ? ' split-badge-clickable' : '');
+
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 'split-badge-type';
+    typeSpan.textContent = parts.type;
+
+    const idSpan = document.createElement('span');
+    idSpan.className = 'split-badge-id';
+    idSpan.textContent = parts.id;
+
+    badge.appendChild(typeSpan);
+    badge.appendChild(idSpan);
+  } else {
+    badge.className = badgeClass || (clickable ? BADGE_CLICKABLE : BADGE_READONLY);
+    badge.textContent = shortLabel(subjectUri);
+    if (isLabelEligible(subjectUri)) {
+      requestLabel(subjectUri, (label) => { if (label) badge.textContent = label; });
+    }
+  }
 
   if (clickable) {
-    // Only assign href when the URI has a safe http(s) scheme; see
-    // _isNavigableHref rationale in _renderNamedNode above.
     if (_isNavigableHref(subjectUri)) {
       badge.href = subjectUri;
     }
     _attachNavigationHandler(badge, term, /* clickable */ true, onClick);
-  }
-
-  if (isLabelEligible(subjectUri)) {
-    requestLabel(subjectUri, (label) => {
-      if (label) badge.textContent = label;
-    });
   }
 
   return badge;

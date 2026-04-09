@@ -823,6 +823,51 @@ main {
   text-decoration: none !important;
 }
 
+/* Split badge — two-tone pill with border */
+.split-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  margin-left: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  text-decoration: none !important;
+  line-height: 1;
+  border: 1px solid #6c757d;
+}
+.split-badge-type {
+  padding: 0.25em 0.6em;
+  background-color: #6c757d;
+  color: #fff;
+}
+.split-badge-id {
+  padding: 0.25em 0.6em;
+  background-color: #fff;
+  color: #2a00ff;
+}
+.split-badge-clickable {
+  cursor: pointer;
+}
+.split-badge-clickable:hover .split-badge-type {
+  background-color: var(--ted-primary, #2c862d);
+}
+.split-badge-clickable:hover .split-badge-id {
+  background-color: #fff;
+  color: var(--ted-primary, #2c862d);
+}
+
+/* Solid badge for non-ePO URIs */
+.tree-badge-solid {
+  background-color: #6c757d;
+  color: #fff;
+}
+.tree-badge-solid:hover {
+  background-color: var(--ted-primary, #2c862d);
+  color: #fff;
+}
+
 .tree-node .predicate { color: #0d6efd; }
 .tree-node .literal { color: #2a00ff; }
 .tree-node .datatype { font-size: 0.75em; opacity: 0.6; margin-left: 2px; }
