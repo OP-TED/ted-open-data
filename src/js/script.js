@@ -145,7 +145,16 @@ SELECT ?earliestDate ?latestDate WHERE {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `query=${encodeURIComponent(datePeriodQuery)}&format=${encodeURIComponent('application/sparql-results+json')}`
   })
-    .then(response => response.json())
+    .then(response => {
+      // Check `response.ok` explicitly — otherwise a 500 HTML
+      // error page would flow into response.json() and throw a
+      // SyntaxError that was previously swallowed by the empty
+      // .catch() below.
+      if (!response.ok) {
+        throw new Error(`HTTP error. Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then(data => {
       const bindings = data.results?.bindings?.[0];
       if (bindings?.earliestDate?.value && bindings?.latestDate?.value) {
@@ -157,11 +166,18 @@ SELECT ?earliestDate ?latestDate WHERE {
         document.getElementById('data-period').textContent =
           `Data period: ${fmt(bindings.earliestDate.value)} to ${fmt(bindings.latestDate.value)}`;
         const infoIcon = document.getElementById('data-period-info');
-        infoIcon.style.display = 'inline';
-        bootstrap.Tooltip.getOrCreateInstance(infoIcon);
+        if (infoIcon) {
+          infoIcon.style.display = 'inline';
+          bootstrap.Tooltip.getOrCreateInstance(infoIcon);
+        }
       }
     })
-    .catch(() => {});
+    .catch(err => {
+      // Log the failure so a developer can see why the footer is
+      // missing its data-period label. Users get graceful
+      // degradation — the footer slot just stays empty.
+      console.warn('[script] Failed to load data period for footer:', err);
+    });
 
 });
 

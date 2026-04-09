@@ -12,6 +12,7 @@
  * the Licence.
  */
 
+import { copyToClipboard } from './clipboardCopy.js';
 import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
 import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
@@ -153,22 +154,30 @@ export class QueryResults {
 
   /**
    * Handle copy URL button click event.
-   * Generates a URL for the current query and copies it to the clipboard.
+   * Generates a URL for the current query and copies it to the
+   * clipboard. Uses the shared `copyToClipboard` helper so insecure
+   * contexts (non-HTTPS, older browsers) get the execCommand
+   * fallback instead of a synchronous throw, and a real failure
+   * surfaces via the shared toast instead of a silent
+   * console.error.
    */
-  onCopyUrl() {
+  async onCopyUrl() {
     const url = this.generateUrl();
-    navigator.clipboard.writeText(url).then(() => {
-      // Populate the shared toast with a SELECT-lane-specific
-      // explanation: this URL is a JSON endpoint, consumable by
-      // Excel / Power BI / any HTTP client.
-      document.getElementById('copyUrlToastTitle').textContent = 'Query URL copied';
-      document.getElementById('copyUrlToastBody').textContent =
-        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.';
-      const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
-      toast.show();
-    }).catch(err => {
-      console.error('Failed to copy URL:', err);
-    });
+    const copied = await copyToClipboard(url);
+    if (copied) {
+      // SELECT-lane specific success copy: the URL is a JSON
+      // endpoint, consumable by Excel / Power BI / any HTTP client.
+      showToast(
+        'Query URL copied',
+        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.',
+      );
+    } else {
+      showToast(
+        'Copy failed',
+        'Could not copy the URL to the clipboard. Please copy it manually from the address bar after clicking Run Query.',
+        { variant: 'danger' },
+      );
+    }
   }
 
   /**

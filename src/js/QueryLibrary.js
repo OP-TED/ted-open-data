@@ -96,8 +96,13 @@ export class QueryLibrary {
    */
   async loadQueries() {
     try {
-      // Fetch the YAML file containing the queries
+      // Fetch the YAML file containing the queries. Check
+      // response.ok explicitly — otherwise a 404 HTML body flows
+      // into yaml.load() and throws an opaque parse error.
       const response = await fetch(`${this.remoteQueriesUrl}index.yaml`);
+      if (!response.ok) {
+        throw new Error(`HTTP error. Status: ${response.status}`);
+      }
       const text = await response.text();
       const data = yaml.load(text);
       const categories = new Map();
@@ -177,8 +182,48 @@ export class QueryLibrary {
 
       this.queries = data.queries;
     } catch (error) {
-      console.error('Failed to load queries:', error);
+      console.error('[QueryLibrary] Failed to load queries:', error);
+      this._renderLoadError();
     }
+  }
+
+  /**
+   * Render an inline error state inside the (empty) accordion when
+   * the initial loadQueries fetch fails. Without this, a failed
+   * load leaves a silently blank library with no explanation —
+   * users assume the tab is broken and bounce. The retry button
+   * re-runs loadQueries so transient failures are recoverable
+   * without a page reload.
+   * @private
+   */
+  _renderLoadError() {
+    if (!this.queryAccordion) return;
+    this.queryAccordion.replaceChildren();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-muted small p-3';
+
+    const title = document.createElement('p');
+    title.className = 'mb-2';
+    title.textContent = 'Could not load the query library.';
+    wrapper.appendChild(title);
+
+    const hint = document.createElement('p');
+    hint.className = 'mb-2';
+    hint.textContent = 'Please check your connection and try again.';
+    wrapper.appendChild(hint);
+
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'btn btn-sm btn-outline-secondary';
+    retry.textContent = 'Retry';
+    retry.addEventListener('click', () => {
+      this.queryAccordion.replaceChildren();
+      this.loadQueries();
+    });
+    wrapper.appendChild(retry);
+
+    this.queryAccordion.appendChild(wrapper);
   }
 
   /**
