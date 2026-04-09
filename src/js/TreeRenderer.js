@@ -100,8 +100,9 @@ class TreeRenderer {
     card.className = 'tree-card';
     card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate));
 
-    // Root cards render their body eagerly so the tree is immediately visible.
-    // Nested cards defer body creation until first expand (lazy render).
+    // Root cards render their body eagerly so the tree is
+    // immediately visible. Nested cards defer body creation until
+    // first expand (lazy render).
     const startExpanded = !incomingPredicate;
     const toggle = card.querySelector('.tree-toggle');
     const buildBody = () => this._buildCardBody(predicates, branchAncestors);
@@ -112,17 +113,29 @@ class TreeRenderer {
       card.appendChild(body);
     }
     toggle.textContent = startExpanded ? '▼' : '▶';
+    toggle.setAttribute('aria-expanded', String(startExpanded));
 
-    toggle.addEventListener('click', () => {
+    const toggleBody = () => {
       if (!body) {
         body = buildBody();
         card.appendChild(body);
         toggle.textContent = '▼';
+        toggle.setAttribute('aria-expanded', 'true');
         return;
       }
       const collapsed = body.style.display === 'none';
       body.style.display = collapsed ? '' : 'none';
       toggle.textContent = collapsed ? '▼' : '▶';
+      toggle.setAttribute('aria-expanded', String(collapsed));
+    };
+
+    toggle.addEventListener('click', toggleBody);
+    // Keyboard activation for screen-reader and keyboard-only users.
+    // Space and Enter are the canonical keys for role="button".
+    toggle.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      toggleBody();
     });
 
     fragment.appendChild(card);
@@ -144,6 +157,9 @@ class TreeRenderer {
     const toggle = document.createElement('span');
     toggle.className = 'tree-toggle';
     toggle.textContent = '▼';
+    toggle.setAttribute('role', 'button');
+    toggle.setAttribute('tabindex', '0');
+    toggle.setAttribute('aria-label', 'Toggle card');
     header.appendChild(toggle);
     header.appendChild(document.createTextNode(' '));
 

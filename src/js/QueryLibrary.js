@@ -84,6 +84,16 @@ export class QueryLibrary {
    */
   initEventListeners() {
     this.queryAccordion.addEventListener('click', this.onQueryClick.bind(this));
+    // Keyboard selection for the query items. Enter and Space are
+    // the canonical activation keys for role="button" elements.
+    // Space must preventDefault or the browser scrolls the page.
+    this.queryAccordion.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const item = event.target.closest('.list-group-item');
+      if (!item) return;
+      event.preventDefault();
+      this.onQueryClick(event);
+    });
     this.tryQueryButton.addEventListener('click', this.onTryQuery.bind(this));
     this.customiseQueryButton?.addEventListener('click', this.onCustomise.bind(this));
   }
@@ -159,9 +169,17 @@ export class QueryLibrary {
           li.className = 'list-group-item list-group-item-action query-library-item';
           li.dataset.queryTitle = query.title;
           li.dataset.queryFile = query.sparql;
+          // Accessibility: the items look and behave like buttons
+          // but the semantic element is <li> (they live in an
+          // accordion list). Expose them as buttons to assistive
+          // tech and make them reachable via keyboard.
+          li.setAttribute('role', 'button');
+          li.setAttribute('tabindex', '0');
+          li.setAttribute('aria-label', `Select query: ${query.title}`);
 
           const icon = document.createElement('i');
           icon.className = 'bi bi-file-earmark-code query-library-item-icon';
+          icon.setAttribute('aria-hidden', 'true');
 
           const label = document.createElement('span');
           label.textContent = query.title;

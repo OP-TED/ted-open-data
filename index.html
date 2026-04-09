@@ -127,7 +127,7 @@
              existing button IDs (lookup-notice, try-query-library,
              start-tour) so HomeTab.js wires them up unchanged. -->
         <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
-            <div id="homeCarousel" class="carousel slide home-carousel" data-bs-ride="false" data-bs-interval="false">
+            <div id="homeCarousel" class="carousel slide home-carousel" data-bs-ride="false" data-bs-interval="false" aria-roledescription="carousel" aria-label="TED Open Data capabilities">
                 <div class="carousel-indicators">
                     <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Welcome"></button>
                     <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="1" aria-label="Look inside a notice"></button>
@@ -227,11 +227,11 @@
                     </div>
                 </div>
 
-                <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev" aria-label="Previous slide">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
+                <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next" aria-label="Next slide">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
@@ -340,7 +340,7 @@
                         </div>
                         <div class="card flex-grow-1 border-0 m-0 p-0 d-none" id="queryCard">
                             <div class="card-body d-flex flex-column p-0">
-                                <div id="querySparql"></div>
+                                <div id="querySparql" role="region" aria-label="SPARQL query preview"></div>
                                 <div id="queryDetails" class="p-3">
                                     <h5 id="queryTitle" class="mt-3">Query Title</h5>
                                     <p id="queryDescription">Select a query to see its description.</p>
@@ -477,7 +477,7 @@
                  graph lane's #data-not-found: centred icon + title +
                  message. The message slot is populated at runtime by
                  QueryEditor.js with a user-readable explanation. -->
-            <div id="results-error-state" class="text-center py-5" style="display: none;">
+            <div id="results-error-state" class="text-center py-5" role="status" aria-live="polite" style="display: none;">
                 <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
                     <i class="bi bi-exclamation-circle"></i>
                 </div>
@@ -585,7 +585,7 @@
                     </div>
                 </div>
 
-                <div id="data-loading" class="loading-overlay" style="display: none;">
+                <div id="data-loading" class="loading-overlay" role="status" aria-live="polite" aria-label="Loading graph" style="display: none;">
                     <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
                 </div>
 
@@ -601,7 +601,7 @@
                 <!-- Shown when a notice-number search returns zero triples. Replaces
                      the empty tree view with a clear "not found" message so the
                      user doesn't have to interpret "0 triples" as "doesn't exist". -->
-                <div id="data-not-found" class="text-center py-5" style="display: none;">
+                <div id="data-not-found" class="text-center py-5" role="status" aria-live="polite" style="display: none;">
                     <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
                         <i class="bi bi-search"></i>
                     </div>
@@ -631,7 +631,7 @@
                  data card) so the chrome — breadcrumb, timeline,
                  view-mode radios, title — is hidden when the error is
                  shown. Same register as #data-not-found. -->
-            <div id="data-error-state" class="text-center py-5" style="display: none;">
+            <div id="data-error-state" class="text-center py-5" role="status" aria-live="polite" style="display: none;">
                 <div class="mb-3" style="font-size: 3rem; color: #adb5bd;">
                     <i class="bi bi-exclamation-circle"></i>
                 </div>
