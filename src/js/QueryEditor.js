@@ -265,179 +265,217 @@ export class QueryEditor {
     event.preventDefault();
     if (this.isQueryRunning) return;
 
-    // Stage 7 — auto-route by query type. CONSTRUCT and DESCRIBE
-    // queries return RDF graphs, which the Explore tab is built to
-    // render (tree / turtle / backlinks). SELECT and ASK return
-    // tabular bindings, which the existing Query Results path below
-    // handles. ASK with no result tab support yet falls through to
-    // SELECT (the user sees the boolean as a one-row table).
-    //
-    // The routing only kicks in when setExplorerRouting() has been
-    // called from the bootstrap (script.js), which is always true in
-    // the merged app but kept optional so QueryEditor can still be
-    // used standalone if anyone needs to.
-    if (this.explorerController && this.showExplorerTab) {
-      const queryText = this.getQuery();
-      let queryType;
-      try {
-        queryType = new SparqlJs.Parser().parse(queryText)?.queryType;
-      } catch {
-        // Parse error: fall through to the existing SELECT path which
-        // surfaces the error message via its own error handling. Run
-        // is normally disabled when there's a syntax error, so this
-        // branch is mostly defensive.
-      }
-      if (queryType === 'CONSTRUCT' || queryType === 'DESCRIBE') {
-        // Hand the raw query to the ExplorerController. It re-runs
-        // the query through its own worker-backed sparqlService, parses
-        // the Turtle into quads, and emits results-changed for DataView
-        // to render. Then we switch tabs and enforce Stage 12 mutual
-        // exclusion (hide the SELECT lane's tab — graph lane wins).
-        try {
-          await this.explorerController.search({ type: 'query', query: queryText });
-          this.setActiveResultTab('graph');
-          this.showExplorerTab();
-        } catch (error) {
-          // Defensive: ExplorerController already catches worker
-          // errors internally and routes them to DataView's graph
-          // lane error state, so this branch is mostly unreachable.
-          // If something slips through, log it rather than leaving
-          // the user with no feedback.
-          console.error('Explorer controller error:', error);
-        }
-        return;
-      }
-    }
-
-    this.queryResults.setResponseData(null, null);
-    const progressBar = document.querySelector('.progress-bar');
-    const submitButton = this.queryForm.querySelector('button[type="submit"]');
-    const queryTimer = document.getElementById('query-timer');
-    progressBar.style.width = '100%';
-    progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
-    queryTimer.textContent = '0s';
-    submitButton.disabled = true;
-    this.stopQueryButton.style.display = 'flex';
+    // Mark the editor busy up-front, before the CONSTRUCT/DESCRIBE
+    // routing branch. Previously the `isQueryRunning` flag was only
+    // set on the SELECT path, so two rapid-fire CONSTRUCT submissions
+    // could run overlapping explorer searches and fire their tab
+    // switches out of order. A single `try/finally` around the whole
+    // submit body guarantees the flag is always released, regardless
+    // of which lane the query took.
     this.isQueryRunning = true;
-    this.abortController = new AbortController();
-
-    const startTime = performance.now();
-    this.timerInterval = setInterval(() => {
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
-      queryTimer.textContent = `${elapsed}s`;
-    }, 1000);
-
-    // Reset the results toolbar and the friendly error state to a
-    // clean start before the new run. The toolbar is revealed on
-    // success via QueryResults.displayJsonResults; the error state
-    // only appears if the fetch or rendering fails.
-    this.copyUrlAlert.classList.add('d-none');
-    this.resultsErrorState.style.display = 'none';
-    this.resultsErrorMessage.textContent = '';
-    this.resultsDiv.innerHTML = '';
 
     try {
-      const query = this.getQuery();
-      // The editor always requests SPARQL Results JSON — QueryResults
-      // renders its own consistent table from the structured payload
-      // (drops language tags, unwraps quoted literals, formats dates).
-      // Format choice for export has moved to the Data tab's
-      // "Download as…" menu and no longer affects what the editor runs.
-      const format = "application/sparql-results+json";
-      const defaultGraphUri = document.getElementById("default-graph-uri").value;
-      const timeout = document.getElementById("timeout").value;
-      const strict = document.getElementById("strict").checked ? "true" : "false";
-      const debug = document.getElementById("debug").checked ? "true" : "false";
-      const report = document.getElementById("report").checked ? "true" : "false";
+      // Stage 7 — auto-route by query type. CONSTRUCT and DESCRIBE
+      // queries return RDF graphs, which the Explore tab is built to
+      // render (tree / turtle / backlinks). SELECT and ASK return
+      // tabular bindings, which the existing Query Results path below
+      // handles. ASK with no result tab support yet falls through to
+      // SELECT (the user sees the boolean as a one-row table).
+      //
+      // The routing only kicks in when setExplorerRouting() has been
+      // called from the bootstrap (script.js), which is always true in
+      // the merged app but kept optional so QueryEditor can still be
+      // used standalone if anyone needs to.
+      if (this.explorerController && this.showExplorerTab) {
+        const queryText = this.getQuery();
+        let queryType;
+        let parseError;
+        try {
+          queryType = new SparqlJs.Parser().parse(queryText)?.queryType;
+        } catch (e) {
+          // Parse error: remember it so we can surface it via the
+          // friendly error state below, instead of silently falling
+          // through to the SELECT path (where the server would reject
+          // the same query and return a confusingly late error).
+          parseError = e;
+        }
 
-      const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
-        + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
-        + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
-        + `&strict=${encodeURIComponent(strict)}`
-        + `&debug=${encodeURIComponent(debug)}`
-        + `&report=${encodeURIComponent(report)}`;
+        if (parseError) {
+          this._renderSelectLaneError(parseError);
+          return;
+        }
 
-      const response = await fetch(this.sparqlEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body,
-        signal: this.abortController.signal
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        const error = new Error(`HTTP error. Status: ${response.status}`);
-        error.serverMessage = errorBody;
-        throw error;
+        if (queryType === 'CONSTRUCT' || queryType === 'DESCRIBE') {
+          // Hand the raw query to the ExplorerController. It re-runs
+          // the query through its own worker-backed sparqlService, parses
+          // the Turtle into quads, and emits results-changed for DataView
+          // to render. Then we switch tabs and enforce Stage 12 mutual
+          // exclusion (hide the SELECT lane's tab — graph lane wins).
+          try {
+            await this.explorerController.search({ type: 'query', query: queryText });
+            this.setActiveResultTab('graph');
+            this.showExplorerTab();
+          } catch (error) {
+            // Defensive: ExplorerController already catches worker
+            // errors internally and routes them to DataView's graph
+            // lane error state, so this branch is mostly unreachable.
+            // If something slips through, log it rather than leaving
+            // the user with no feedback.
+            console.error('Explorer controller error:', error);
+          }
+          return;
+        }
       }
 
-      const contentType = response.headers.get('content-type');
-      const responseText = await response.text();
-      this.queryResults.setResponseData(responseText, contentType);
+      // ── SELECT / ASK path ────────────────────────────────────────
+      this.queryResults.setResponseData(null, null);
+      const progressBar = document.querySelector('.progress-bar');
+      const submitButton = this.queryForm.querySelector('button[type="submit"]');
+      const queryTimer = document.getElementById('query-timer');
+      progressBar.style.width = '100%';
+      progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+      queryTimer.textContent = '0s';
+      submitButton.disabled = true;
+      this.stopQueryButton.style.display = 'flex';
+      this.abortController = new AbortController();
 
-      // The request is always JSON, but a misconfigured endpoint could
-      // still return an unexpected content type — parse defensively.
-      try {
-        const result = JSON.parse(responseText);
-        this.queryResults.displayJsonResults(result);
-      } catch (parseError) {
-        this.queryResults.displayTextResults(responseText, 'text');
-      }
-      this.copyUrlAlert.classList.remove('d-none');
-      this.copyUrlAlert.classList.add('d-flex');
-    } catch (error) {
-      // Classify via the shared helper (lane='select') so the SELECT
-      // and graph lanes present errors with the same vocabulary and
-      // visual shape. The classifier can also hand back an optional
-      // inline action (e.g. "copy the query URL" on timeout).
-      const { friendly, detail, action } = classifyError(error, 'select');
-      // Wipe the message slot (and any previous inline link) before
-      // re-rendering.
-      this.resultsErrorMessage.textContent = friendly;
-      if (action?.kind === 'copy-select-url') {
-        // Append a space + inline link + period to the friendly
-        // sentence. Clicking the link calls the existing Copy URL
-        // handler on QueryResults so the user gets the same toast
-        // and the same JSON-format URL we offer from the toolbar.
-        this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
-        const link = document.createElement('a');
-        link.href = '#';
-        link.textContent = action.label;
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          this.queryResults?.onCopyUrl();
-        });
-        this.resultsErrorMessage.appendChild(link);
-        this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
-      }
-      // Remove any previous details block before adding a new one.
-      this.resultsErrorState.querySelector('pre')?.remove();
-      if (detail) {
-        const pre = document.createElement('pre');
-        pre.className = 'mt-3 mb-0 small text-muted text-center';
-        pre.style.whiteSpace = 'pre-wrap';
-        pre.textContent = detail;
-        this.resultsErrorState.appendChild(pre);
-      }
-      this.resultsErrorState.style.display = '';
+      const startTime = performance.now();
+      this.timerInterval = setInterval(() => {
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
+        queryTimer.textContent = `${elapsed}s`;
+      }, 1000);
+
+      // Reset the results toolbar and the friendly error state to a
+      // clean start before the new run. The toolbar is revealed on
+      // success via QueryResults.displayJsonResults; the error state
+      // only appears if the fetch or rendering fails.
       this.copyUrlAlert.classList.add('d-none');
-    } finally {
-      clearInterval(this.timerInterval);
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-      progressBar.style.width = '0%';
-      progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
-      queryTimer.textContent = `${elapsed}s`;
-      submitButton.disabled = false;
-      this.stopQueryButton.style.display = 'none';
-      this.isQueryRunning = false;
-      this.abortController = null;
-      this.onEditorChange();
-    }
+      this.resultsErrorState.style.display = 'none';
+      this.resultsErrorMessage.textContent = '';
+      this.resultsDiv.innerHTML = '';
 
-    // Stage 12 — mutual exclusion: SELECT lane wins. Reveal the SELECT
-    // result tab and hide the graph result tab. Then switch to it.
-    this.setActiveResultTab('select');
-    this.queryResultsTab.show();
+      try {
+        const query = this.getQuery();
+        // The editor always requests SPARQL Results JSON — QueryResults
+        // renders its own consistent table from the structured payload
+        // (drops language tags, unwraps quoted literals, formats dates).
+        // Format choice for export has moved to the Data tab's
+        // "Download as…" menu and no longer affects what the editor runs.
+        const format = "application/sparql-results+json";
+        const defaultGraphUri = document.getElementById("default-graph-uri").value;
+        const timeout = document.getElementById("timeout").value;
+        const strict = document.getElementById("strict").checked ? "true" : "false";
+        const debug = document.getElementById("debug").checked ? "true" : "false";
+        const report = document.getElementById("report").checked ? "true" : "false";
+
+        const body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`
+          + (defaultGraphUri ? `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}` : "")
+          + (timeout ? `&timeout=${encodeURIComponent(timeout)}` : "")
+          + `&strict=${encodeURIComponent(strict)}`
+          + `&debug=${encodeURIComponent(debug)}`
+          + `&report=${encodeURIComponent(report)}`;
+
+        const response = await fetch(this.sparqlEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: body,
+          signal: this.abortController.signal
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          const error = new Error(`HTTP error. Status: ${response.status}`);
+          error.serverMessage = errorBody;
+          throw error;
+        }
+
+        const contentType = response.headers.get('content-type');
+        const responseText = await response.text();
+        this.queryResults.setResponseData(responseText, contentType);
+
+        // The request is always JSON, but a misconfigured endpoint could
+        // still return an unexpected content type — parse defensively.
+        try {
+          const result = JSON.parse(responseText);
+          this.queryResults.displayJsonResults(result);
+        } catch (parseError) {
+          this.queryResults.displayTextResults(responseText, 'text');
+        }
+        this.copyUrlAlert.classList.remove('d-none');
+        this.copyUrlAlert.classList.add('d-flex');
+
+        // Stage 12 — mutual exclusion: SELECT lane wins. Reveal the
+        // SELECT result tab and hide the graph result tab. Only runs
+        // on success; on error we stay on whatever tab the user is on
+        // (previously the tab-switch fell out of the try/catch and
+        // yanked the user to an empty SELECT tab after a failure).
+        this.setActiveResultTab('select');
+        this.queryResultsTab.show();
+      } catch (error) {
+        this._renderSelectLaneError(error);
+      } finally {
+        clearInterval(this.timerInterval);
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+        progressBar.style.width = '0%';
+        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+        queryTimer.textContent = `${elapsed}s`;
+        submitButton.disabled = false;
+        this.stopQueryButton.style.display = 'none';
+        this.abortController = null;
+        this.onEditorChange();
+      }
+    } finally {
+      // Outer finally — releases the top-level busy flag set at entry,
+      // regardless of whether this was a CONSTRUCT or a SELECT path
+      // and regardless of whether it succeeded.
+      this.isQueryRunning = false;
+    }
+  }
+
+  /**
+   * Render a SELECT-lane error into the shared friendly-error state.
+   * Extracted so both the sparqljs parse-error branch and the fetch
+   * error branch can use the same rendering code, and so the rendering
+   * logic is not duplicated mid-method.
+   * @param {Error} error
+   * @private
+   */
+  _renderSelectLaneError(error) {
+    // Classify via the shared helper (lane='select') so the SELECT
+    // and graph lanes present errors with the same vocabulary and
+    // visual shape. The classifier can also hand back an optional
+    // inline action (e.g. "copy the query URL" on timeout).
+    const { friendly, detail, action } = classifyError(error, 'select');
+    // Wipe the message slot (and any previous inline link) before
+    // re-rendering.
+    this.resultsErrorMessage.textContent = friendly;
+    if (action?.kind === 'copy-select-url') {
+      // Append a space + inline link + period to the friendly
+      // sentence. Clicking the link calls the existing Copy URL
+      // handler on QueryResults so the user gets the same toast
+      // and the same JSON-format URL we offer from the toolbar.
+      this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
+      const link = document.createElement('a');
+      link.href = '#';
+      link.textContent = action.label;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.queryResults?.onCopyUrl();
+      });
+      this.resultsErrorMessage.appendChild(link);
+      this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
+    }
+    // Remove any previous details block before adding a new one.
+    this.resultsErrorState.querySelector('pre')?.remove();
+    if (detail) {
+      const pre = document.createElement('pre');
+      pre.className = 'mt-3 mb-0 small text-muted text-center';
+      pre.style.whiteSpace = 'pre-wrap';
+      pre.textContent = detail;
+      this.resultsErrorState.appendChild(pre);
+    }
+    this.resultsErrorState.style.display = '';
+    this.copyUrlAlert.classList.add('d-none');
   }
 
   /**
@@ -480,15 +518,25 @@ export class QueryEditor {
   }
 
   /**
-   * Minify the SPARQL query.
+   * Minify the SPARQL query. The return value is fed directly into
+   * `encodeURIComponent` for Copy URL / Share view, so it must never
+   * throw — a parse failure would bubble out of the click handler as
+   * an unhandled rejection and leave the button in a broken state.
+   * On parse failure, fall back to the raw query: the resulting URL
+   * is longer than ideal but still a valid SPARQL query string.
    * @param {string} query - The SPARQL query.
-   * @returns {string} - The minified SPARQL query.
+   * @returns {string} - The minified (or, on parse failure, raw) query.
    */
   minifySparqlQuery(query) {
-    const parser = new SparqlJs.Parser();
-    const generator = new SparqlJs.Generator();
-    const parsedQuery = parser.parse(query);
-    return generator.stringify(parsedQuery);
+    try {
+      const parser = new SparqlJs.Parser();
+      const generator = new SparqlJs.Generator();
+      const parsedQuery = parser.parse(query);
+      return generator.stringify(parsedQuery);
+    } catch (e) {
+      console.warn('minifySparqlQuery: falling back to raw query (parse failed):', e);
+      return query;
+    }
   }
 
   /**

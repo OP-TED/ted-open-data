@@ -41,6 +41,7 @@ export function classifyError(error, lane = 'select') {
 
   const raw = error.message || '';
   const serverMessage = error.serverMessage || null;
+  const status = _extractStatus(raw);
 
   // User cancellation — not really an error, but the catch branch may
   // still land here.
@@ -48,35 +49,24 @@ export function classifyError(error, lane = 'select') {
     return { friendly: 'Query cancelled.', detail: null, action: null };
   }
 
-  // 400 Bad Request — SPARQL parser / semantic error. The server's own
-  // message usually includes line/column information that's useful to
-  // surface.
-  if (raw.includes('Status: 400') || raw.includes('400')) {
-    return {
-      friendly: 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.',
-      detail: serverMessage || _extractVirtuoso(raw),
-      action: null,
-    };
-  }
-
-  // 500 Internal Server Error — Virtuoso itself gave up. The detail is
-  // rarely actionable for the user but helps when filing a bug.
-  if (raw.includes('Status: 500') || raw.includes('500')) {
-    return {
-      friendly: 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.',
-      detail: serverMessage || _extractVirtuoso(raw),
-      action: null,
-    };
-  }
-
-  // 504 Gateway Timeout — the query took longer than the endpoint's
-  // allowed execution budget. Per-lane copy:
+  // Timeout — check before the generic 5xx branch, because a Virtuoso
+  // 500 response body can contain the word "timeout" ("Transaction
+  // timed out", "anytime query timeout") and would otherwise be
+  // misclassified as a generic internal error.
+  //
+  // Per-lane copy:
   //   SELECT → honest, with a recovery link: the query is fine,
   //            copy the URL to use it from a tool that handles long
   //            requests (curl, Python, Excel's Get Data...).
   //   GRAPH  → the user can't "simplify" a canned CONSTRUCT for a
   //            notice; the honest advice is "try again".
-  if (raw.includes('Status: 504') || raw.includes('504') || /timeout/i.test(raw)) {
+  //
+  // Status 524 is Cloudflare's "A timeout occurred" and is handled
+  // here rather than with the generic 5xx branch. The regex covers
+  // both "timeout" (Virtuoso's "anytime query timeout") and "timed out"
+  // (Virtuoso's "Transaction timed out") so a 500 body containing
+  // either flavour is correctly re-routed to the timeout branch.
+  if (status === 504 || status === 524 || /time\s*(?:d\s+)?out/i.test(raw)) {
     if (lane === 'graph') {
       return {
         friendly: 'The query took too long to complete. The endpoint may be under load — please try again in a moment.',
@@ -91,12 +81,49 @@ export function classifyError(error, lane = 'select') {
     };
   }
 
+  // 400 Bad Request — SPARQL parser / semantic error. The server's own
+  // message usually includes line/column information that's useful to
+  // surface.
+  if (status === 400) {
+    return {
+      friendly: 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.',
+      detail: serverMessage || _extractServerDetail(raw),
+      action: null,
+    };
+  }
+
+  // 413 Payload Too Large — long queries sent via GET overflow the
+  // endpoint's URL limit; suggest the obvious workaround rather than
+  // the generic "syntax" hint for 400.
+  if (status === 413) {
+    return {
+      friendly: 'The query is too large to send. Try shortening it or splitting it into smaller queries.',
+      detail: serverMessage || _extractServerDetail(raw),
+      action: null,
+    };
+  }
+
+  // 500-class — 500, 502, 503 all mean "the endpoint can't answer right
+  // now". 500 is usually Virtuoso itself giving up; 502/503 are
+  // reverse-proxy / load-balancer layers above it (nginx "Bad Gateway",
+  // Cloudflare "Service Unavailable"). Collapse into one friendly
+  // message because the distinction isn't actionable for the user.
+  if (status === 500 || status === 502 || status === 503) {
+    return {
+      friendly: 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.',
+      detail: serverMessage || _extractServerDetail(raw),
+      action: null,
+    };
+  }
+
   // Network failure — fetch threw before the endpoint answered at all.
   // Chrome surfaces this as TypeError "Failed to fetch" in the main
   // thread, but worker-relayed errors arrive as plain Error because
-  // the worker postMessages only the message string. Matching on the
-  // message substring catches both cases.
-  if (/Failed to fetch|NetworkError|ERR_NETWORK|ECONNRESET|socket hang up/i.test(raw)) {
+  // the worker postMessages only the message string. The alternation
+  // below covers browser wording (Failed to fetch, NetworkError,
+  // ERR_*) and common Node-side socket / DNS / TLS errors that can
+  // reach the classifier via tests or a proxy-layer relay.
+  if (/Failed to fetch|NetworkError|ERR_NETWORK|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|certificate/i.test(raw)) {
     return {
       friendly: 'Could not reach the SPARQL endpoint. Please check your internet connection and try again.',
       detail: null,
@@ -114,12 +141,36 @@ export function classifyError(error, lane = 'select') {
 }
 
 /**
- * Pull a Virtuoso-shaped server error out of a generic error message
- * (e.g. "HTTP error. Status: 400\nVirtuoso 37000 Error SP030: …").
- * Returns null if there's no recognisable Virtuoso block.
+ * Parse the HTTP status code out of a raw error message that follows
+ * the sparqlWorker convention `"HTTP error. Status: <n>\n<body>"`.
+ * Returns the status as a number, or null when no status prefix is
+ * present. This is deliberately strict: it only matches the explicit
+ * `Status: NNN` prefix produced by the worker, never bare digit
+ * substrings, because bare-match collides with timestamps, millisecond
+ * values, literal digits inside a query, port numbers in URLs, and
+ * cross-status matches like "504" being a substring of "5040".
  * @private
  */
-function _extractVirtuoso(raw) {
-  const m = raw.match(/Virtuoso\s+\d+\s+Error[\s\S]*/);
-  return m ? m[0].trim() : null;
+function _extractStatus(raw) {
+  const m = raw.match(/Status:\s*(\d{3})\b/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Pull a readable server-side error block out of a raw error message.
+ * Prefers a Virtuoso-shaped block when present (the EU endpoint's
+ * canonical format), and falls back to the body that follows the
+ * `HTTP error. Status: NNN` prefix so non-Virtuoso backends
+ * (Fuseki, Blazegraph, GraphDB) still surface useful detail instead
+ * of disappearing.
+ * @private
+ */
+function _extractServerDetail(raw) {
+  const virtuoso = raw.match(/Virtuoso\s+\d+\s+Error[\s\S]*/);
+  if (virtuoso) return virtuoso[0].trim();
+
+  // Strip the "HTTP error. Status: NNN" prefix (optionally followed by
+  // a newline) and return whatever remains, if anything.
+  const stripped = raw.replace(/^HTTP error\.\s*Status:\s*\d+\s*\n?/, '').trim();
+  return stripped || null;
 }

@@ -109,7 +109,13 @@ function getWorker() {
 // is missing, and the `new Worker(...)` constructor itself can throw on
 // some browsers. We resolve the worker BEFORE inserting into
 // pendingRequests so a failure here can never leave an orphan entry
-// behind. The Promise rejects synchronously inside the executor.
+// behind.
+//
+// postMessage itself can also throw (structured-clone failure on an
+// exotic payload, worker crashed between calls). When that happens we
+// must remove the entry we just inserted into pendingRequests, or the
+// promise leaks and the caller waits forever. The try/catch below
+// guarantees the entry and the promise stay in lockstep.
 function doSPARQL(query) {
   return new Promise((resolve, reject) => {
     let activeWorker;
@@ -121,12 +127,17 @@ function doSPARQL(query) {
     }
     const id = ++messageIdCounter;
     pendingRequests.set(id, { resolve, reject });
-    activeWorker.postMessage({
-      id,
-      type: 'sparql',
-      query,
-      endpoint: getEndpoint(),
-    });
+    try {
+      activeWorker.postMessage({
+        id,
+        type: 'sparql',
+        query,
+        endpoint: getEndpoint(),
+      });
+    } catch (err) {
+      pendingRequests.delete(id);
+      reject(err);
+    }
   });
 }
 

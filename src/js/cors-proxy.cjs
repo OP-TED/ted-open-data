@@ -136,17 +136,24 @@ app.all('/proxy', async (req, res) => {
   try {
     const response = await fetch(targetUrl, options);
     console.log(`Response status: ${response.status}`);
-    if (!response.ok) {
-      console.error(`Error fetching URL: ${response.statusText}`);
-      return res.status(response.status).send(`Error fetching URL: ${response.statusText}`);
-    }
-    const contentType = response.headers.get('content-type');
-    res.setHeader('Content-Type', contentType);
+    const contentType = response.headers.get('content-type') || 'text/plain';
+    // Always forward the body as-is. On non-OK responses this preserves
+    // the Virtuoso / Fuseki error detail that `errorMessages.js` needs
+    // to populate the friendly-error-state "detail" slot; throwing
+    // away the body and replacing it with `response.statusText` breaks
+    // that contract and leaves the user staring at a generic message.
     const body = await response.text();
-    res.send(body);
+    if (!response.ok) {
+      console.error(`Upstream ${response.status}: ${response.statusText}`);
+    }
+    res.status(response.status).set('Content-Type', contentType).send(body);
   } catch (error) {
     console.error(`Error fetching URL: ${error.message}`);
-    res.status(500).send(`Error fetching URL: ${error.message}`);
+    // 502 Bad Gateway is honest here: the proxy itself failed to
+    // reach or parse the upstream response. Returning 500 would
+    // collide with legitimate upstream 500s in the classifier and
+    // misleadingly attribute an infrastructure failure to Virtuoso.
+    res.status(502).set('Content-Type', 'text/plain').send(`Upstream fetch failed: ${error.message}`);
   }
 });
 
@@ -180,7 +187,11 @@ app.all('/sparql', async (req, res) => {
     res.set('Content-Type', response.headers.get('Content-Type') || 'text/turtle');
     res.status(response.status).send(text);
   } catch (error) {
-    res.status(500).send(error.message);
+    // Same rationale as /proxy: 502 (not 500) distinguishes a
+    // proxy-side failure from a legitimate upstream 500 so the
+    // classifier does not mis-attribute it to Virtuoso.
+    console.error(`[/sparql] fetch failed: ${error.message}`);
+    res.status(502).set('Content-Type', 'text/plain').send(`Upstream fetch failed: ${error.message}`);
   }
 });
 
