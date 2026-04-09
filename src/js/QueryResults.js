@@ -9,8 +9,11 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the Licence
  * is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence for the specific language governing permissions and limitations under
- * the Lic
+ * the Licence.
  */
+
+import { classifyError } from './errorMessages.js';
+import { showToast } from './toast.js';
 
 /**
  * Class representing the Query Results.
@@ -186,7 +189,10 @@ export class QueryResults {
    */
   async downloadAs(format) {
     const query = this.queryEditor.getQuery();
-    if (!query || !query.trim()) return;
+    if (!query || !query.trim()) {
+      showToast('Download failed', 'Write a query first, then try again.', { variant: 'warning' });
+      return;
+    }
 
     // Build the same POST body the editor uses, but with the chosen
     // format instead of the always-JSON one.
@@ -213,7 +219,11 @@ export class QueryResults {
         body,
       });
       if (!response.ok) {
-        console.error('Download failed:', response.status, await response.text());
+        const detail = await response.text().catch(() => '');
+        console.error('Download failed:', response.status, detail);
+        const err = new Error(`HTTP error. Status: ${response.status}\n${detail}`);
+        const { friendly } = classifyError(err, 'select');
+        showToast('Download failed', friendly, { variant: 'danger' });
         return;
       }
       const text = await response.text();
@@ -244,6 +254,8 @@ export class QueryResults {
       }, 100);
     } catch (error) {
       console.error('Download failed:', error);
+      const { friendly } = classifyError(error, 'select');
+      showToast('Download failed', friendly, { variant: 'danger' });
     }
   }
 

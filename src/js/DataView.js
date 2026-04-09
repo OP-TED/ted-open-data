@@ -43,6 +43,7 @@ import { eclipseHighlightStyle, eclipseTheme } from './cm-theme.js';
 import { copyToClipboard } from './clipboardCopy.js';
 import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
+import { showToast } from './toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
 class DataView {
@@ -171,7 +172,10 @@ class DataView {
         // Use the same /sparql route the worker uses; it preserves
         // Accept and forwards to the real endpoint.
         const query = getQuery(facet);
-        if (!query) return;
+        if (!query) {
+          showToast('Download failed', 'Could not build a download query for the current view.', { variant: 'danger' });
+          return;
+        }
         const response = await fetch('/sparql', {
           method: 'POST',
           headers: {
@@ -181,7 +185,11 @@ class DataView {
           body: `query=${encodeURIComponent(query)}`,
         });
         if (!response.ok) {
-          console.error('Download failed:', response.status, await response.text());
+          const detail = await response.text().catch(() => '');
+          console.error('Download failed:', response.status, detail);
+          const err = new Error(`HTTP error. Status: ${response.status}\n${detail}`);
+          const { friendly } = classifyError(err, 'graph');
+          showToast('Download failed', friendly, { variant: 'danger' });
           return;
         }
         body = await response.text();
@@ -191,6 +199,8 @@ class DataView {
       }
     } catch (error) {
       console.error('Download failed:', error);
+      const { friendly } = classifyError(error, 'graph');
+      showToast('Download failed', friendly, { variant: 'danger' });
       return;
     }
 

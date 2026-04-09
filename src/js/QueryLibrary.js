@@ -20,6 +20,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         syntaxHighlighting, defaultHighlightStyle,
         sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
+import { showToast } from './toast.js';
 
 /**
  * Class representing the Query Library.
@@ -203,36 +204,56 @@ export class QueryLibrary {
     // on its own fails because event.target is whichever inner node
     // the user actually clicked on.
     const item = event.target.closest('.list-group-item');
-    if (item) {
-      const selectedQuery = this.queries.find(query => query.title === item.dataset.queryTitle);
+    if (!item) return;
 
-      if (selectedQuery) {
-        const queryFileResponse = await fetch(`${this.remoteQueriesUrl}${selectedQuery.sparql}`);
-        const querySparqlText = await queryFileResponse.text();
+    const selectedQuery = this.queries.find(query => query.title === item.dataset.queryTitle);
 
-        this.queryTitle.textContent = selectedQuery.title;
-        this.queryDescription.textContent = selectedQuery.description;
-        this.setSparqlEditorValue(querySparqlText);
-        this.tryQueryButton.disabled = false;
-        if (this.customiseQueryButton) this.customiseQueryButton.disabled = false;
-        this.queryCard.classList.remove('d-none');
-        this.selectQueryMessage.classList.add('d-none');
-
-        if (this.selectedQueryElement) {
-          this.selectedQueryElement.classList.remove('active');
-        }
-        item.classList.add('active');
-        this.selectedQueryElement = item;
-      } else {
-        this.queryTitle.textContent = 'Query Title';
-        this.queryDescription.textContent = 'Select a query to see its description.';
-        this.setSparqlEditorValue('SPARQL query will be displayed here.');
-        this.tryQueryButton.disabled = true;
-        if (this.customiseQueryButton) this.customiseQueryButton.disabled = true;
-        this.queryCard.classList.add('d-none');
-        this.selectQueryMessage.classList.remove('d-none');
-      }
+    if (!selectedQuery) {
+      this.queryTitle.textContent = 'Query Title';
+      this.queryDescription.textContent = 'Select a query to see its description.';
+      this.setSparqlEditorValue('SPARQL query will be displayed here.');
+      this.tryQueryButton.disabled = true;
+      if (this.customiseQueryButton) this.customiseQueryButton.disabled = true;
+      this.queryCard.classList.add('d-none');
+      this.selectQueryMessage.classList.remove('d-none');
+      return;
     }
+
+    // Fetch the .sparql file. A failed fetch (offline, 404, CORS) used
+    // to bubble out of this async handler as an unhandled rejection,
+    // leaving the editor with stale content and the user with no
+    // feedback. Now we surface via a toast and leave the previously-
+    // selected query untouched so the user can retry.
+    let querySparqlText;
+    try {
+      const response = await fetch(`${this.remoteQueriesUrl}${selectedQuery.sparql}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error. Status: ${response.status}`);
+      }
+      querySparqlText = await response.text();
+    } catch (err) {
+      console.error('Failed to load query file:', err);
+      showToast(
+        'Could not load query',
+        'The query file could not be fetched. Please check your connection and try again.',
+        { variant: 'danger' },
+      );
+      return;
+    }
+
+    this.queryTitle.textContent = selectedQuery.title;
+    this.queryDescription.textContent = selectedQuery.description;
+    this.setSparqlEditorValue(querySparqlText);
+    this.tryQueryButton.disabled = false;
+    if (this.customiseQueryButton) this.customiseQueryButton.disabled = false;
+    this.queryCard.classList.remove('d-none');
+    this.selectQueryMessage.classList.add('d-none');
+
+    if (this.selectedQueryElement) {
+      this.selectedQueryElement.classList.remove('active');
+    }
+    item.classList.add('active');
+    this.selectedQueryElement = item;
   }
 
   /**
