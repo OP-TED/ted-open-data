@@ -280,6 +280,15 @@ main {
     margin-top: 10px; /* Adjust the value as needed */
 }
 
+/* Margin spacers at either end of the tablist. Using <li> with an
+   inline style was invalid HTML (a <div> cannot be a direct child
+   of <ul>); valid markup + a CSS rule gives the same visual. */
+.nav-tabs-spacer-left,
+.nav-tabs-spacer-right {
+    width: 20px;
+    list-style: none;
+}
+
 /* Stage 14a — give the icons inside tab buttons a touch of breathing
    space before the label so they don't visually fuse with the text. */
 .nav-tabs .nav-link i.bi {
@@ -1011,6 +1020,21 @@ main {
 }
 .home-carousel .carousel-indicators .active {
   background-color: var(--ted-primary, #2c862d);
+}
+
+/* Responsive squeeze for narrow viewports. The default 4rem side
+   padding + 4rem control-button width eats 128px of horizontal
+   space before slide content, which crushes the slide-1 CTA row
+   below ~576px. Shrink the padding and the controls on small
+   screens so the content can breathe. */
+@media (max-width: 576px) {
+  .home-carousel {
+    padding: 0.5rem 1rem;
+  }
+  .home-carousel .carousel-control-prev,
+  .home-carousel .carousel-control-next {
+    width: 2rem;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────

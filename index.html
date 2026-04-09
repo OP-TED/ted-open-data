@@ -66,7 +66,7 @@
 
     <nav>
         <ul class="nav nav-tabs w-100 d-flex align-items-center" role="tablist">
-            <div style="width: 20px;"><!-- leaves some space before the first tab --></div>
+            <li role="presentation" aria-hidden="true" class="nav-tabs-spacer-left"></li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-content"
                     type="button" role="tab" aria-controls="home-tab-content" aria-selected="true">Home</button>
@@ -114,7 +114,7 @@
                 <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab"
                     aria-controls="help" aria-selected="false"><i class="bi bi-question-circle"></i> Help</button>
             </li>
-            <div style="width: 20px;"></div> <!-- Right margin -->
+            <li role="presentation" aria-hidden="true" class="nav-tabs-spacer-right"></li>
         </ul>
     </nav>
 
@@ -157,9 +157,9 @@
                                 research and applications.
                             </p>
                             <div class="home-carousel-cta-row mt-4">
-                                <button id="home-cta-lookup" class="btn btn-outline-secondary"><i class="bi bi-1-circle"></i> Look inside a notice</button>
-                                <button id="home-cta-library" class="btn btn-outline-secondary"><i class="bi bi-2-circle"></i> Try our query library</button>
-                                <button id="home-cta-editor" class="btn btn-outline-secondary"><i class="bi bi-3-circle"></i> Write your own query</button>
+                                <button type="button" id="home-cta-lookup" class="btn btn-outline-secondary"><i class="bi bi-1-circle"></i> Look inside a notice</button>
+                                <button type="button" id="home-cta-library" class="btn btn-outline-secondary"><i class="bi bi-2-circle"></i> Try our query library</button>
+                                <button type="button" id="home-cta-editor" class="btn btn-outline-secondary"><i class="bi bi-3-circle"></i> Write your own query</button>
                             </div>
                             <p class="home-carousel-body small mt-4 mb-0" style="color: #9ba3ab;">
                                 Tenders Electronic Daily (TED) is the Supplement to the Official Journal
@@ -177,7 +177,7 @@
                                 Begin by looking at how the eProcurement Ontology represents a single notice.
                                 Enter a publication number to select a real notice and explore its knowledge graph.
                             </p>
-                            <button id="lookup-notice" class="btn btn-primary mt-3">Try it now →</button>
+                            <button type="button" id="lookup-notice" class="btn btn-primary mt-3">Try it now →</button>
                         </div>
                     </div>
 
@@ -191,7 +191,7 @@
                                 worked examples organised by topic — notices, tenders, procedures, organisations
                                 — that you can read, run and adapt to learn how the data is queried in practice.
                             </p>
-                            <button id="try-query-library" class="btn btn-primary mt-3">Try it now →</button>
+                            <button type="button" id="try-query-library" class="btn btn-primary mt-3">Try it now →</button>
                         </div>
                     </div>
 
@@ -205,7 +205,7 @@
                                 queries against the entire dataset. Autocomplete and syntax checking based on
                                 the eProcurement Ontology help you build what you need, one question at a time.
                             </p>
-                            <button id="start-tour" class="btn btn-primary mt-3">Try it now →</button>
+                            <button type="button" id="start-tour" class="btn btn-primary mt-3">Try it now →</button>
                         </div>
                     </div>
 
@@ -265,7 +265,7 @@
                             <input type="text" id="search-input" class="form-control form-control-lg search-hero-input"
                                    placeholder="Enter publication number" list="search-history" autocomplete="off">
                             <datalist id="search-history"></datalist>
-                            <button id="search-btn" class="btn btn-lg search-hero-btn" title="Search">
+                            <button type="button" id="search-btn" class="btn btn-lg search-hero-btn" title="Search">
                                 <i class="bi bi-search"></i>
                             </button>
                             <div class="dropdown">
@@ -345,8 +345,8 @@
                                     <h5 id="queryTitle" class="mt-3">Query Title</h5>
                                     <p id="queryDescription">Select a query to see its description.</p>
                                     <div id="queryActionButtons" class="d-flex justify-content-end mt-3 gap-2">
-                                        <button id="customiseQueryButton" class="btn btn-outline-secondary" disabled>Customise</button>
-                                        <button id="tryQueryButton" class="btn btn-primary" disabled>Try this query</button>
+                                        <button type="button" id="customiseQueryButton" class="btn btn-outline-secondary" disabled>Customise</button>
+                                        <button type="button" id="tryQueryButton" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
                                 </div>
                             </div>
@@ -454,7 +454,7 @@
                     </button>
                 </span>
                 <div class="results-toolbar-actions">
-                    <button id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
+                    <button type="button" id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
                     <div class="dropdown d-inline-block">
                         <button id="download-as-button" class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -838,7 +838,7 @@
             <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
             <span id="query-timer" class="position-absolute w-100 text-center small text-muted" style="top: 0; left: 0; line-height: 1rem; font-size: 0.65rem; font-weight: 600;"></span>
         </div>
-        <button id="stopQueryButton" class="btn p-0 align-items-center justify-content-center" aria-label="Cancel query" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel query" style="display: none; font-size: 1.2rem; line-height: 1; margin-left: 0.5rem; color: #dc3545; border: none;"><i class="bi bi-x-circle-fill"></i></button>
+        <button type="button" id="stopQueryButton" class="btn p-0 align-items-center justify-content-center" aria-label="Cancel query" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel query" style="display: none; font-size: 1.2rem; line-height: 1; margin-left: 0.5rem; color: #dc3545; border: none;"><i class="bi bi-x-circle-fill"></i></button>
     </footer>
 
     <!-- Toast Container — one shared toast reused by both Copy URL

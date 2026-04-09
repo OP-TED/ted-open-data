@@ -9,7 +9,7 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the Licence
  * is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence for the specific language governing permissions and limitations under
- * the Lic
+ * the Licence.
  */
 
 /**
@@ -54,7 +54,7 @@ export class HomeTab {
    * diff localised to initEventListeners).
    */
   initEventListeners() {
-    this.startTourButton.addEventListener('click', this.onStartTour.bind(this));
+    this.startTourButton.addEventListener('click', this.onOpenCustomizeTab.bind(this));
     this.tryQueryLibraryButton.addEventListener('click', this.onTryQueryLibrary.bind(this));
     if (this.lookupNoticeButton && this.searchTab) {
       this.lookupNoticeButton.addEventListener('click', this.onLookupNotice.bind(this));
@@ -87,10 +87,13 @@ export class HomeTab {
   }
 
   /**
-   * Handle start tour button click event.
-   * Switches to the query editor tab.
+   * Handle the "write your own query" CTA on the Customize
+   * carousel slide. Switches to the Customize tab
+   * (`#query-editor-tab`). Named onOpenCustomizeTab rather than
+   * onStartTour (the legacy DOM id `start-tour` predates the rename
+   * to Customize) so the method name matches what it actually does.
    */
-  onStartTour() {
+  onOpenCustomizeTab() {
     this.queryEditorTab.show();
   }
 

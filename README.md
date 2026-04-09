@@ -5,7 +5,7 @@ A web-based tool for exploring TED Open Data — the public procurement data pub
 - **Look up an individual notice** by its publication number and inspect its full RDF graph as a navigable tree, raw Turtle, or backlinks view. Procedure timeline, breadcrumb navigation, drill-into-resource, and shareable URLs included.
 - **Write SPARQL queries** against the entire dataset using a CodeMirror 6 editor with ePO-aware autocomplete and syntax linting. SELECT and ASK results render as a table; CONSTRUCT and DESCRIBE results render as the same RDF graph view used by notice lookup.
 
-The two workflows share a single "Query Results" tab that auto-picks the right rendering based on the query type.
+The two workflows share a single **Reuse** tab that auto-picks the right rendering based on the query type (tabular for SELECT/ASK, graph for CONSTRUCT/DESCRIBE).
 
 ## Features
 
