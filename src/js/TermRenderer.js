@@ -191,4 +191,4 @@ function renderSubjectBadge(subjectUri, options = {}) {
   return badge;
 }
 
-export { renderSubjectBadge, renderTerm, setController };
+export { _isNavigableHref as isNavigableHref, renderSubjectBadge, renderTerm, setController };

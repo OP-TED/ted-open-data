@@ -25,8 +25,8 @@ Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of th
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+- Node.js (v18 or higher)
+- npm (v8 or higher)
 
 ### Installation & Running
 

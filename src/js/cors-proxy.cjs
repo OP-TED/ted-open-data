@@ -55,7 +55,7 @@ const proxyUrl = process.env.http_proxy || process.env.HTTP_PROXY;
 // ── Dev error simulation ──
 // Start the proxy with SIMULATE=<kind> to force every /proxy and
 // /sparql request to fail in a canned way, so the friendly error
-// states on the Data tab can be evaluated without needing to break
+// states on the Reuse tab can be evaluated without needing to break
 // a real query. Supported kinds:
 //   400      → Virtuoso-shaped parser error
 //   500      → Virtuoso-shaped internal error
@@ -163,7 +163,7 @@ app.all('/proxy', async (req, res) => {
   }
 });
 
-// /sparql route — added by Stage 6 of the explorer integration so the
+// /sparql route — added for the explorer integration so the
 // ported sparqlService.js can hit a same-origin URL in dev. Forwards
 // the request body verbatim to the real SPARQL endpoint and proxies
 // the response back, preserving the Accept header (Turtle for

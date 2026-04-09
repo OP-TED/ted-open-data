@@ -24,6 +24,7 @@ import {
   createPublicationNumberFacet,
   getLabel,
   getQuery,
+  isSafeUri,
   normalize,
   validateFacet,
 } from '../src/js/facets.js';
@@ -422,6 +423,46 @@ test('addUnique treats two different queries as different facets', () => {
   const { facets, index } = addUnique(afterQ1, q2);
   assert.equal(facets.length, 2);
   assert.equal(index, 1);
+});
+
+// ── isSafeUri — SPARQL injection guard ─────────────────────────────
+
+test('isSafeUri accepts a plain http URI', () => {
+  assert.equal(isSafeUri('http://data.europa.eu/a4g/ontology#Notice'), true);
+});
+
+test('isSafeUri accepts an https URI', () => {
+  assert.equal(isSafeUri('https://example.org/resource'), true);
+});
+
+test('isSafeUri rejects URI with angle bracket (IRI breakout)', () => {
+  assert.equal(isSafeUri('http://example.org/x> <http://evil'), false);
+});
+
+test('isSafeUri rejects URI with double quote (string literal breakout)', () => {
+  assert.equal(isSafeUri('http://example.org/x"^^xsd:string'), false);
+});
+
+test('isSafeUri rejects URI with backslash (escape sequences)', () => {
+  assert.equal(isSafeUri('http://example.org/x\\n'), false);
+});
+
+test('isSafeUri rejects URI with whitespace', () => {
+  assert.equal(isSafeUri('http://example.org/x y'), false);
+});
+
+test('isSafeUri rejects URI with control character', () => {
+  assert.equal(isSafeUri('http://example.org/\x00'), false);
+});
+
+test('isSafeUri rejects empty string', () => {
+  assert.equal(isSafeUri(''), false);
+});
+
+test('isSafeUri rejects non-string input', () => {
+  assert.equal(isSafeUri(42), false);
+  assert.equal(isSafeUri(null), false);
+  assert.equal(isSafeUri(undefined), false);
 });
 
 test('addUnique Symbol-fallback: two malformed facets are never equal', () => {

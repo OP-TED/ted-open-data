@@ -99,13 +99,13 @@ export class NoticeView {
     // input mirrors "the notice currently being looked at", matching the
     // behaviour of the lucky link and the History dropdown.
     this.setSearchInput = setSearchInput || (() => {});
-    // Stage 8 — same Search-tab editor reflection as SearchPanel: when
+    // Same Inspect-tab editor reflection as SearchPanel: when
     // a timeline sibling is clicked, drop the canned CONSTRUCT for the
     // sibling notice into the SPARQL editor as a side effect, so the
     // Customize tab (`#query-editor`) stays in sync with what is
     // currently being shown on the Reuse tab's graph lane.
     this.loadEditorText = loadEditorText || (() => {});
-    // Stage 12 — graph lane wins on timeline navigation.
+    // Graph lane wins on timeline navigation.
     this.setActiveResultTab = setActiveResultTab || (() => {});
 
     // Inspect tab (`#app-tab-search`) DOM refs
@@ -285,7 +285,7 @@ export class NoticeView {
 
   // Render the card-header content: "Procedure Timeline" on the left, the
   // procedure ID(s) pushed to the right in a monospace font. `flex-grow-1`
-  // lets this work both for the Search-tab card-header (where the target
+  // lets this work both for the Inspect-tab card-header (where the target
   // element is the card-header itself) and for the Explorer mini card
   // (where the target is a span sharing a d-flex parent with the chevron).
   // `align-items-baseline` keeps the sans-serif label and the monospace IDs
@@ -391,7 +391,7 @@ export class NoticeView {
       // reflects "what's currently being looked at", matching the lucky
       // link and History dropdown behaviour.
       this.setSearchInput(notice.publicationNumber);
-      // Stage 8 — also drop the canned CONSTRUCT for this sibling
+      // Also drop the canned CONSTRUCT for this sibling
       // into the SPARQL editor as a side effect, mirroring
       // SearchPanel._search.
       try {
@@ -407,8 +407,10 @@ export class NoticeView {
       // sibling to History. The Procedure Timeline is already the
       // contextual UI for these siblings; History is reserved for
       // notices the user explicitly started from.
-      this.controller.search(facet, { addToHistory: false });
-      // Stage 12 — graph lane wins (lateral notice navigation).
+      this.controller.search(facet, { addToHistory: false }).catch(err => {
+        console.error('[NoticeView] timeline navigation failed:', err);
+      });
+      // Graph lane wins (lateral notice navigation).
       this.setActiveResultTab('graph');
       // Direct user gesture (timeline click) → switch to the Reuse
       // graph lane (`#app-tab-explorer`).
@@ -501,7 +503,7 @@ export class NoticeView {
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
         safeHref = parsed.href;
       }
-    } catch { /* invalid URL — leave safeHref null and render nothing */ }
+    } catch (e) { console.debug('[NoticeView] Skipping unsafe/invalid TED URL:', notice.html, e); }
 
     if (!safeHref) return el;
 
@@ -523,7 +525,7 @@ export class NoticeView {
   // After the timeline has been appended to the DOM, scroll it horizontally
   // so the selected notice sits in the visible center.
   //
-  // Called once per container per render (Search-tab card + Explore-tab
+  // Called once per container per render (Inspect-tab card + Reuse-tab
   // mini-card), so each container gets its own scroll position computed
   // independently. The Explorer mini-card is collapsed by default, which
   // means `clientWidth === 0` on the first render and the scrollLeft

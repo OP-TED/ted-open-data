@@ -91,6 +91,11 @@ function getQuery(facet) {
 }
 
 function _noticeByPublicationNumberQuery(publicationNumber) {
+  // Defence-in-depth: normalize() already restricts to digits + hyphen,
+  // but validate at the interpolation boundary to match _describeTermQuery.
+  if (!/^\d{8}-\d{4}$/.test(publicationNumber)) {
+    throw new Error(`Invalid publication number at query boundary: ${publicationNumber}`);
+  }
   return `PREFIX epo: <http://data.europa.eu/a4g/ontology#>
 
 CONSTRUCT { ?s ?p ?o }

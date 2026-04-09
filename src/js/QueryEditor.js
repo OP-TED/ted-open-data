@@ -176,7 +176,7 @@ export class QueryEditor {
   }
 
   /**
-   * Wire the explorer routing — Stage 7. When set, queries of type
+   * Wire the explorer routing — . When set, queries of type
    * CONSTRUCT or DESCRIBE are routed to the ExplorerController for
    * tree / turtle / backlinks rendering on the Reuse tab's graph
    * lane (`#app-tab-explorer`), instead of being fetched and rendered
@@ -188,7 +188,7 @@ export class QueryEditor {
    *   Bootstrap tab to the Reuse graph lane and resets its view mode
    *   to Tree.
    * @param {(lane: 'select' | 'graph' | 'none') => void} [setActiveResultTab]
-   *   - Stage 12 mutual-exclusion callback toggling which of the two
+   *   -  mutual-exclusion callback toggling which of the two
    *   Reuse-tab lanes is visible (`#query-results-tab-item` vs
    *   `#app-tab-explorer-item`). Optional — defaults to a no-op so
    *   QueryEditor can still run standalone.
@@ -200,7 +200,7 @@ export class QueryEditor {
   }
 
   /**
-   * Replace the editor's content with the given text — Stage 8.
+   * Replace the editor's content with the given text — .
    * Get the current query text.
    * @returns {string} - The current query text.
    */
@@ -276,7 +276,7 @@ export class QueryEditor {
     this.isQueryRunning = true;
 
     try {
-      // Stage 7 — auto-route by query type. CONSTRUCT and DESCRIBE
+      // Auto-route by query type. CONSTRUCT and DESCRIBE
       // queries return RDF graphs, which the Reuse tab's graph lane
       // (`#app-tab-explorer`) is built to render (tree / turtle /
       // backlinks). SELECT and ASK return tabular bindings, which
@@ -422,7 +422,7 @@ export class QueryEditor {
         this.abortController = null;
         this.onEditorChange();
 
-        // Stage 12 — mutual exclusion: SELECT lane wins. Runs in
+        // Mutual exclusion: SELECT lane wins. Runs in
         // `finally` so the user is taken to the Reuse SELECT pane
         // on BOTH success (to see the table) AND error (to see the
         // friendly error state). The original M8 fix placed this

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/js/cors-proxy.cjs",
     "build:codemirror": "node scripts/build-codemirror.cjs",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "codemirror-lang-turtle": "^0.0.2",

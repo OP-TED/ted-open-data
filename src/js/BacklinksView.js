@@ -28,7 +28,7 @@ const NO_BACKLINKS_MESSAGE =
 
 export class BacklinksView {
   // The `doSPARQL` option lets tests inject a stub; production callers
-  // (app.js) pass no arguments and get the real worker-backed service.
+  // (script.js) pass no arguments and get the real worker-backed service.
   constructor(controller, { doSPARQL = defaultDoSPARQL } = {}) {
     this.controller = controller;
     this._doSPARQL = doSPARQL;
@@ -165,7 +165,7 @@ WHERE {
   _renderBacklinks(quads) {
     this.content.innerHTML = '';
 
-    const groups = this._groupBySubject(quads);
+    const groups = this._groupByPredicate(quads);
     if (Object.keys(groups).length === 0) {
       this.content.innerHTML = NO_BACKLINKS_MESSAGE;
       return;
@@ -177,7 +177,7 @@ WHERE {
   }
 
   // Build a map of predicate → { property, subjects } from the quads.
-  _groupBySubject(quads) {
+  _groupByPredicate(quads) {
     const groups = {};
     for (const quad of quads) {
       if (quad.object.value !== this.currentUri) continue;

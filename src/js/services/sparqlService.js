@@ -15,7 +15,7 @@
 //
 // CONSTRUCT/DESCRIBE queries run off-thread in a Web Worker and return parsed
 // quads. SELECT queries are executed directly on the main thread and return
-// JSON bindings (only used by the footer's data-period query).
+// JSON bindings (used by ExplorerController for SELECT/ASK on the graph lane).
 //
 // N3 is loaded via a <script> tag in index.html rather than bundled, so the
 // global must be present by the time any CONSTRUCT/DESCRIBE response comes
@@ -124,7 +124,7 @@ function getWorker() {
     const err = new Error(userFacingMessage);
     for (const pending of pendingRequests.values()) pending.reject(err);
     pendingRequests.clear();
-    try { worker?.terminate(); } catch { /* already dead */ }
+    try { worker?.terminate(); } catch (e) { console.debug('[sparqlService] worker.terminate() threw:', e); }
     worker = null;
 
     if (workerCrashTimestamps.length >= WORKER_CRASH_LIMIT) {
@@ -232,7 +232,7 @@ function cancelAllSparqlRequests() {
   err.name = 'CancelledError';
   for (const pending of pendingRequests.values()) pending.reject(err);
   pendingRequests.clear();
-  try { worker?.terminate(); } catch { /* already dead */ }
+  try { worker?.terminate(); } catch (e) { console.debug('[sparqlService] worker.terminate() threw:', e); }
   worker = null;
 }
 
@@ -271,7 +271,7 @@ function __resetWorkerForTesting() {
     pending.reject(new Error('reset for test'));
   }
   pendingRequests.clear();
-  try { worker?.terminate(); } catch { /* already dead */ }
+  try { worker?.terminate(); } catch (e) { console.debug('[sparqlService] worker.terminate() threw:', e); }
   worker = null;
 }
 

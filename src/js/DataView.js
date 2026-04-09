@@ -49,7 +49,7 @@ import { showToast } from './utils/toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
 export class DataView {
-  // `pickRandom` is an optional callback wired from app.js to
+  // `pickRandom` is an optional callback wired from script.js to
   // SearchPanel.pickRandom(). It fires when the user clicks the
   // "pick a random notice" link inside the not-found state.
   constructor(controller, { pickRandom } = {}) {
@@ -84,7 +84,7 @@ export class DataView {
     this.notFoundEl = document.getElementById('data-not-found');
     this.notFoundPubEl = document.getElementById('data-not-found-pub');
     this.viewModeGroup = this.card?.querySelector('.btn-group[role="group"]');
-    // Stage 10 — download menu (Turtle / RDF/XML / N-Triples)
+    // Download menu (Turtle / RDF/XML / N-Triples)
     this.downloadMenu = document.getElementById('data-download-menu');
 
     this.treeRenderer = new TreeRenderer(this.treeContainer);
@@ -126,7 +126,7 @@ export class DataView {
       this.shareBtn.addEventListener('click', () => this._share());
     }
 
-    // Stage 10 — download menu items. Each option's data-download-format
+    // Download menu items. Each option's data-download-format
     // attribute carries the MIME type to request from the SPARQL
     // endpoint. Turtle is short-circuited to use the rawTurtle already
     // in memory; RDF/XML and N-Triples re-fetch via /sparql.
@@ -149,10 +149,10 @@ export class DataView {
     if (!url) return;
     const copied = await copyToClipboard(url);
     if (copied) {
-      document.getElementById('copy-url-toast-title').textContent = 'Link copied';
-      document.getElementById('copy-url-toast-body').textContent =
-        'Save this link to come back to the same view later, or share it with a colleague — they will see exactly what you see now.';
-      bootstrap.Toast.getOrCreateInstance(document.getElementById('copy-url-toast')).show();
+      showToast(
+        'Link copied',
+        'Save this link to come back to the same view later, or share it with a colleague — they will see exactly what you see now.',
+      );
     } else {
       // Fallback: brief visual signal on the button itself when the
       // clipboard API is blocked (rare, but possible in some
@@ -164,7 +164,7 @@ export class DataView {
   }
 
   /**
-   * Stage 10 — download the current data card's content in the
+   * Download the current data card's content in the
    * requested RDF serialisation. Turtle short-circuits to use the
    * rawTurtle already in memory; RDF/XML and N-Triples re-fetch via
    * /sparql with the appropriate Accept header. Triggers a browser
@@ -176,6 +176,9 @@ export class DataView {
   async _download(format) {
     const facet = this.controller.currentFacet;
     if (!facet) return;
+    // Disable download items during fetch to prevent duplicate clicks.
+    const items = this.downloadMenu?.querySelectorAll('[data-download-format]') || [];
+    items.forEach(i => i.classList.add('disabled'));
     let body;
     let extension;
     try {
@@ -208,6 +211,9 @@ export class DataView {
         if (opts.debug) params.set('debug', opts.debug);
         if (opts.report) params.set('report', opts.report);
 
+        const downloadTimeout = Math.max(Number(opts.timeout) || 60_000, 10_000);
+        const abort = new AbortController();
+        const timer = setTimeout(() => abort.abort(), downloadTimeout);
         const response = await fetch(getEndpoint(), {
           method: 'POST',
           headers: {
@@ -215,7 +221,9 @@ export class DataView {
             'Accept': format,
           },
           body: params.toString(),
+          signal: abort.signal,
         });
+        clearTimeout(timer);
         if (!response.ok) {
           const detail = await response.text().catch(() => '');
           console.error('Download failed:', response.status, detail);
@@ -231,9 +239,15 @@ export class DataView {
       }
     } catch (error) {
       console.error('Download failed:', error);
-      const { friendly } = classifyError(error, 'graph');
-      showToast('Download failed', friendly, { variant: 'danger' });
+      if (error?.name === 'AbortError') {
+        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+      } else {
+        const { friendly } = classifyError(error, 'graph');
+        showToast('Download failed', friendly, { variant: 'danger' });
+      }
       return;
+    } finally {
+      items.forEach(i => i.classList.remove('disabled'));
     }
 
     // Build a filename from the current facet for friendlier downloads.
@@ -373,7 +387,7 @@ export class DataView {
 
   _setShareBtnVisible(visible) {
     if (this.shareBtn) this.shareBtn.style.display = visible ? '' : 'none';
-    // Stage 10 — download menu visibility tracks the share button.
+    // Download menu visibility tracks the share button.
     // Both are "you have something loaded that you can act on" affordances.
     if (this.downloadMenu) this.downloadMenu.style.display = visible ? '' : 'none';
   }

@@ -86,7 +86,7 @@ main {
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Stage 12 — explorer-port card headers should NOT inherit the global
+/* Explorer-port card headers should NOT inherit the global
    green .card-header treatment; they were styled grey in the original
    standalone explorer and the user prefers the grey. Two scoped
    overrides revert these specific cards to Bootstrap defaults. */
@@ -289,7 +289,7 @@ main {
     list-style: none;
 }
 
-/* Stage 14a — give the icons inside tab buttons a touch of breathing
+/* Give the icons inside tab buttons a touch of breathing
    space before the label so they don't visually fuse with the text. */
 .nav-tabs .nav-link i.bi {
     margin-right: 0.3rem;
@@ -508,10 +508,10 @@ main {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Explorer-derived rules — Stage 5 port
+   Explorer-derived rules
    ─────────────────────────────────────────────────────────────────
    Brought over from ted-open-data-explorer/src/assets/style.css to
-   support the new Search and Explore tab content. Selectors are
+   support the Inspect and Reuse tab content. Selectors are
    unique to the explorer port; nothing here clobbers existing
    ted-open-data styling.
 
@@ -658,7 +658,7 @@ main {
   color: #999;
 }
 
-/* Slim results toolbar on the SELECT lane of the Data tab.
+/* Slim results toolbar on the SELECT lane of the Reuse tab.
    Visually matches the .data-sticky-header on the graph lane:
    a flat row with a single bottom border, no fill, minimal
    padding. Hosts the Copy URL + Download as… actions and a
@@ -743,7 +743,7 @@ main {
   margin-right: 0.3rem;
 }
 
-/* ── Explore tab ── */
+/* ── Reuse tab (graph lane) ── */
 
 .data-sticky-header {
   position: sticky;
@@ -889,7 +889,7 @@ main {
   border-bottom: 5px solid transparent;
 }
 
-/* The Turtle editor inside the Explore tab grows to fit its content
+/* The Turtle editor inside the Reuse tab grows to fit its content
    rather than scrolling internally. Scoped to #turtle-container so it
    does NOT affect the Query Editor tab's CodeMirror, which keeps the
    ted-open-data .cm-editor styling. */
@@ -900,7 +900,7 @@ main {
   overflow: visible;
 }
 
-/* ── Loading overlay (Explore tab) ── */
+/* ── Loading overlay (Reuse tab) ── */
 
 .loading-overlay {
   position: absolute;
@@ -923,7 +923,7 @@ main {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   Stage 14a follow-up — Home tab carousel
+   Home tab carousel
    ─────────────────────────────────────────────────────────────────
    Bootstrap's default carousel is designed for full-bleed photo
    slides on dark backgrounds. We use it for centered text on a

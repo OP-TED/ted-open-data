@@ -38,14 +38,14 @@ export class SearchPanel {
   constructor(controller, { showExplorerTab, loadEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
-    // Stage 8 — when set, every notice search drops the canned
+    // When set, every notice search drops the canned
     // CONSTRUCT for that notice into the SPARQL editor as a side
     // effect, so the user can see, edit and learn from the underlying
     // query. The actual execution still goes through controller.search
     // with a notice-number facet, preserving the title, the procedure
     // timeline, and the History dropdown labels. No-op if not wired.
     this.loadEditorText = loadEditorText || (() => {});
-    // Stage 12 — toggles the SELECT lane vs graph lane result tabs
+    // Toggles the SELECT lane vs graph lane result tabs
     // mutually exclusively. Notice search always lands on the graph
     // lane (it runs a CONSTRUCT under the hood), so we call
     // setActiveResultTab('graph') as part of every search.
@@ -61,7 +61,7 @@ export class SearchPanel {
     this._listen();
   }
 
-  // Exposed to other panels (NoticeView, app.js) so they can mirror a
+  // Exposed to other panels (NoticeView, script.js) so they can mirror a
   // selected publication number into the search box without reaching
   // into another panel's DOM directly.
   setInputValue(value) {
@@ -122,7 +122,7 @@ export class SearchPanel {
     // from a previous failed run — otherwise the red text stays
     // under the input indefinitely once shown.
     this._clearLuckyError();
-    // Stage 8 — drop the canned CONSTRUCT into the SPARQL editor as a
+    // Drop the canned CONSTRUCT into the SPARQL editor as a
     // side effect, so the Query Editor tab shows the underlying query
     // when the user navigates there. Wraps in a try because the
     // editor wiring is optional in test contexts.
@@ -135,8 +135,10 @@ export class SearchPanel {
       // wiring is visible in the console instead of silently gone.
       console.warn('[SearchPanel] editor reflection failed on _search:', err);
     }
-    this.controller.search(facet);
-    // Stage 12 — graph lane wins, hide the SELECT lane's result tab.
+    this.controller.search(facet).catch(err => {
+      console.error('[SearchPanel] search failed:', err);
+    });
+    // Graph lane wins, hide the SELECT lane's result tab.
     this.setActiveResultTab('graph');
     // Direct user gesture (button or Enter) → switch to the Reuse
     // graph lane (`#app-tab-explorer`).
@@ -270,7 +272,7 @@ export class SearchPanel {
       if (facet.type === 'notice-number') {
         this.input.value = facet.value;
       }
-      // Stage 8 — also reflect the canned query in the editor.
+      // Also reflect the canned query in the editor.
       try {
         const query = getQuery(facet);
         if (query) this.loadEditorText(query);
@@ -281,8 +283,10 @@ export class SearchPanel {
       }
       // Clear any lingering lucky-link error from a previous run.
       this._clearLuckyError();
-      this.controller.selectFromHistory(facet);
-      // Stage 12 — graph lane wins.
+      this.controller.selectFromHistory(facet).catch(err => {
+        console.error('[SearchPanel] history navigation failed:', err);
+      });
+      // Graph lane wins.
       this.setActiveResultTab('graph');
       // Direct user gesture (history dropdown click) → switch to
       // the Reuse graph lane (`#app-tab-explorer`).
@@ -357,8 +361,8 @@ export class SearchPanel {
       if (facet?.type === 'notice-number') {
         this.input.value = facet.value;
       }
-      // Stage 9 — also drop the canned query into the SPARQL editor
-      // as a side effect, mirroring the Stage 8 behaviour for typed
+      // Also drop the canned query into the SPARQL editor
+      // as a side effect, mirroring the search behaviour for typed
       // searches. Anyone landing on the merged app via a shared
       // ?facet= URL sees the same editor + Reuse-graph-lane state
       // they would have seen if they had typed the search themselves.
@@ -381,7 +385,7 @@ export class SearchPanel {
         hydrateSparqlOptions(this.controller._sparqlOptions);
       }
 
-      // Stage 12 — URL loading is always a graph lane gesture.
+      // URL loading is always a graph lane gesture.
       this.setActiveResultTab('graph');
       // Fresh navigation from a shared link carries explicit intent:
       // the recipient was sent here to look at a notice, so jump

@@ -87,7 +87,7 @@ export async function startCustomizeTour() {
   const driver = await loadDriver();
 
   if (activeTour) {
-    try { activeTour.destroy(); } catch { /* best-effort cleanup */ }
+    try { activeTour.destroy(); } catch (e) { console.debug('[tour] destroy() threw:', e); }
     activeTour = null;
   }
 

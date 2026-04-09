@@ -231,6 +231,10 @@ export class QueryResults {
     const body = buildSparqlBody(minifiedQuery, format);
 
     try {
+      const sparqlTimeout = Number(document.getElementById('timeout')?.value) || 60_000;
+      const downloadTimeout = Math.max(sparqlTimeout, 10_000);
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), downloadTimeout);
       const response = await fetch(this.queryEditor.sparqlEndpoint, {
         method: "POST",
         headers: {
@@ -238,7 +242,9 @@ export class QueryResults {
           "Accept": format,
         },
         body,
+        signal: abort.signal,
       });
+      clearTimeout(timer);
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
         console.error('Download failed:', response.status, detail);
@@ -251,8 +257,12 @@ export class QueryResults {
       triggerBlobDownload(text, `query-results${QueryResults._extensionFor(format)}`);
     } catch (error) {
       console.error('Download failed:', error);
-      const { friendly } = classifyError(error, 'select');
-      showToast('Download failed', friendly, { variant: 'danger' });
+      if (error?.name === 'AbortError') {
+        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+      } else {
+        const { friendly } = classifyError(error, 'select');
+        showToast('Download failed', friendly, { variant: 'danger' });
+      }
     }
   }
 

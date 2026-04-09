@@ -16,13 +16,12 @@ import { QueryLibrary } from './QueryLibrary.js';
 import { HomeTab } from './HomeTab.js';
 import { QueryResults } from './QueryResults.js';
 
-// Explorer port — Stage 6 wiring. These classes drive the Inspect
-// tab (`#app-tab-search`) and the Reuse tab's graph lane
-// (`#app-tab-explorer`), both of which were added in Stage 5 by
-// porting ted-open-data-explorer. They run alongside the existing
-// ted-open-data classes above and use a separate execution path
-// (worker-based, via services/sparqlService.js) until Stage 7
-// unifies the SPARQL execution into a single pipeline.
+// Explorer integration. These classes drive the Inspect tab
+// (`#app-tab-search`) and the Reuse tab's graph lane
+// (`#app-tab-explorer`). They use a worker-based execution path
+// (services/sparqlService.js) for CONSTRUCT/DESCRIBE queries,
+// while SELECT/ASK queries go through the QueryEditor's direct
+// fetch path. The routing is unified in QueryEditor.onSubmit.
 import { BacklinksView } from './BacklinksView.js';
 import { DataView } from './DataView.js';
 import { ExplorerController } from './ExplorerController.js';
@@ -66,14 +65,12 @@ document.addEventListener('DOMContentLoaded', function () {
   queryEditor.setQueryResults(queryResults);
   const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
 
-  // ── Explorer port (Stages 6-7) ──
   // Wire up the Inspect tab (`#app-tab-search`) and the Reuse
   // graph lane (`#app-tab-explorer`). ExplorerController is the
   // model layer; SearchPanel/NoticeView/DataView/BacklinksView bind
-  // to the HTML scaffolding added in Stage 5. Stage 7 also wires
-  // the Customize tab to route CONSTRUCT/DESCRIBE queries to this
-  // controller (so they render on the Reuse graph lane) while
-  // leaving SELECT/ASK on ted-open-data's existing tabular path.
+  // to the HTML scaffolding. The Customize tab routes
+  // CONSTRUCT/DESCRIBE queries to this controller (rendering on the
+  // Reuse graph lane) while SELECT/ASK uses the tabular path.
   bootstrapExplorer(queryEditor);
 
   // Initialize all Bootstrap tooltips
@@ -181,14 +178,10 @@ SELECT ?earliestDate ?latestDate WHERE {
 
 });
 
-// ── Explorer bootstrap (Stage 6) ──
 // Instantiates the explorer controller + views and wires them to the
-// HTML scaffolding from Stage 5. Mirrors ted-open-data-explorer's old
-// app.js, minus the SparqlPanel (decision §3.2: only one editor),
-// minus the progress-bar/stop-button wiring (those use explorer's own
-// element IDs that don't exist in ted-open-data; Stage 7 will unify
-// progress feedback into ted-open-data's existing footer), and minus
-// loadDataPeriod (the existing script.js block above already does it).
+// HTML scaffolding. Progress feedback uses the footer's existing
+// progress bar and stop button. Data-period loading is handled by the
+// DOMContentLoaded block above.
 function bootstrapExplorer(queryEditor) {
   const controller = new ExplorerController();
   setController(controller);
@@ -214,7 +207,7 @@ function bootstrapExplorer(queryEditor) {
     if (tabBtn) new bootstrap.Tab(tabBtn).show();
   }
 
-  // Stage 8 — best-effort callback that drops a query string into
+  // Best-effort callback that drops a query string into
   // the Customize tab's editor as a side effect of a notice-search
   // gesture. The notice-number facet path through the controller is
   // unchanged; the editor reflection is purely visual so the user
@@ -222,7 +215,7 @@ function bootstrapExplorer(queryEditor) {
   // on the Reuse graph lane.
   const loadEditorText = (text) => queryEditor?.setValue?.(text);
 
-  // Stage 12 — mutual exclusion of the two Reuse-tab lanes. Both
+  // Mutual exclusion of the two Reuse-tab lanes. Both
   // share the user-facing label "Reuse"; only one is shown at a
   // time, based on which query type just ran. Cold load = both
   // hidden.
@@ -239,10 +232,10 @@ function bootstrapExplorer(queryEditor) {
     if (graphItem)  graphItem.style.display  = kind === 'graph'  ? '' : 'none';
   };
 
-  // Stage 7 — let QueryEditor route CONSTRUCT/DESCRIBE queries to
-  // this controller. SELECT/ASK queries continue to use ted-open-data's
-  // existing fetch-based path on the Query Results tab. The
-  // setActiveResultTab callback enforces the Stage 12 mutual exclusion.
+  // Let QueryEditor route CONSTRUCT/DESCRIBE queries to this controller.
+  // SELECT/ASK queries continue to use the existing fetch-based path on
+  // the Query Results tab. The setActiveResultTab callback enforces the
+  // mutual exclusion between the SELECT and graph result lanes.
   if (queryEditor?.setExplorerRouting) {
     queryEditor.setExplorerRouting(controller, showExplorerTab, setActiveResultTab);
   }

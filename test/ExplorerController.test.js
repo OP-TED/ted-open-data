@@ -535,6 +535,75 @@ test('clearHistory removes the sessionStorage key entirely', () => {
     'clearHistory should removeItem, not just write []');
 });
 
+// ── Breadcrumb navigation (explore / goBack / goForward / goTo) ──
+
+test('explore() pushes onto the breadcrumb', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  const uri = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r1' } };
+  await controller.explore(uri);
+
+  assert.equal(controller.breadcrumb.length, 2);
+  assert.equal(controller.breadcrumbIndex, 1);
+  assert.equal(controller.currentFacet.term.value, 'http://example.org/r1');
+});
+
+test('goBack / goForward walk the breadcrumb without modifying it', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  const uri = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r1' } };
+  await controller.explore(uri);
+  assert.equal(controller.breadcrumbIndex, 1);
+
+  await controller.goBack();
+  assert.equal(controller.breadcrumbIndex, 0);
+  assert.equal(controller.breadcrumb.length, 2, 'goBack must not truncate');
+
+  await controller.goForward();
+  assert.equal(controller.breadcrumbIndex, 1);
+  assert.equal(controller.currentFacet.term.value, 'http://example.org/r1');
+});
+
+test('explore() after goBack trims stale forward history', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  const r1 = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r1' } };
+  const r2 = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r2' } };
+  await controller.explore(r1);
+  await controller.goBack();
+  // Now at index 0 with forward history. Exploring r2 should trim r1.
+  await controller.explore(r2);
+  assert.equal(controller.breadcrumb.length, 2, 'stale r1 should be trimmed');
+  assert.equal(controller.currentFacet.term.value, 'http://example.org/r2');
+});
+
+test('goTo() jumps to an index and trims everything after it', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  const r1 = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r1' } };
+  const r2 = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r2' } };
+  await controller.explore(r1);
+  await controller.explore(r2);
+  assert.equal(controller.breadcrumb.length, 3);
+
+  await controller.goTo(0);
+  assert.equal(controller.breadcrumbIndex, 0);
+  assert.equal(controller.breadcrumb.length, 1, 'goTo should trim everything after the target');
+  assert.equal(controller.currentFacet.value, PUB_A);
+});
+
+test('explore() is a no-op when the target is the current named-node', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  const uri = { type: 'named-node', term: { termType: 'NamedNode', value: 'http://example.org/r1' } };
+  await controller.explore(uri);
+  assert.equal(controller.breadcrumb.length, 2);
+
+  // Re-explore the same URI — should not push a duplicate.
+  await controller.explore(uri);
+  assert.equal(controller.breadcrumb.length, 2, 'duplicate explore must be a no-op');
+});
+
 // ── helper used only in this file ─────────────────────────────────
 
 function resetShimsExceptLocation() {

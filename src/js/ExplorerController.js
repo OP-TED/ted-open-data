@@ -46,7 +46,7 @@ const STORAGE_KEY = 'explorer-facets-v3';
 
 export class ExplorerController extends EventTarget {
   // The `doSPARQL` and `cancelAllSparqlRequests` options let tests inject
-  // stubs; production callers (app.js) pass no arguments and get the real
+  // stubs; production callers (script.js) pass no arguments and get the real
   // worker-backed service.
   constructor({
     doSPARQL = defaultDoSPARQL,
@@ -307,7 +307,7 @@ export class ExplorerController extends EventTarget {
     let sparqlOptions = {};
     const optsParam = params.get('opts');
     if (optsParam) {
-      try { sparqlOptions = JSON.parse(optsParam); } catch { /* ignore — run with defaults */ }
+      try { sparqlOptions = JSON.parse(optsParam); } catch (e) { console.debug('[ExplorerController] Malformed ?opts= parameter, using defaults:', e); }
     }
 
     // Fire-and-forget the search but attach a .catch so any rejection
@@ -352,8 +352,8 @@ export class ExplorerController extends EventTarget {
     this.facetsList = [];
     try {
       sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Best effort — quota or unavailable storage is fine to ignore.
+    } catch (e) {
+      console.debug('[ExplorerController] sessionStorage.removeItem failed:', e);
     }
     this._emit('facets-list-changed');
   }
@@ -481,7 +481,7 @@ export class ExplorerController extends EventTarget {
       try {
         sessionStorage.setItem(`${STORAGE_KEY}.corrupt`, stored);
         sessionStorage.removeItem(STORAGE_KEY);
-      } catch { /* quota — nothing we can do */ }
+      } catch (e) { console.debug('[ExplorerController] Failed to archive corrupt storage:', e); }
       return;
     }
 

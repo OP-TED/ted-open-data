@@ -20,12 +20,12 @@ export class HomeTab {
   constructor() {
     this.startTourButton = document.getElementById('start-tour');
     this.tryQueryLibraryButton = document.getElementById('try-query-library');
-    // Stage 11 — third CTA: "Look up an existing notice" jumps to the
+    // Third CTA: "Look up an existing notice" jumps to the
     // Inspect tab (`#app-tab-search`). Mirrors the two existing CTAs.
     this.lookupNoticeButton = document.getElementById('lookup-notice');
     this.queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     this.queryLibraryTab = new bootstrap.Tab(document.getElementById('query-library-tab'));
-    // The Inspect tab (`#app-tab-search`) is added by Stage 5; the
+    // The Inspect tab (`#app-tab-search`) is added  the
     // bootstrap.Tab is built lazily because the element only exists
     // in the merged app.
     const searchTabBtn = document.getElementById('app-tab-search');
@@ -40,7 +40,7 @@ export class HomeTab {
    * There are two sets of CTA buttons on the Home tab:
    *   - The slide-specific buttons on carousel slides 2-4 (IDs:
    *     lookup-notice, try-query-library, start-tour) — these are
-   *     the original Stage 11 buttons that work when a user flips
+   *     the original  buttons that work when a user flips
    *     to the relevant slide.
    *   - The "all three at once" CTAs on slide 1 (IDs:
    *     home-cta-lookup, home-cta-library, home-cta-editor) — these
@@ -107,7 +107,7 @@ export class HomeTab {
   }
 
   /**
-   * Stage 11 — handle the look-up-a-notice CTA.
+   * Handle the look-up-a-notice CTA.
    * Switches to the Inspect tab (`#app-tab-search`) and focuses the
    * publication-number input.
    */
