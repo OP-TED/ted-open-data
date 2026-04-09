@@ -56,34 +56,45 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
   // Per-tab guided tours. The tour modules are imported dynamically
-  // on first click so no cost is paid for users who never take a tour.
-  // Each tour anchors to real elements on its own tab; clicking the
-  // trigger icon on any given tab assumes that tab is currently active
-  // (which it is, because the icon only exists inside that tab's pane).
-  document.getElementById('inspect-tour-trigger')?.addEventListener('click', async () => {
-    const { startInspectTour } = await import('./tours/inspectTour.js');
-    startInspectTour();
-  });
-  document.getElementById('explore-tour-trigger')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const { startExploreTour } = await import('./tours/exploreTour.js');
-    startExploreTour();
-  });
-  document.getElementById('customize-tour-trigger')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const { startCustomizeTour } = await import('./tours/customizeTour.js');
-    startCustomizeTour();
-  });
-  document.getElementById('reuse-select-tour-trigger')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const { startReuseSelectTour } = await import('./tours/reuseSelectTour.js');
-    startReuseSelectTour();
-  });
-  document.getElementById('reuse-graph-tour-trigger')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const { startReuseGraphTour } = await import('./tours/reuseGraphTour.js');
-    startReuseGraphTour();
-  });
+  // on first click so users who never take a tour pay no cost at
+  // load time. Each tour anchors to real elements on its own tab;
+  // the trigger icon only exists inside that tab's pane so it is
+  // implicit that the tab is active when clicked.
+  //
+  // Dynamic imports and the tour's internal driver.js CDN fetch can
+  // both fail (network, CSP, 404 after a deploy, corporate firewall).
+  // Catch around both so a dead play-button never happens silently.
+  const TOURS = [
+    { id: 'inspect-tour-trigger',      module: './tours/inspectTour.js',      fn: 'startInspectTour' },
+    { id: 'explore-tour-trigger',      module: './tours/exploreTour.js',      fn: 'startExploreTour' },
+    { id: 'customize-tour-trigger',    module: './tours/customizeTour.js',    fn: 'startCustomizeTour' },
+    { id: 'reuse-select-tour-trigger', module: './tours/reuseSelectTour.js',  fn: 'startReuseSelectTour' },
+    { id: 'reuse-graph-tour-trigger',  module: './tours/reuseGraphTour.js',   fn: 'startReuseGraphTour' },
+  ];
+  for (const { id, module, fn } of TOURS) {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`Tour trigger #${id} not found in DOM — tour unavailable.`);
+      continue;
+    }
+    el.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const mod = await import(module);
+        await mod[fn]();
+      } catch (err) {
+        console.error(`Failed to load tour ${id}:`, err);
+        const { showToast } = await import('./toast.js').catch(() => ({ showToast: null }));
+        if (showToast) {
+          showToast(
+            'Could not load the tour',
+            'The guided tour could not be loaded. Please check your connection and try again.',
+            { variant: 'danger' },
+          );
+        }
+      }
+    });
+  }
 
   // Ensure CM6 editors re-measure when their Bootstrap tabs become visible
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
