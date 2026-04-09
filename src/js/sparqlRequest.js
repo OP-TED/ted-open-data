@@ -46,6 +46,38 @@ export function readSparqlOptions() {
 }
 
 /**
+ * Write SPARQL options into the Options panel form inputs. The
+ * mirror of `readSparqlOptions` — called when a shared URL carries
+ * `?opts=<JSON>` so the Customize tab's form reflects the sender's
+ * settings. Without this, the first execution from the URL is
+ * correct (the controller holds the options in `_sparqlOptions`),
+ * but a subsequent "Run Query" from the Customize tab reads the
+ * DOM form via `buildSparqlBody` and silently reverts to the
+ * recipient's local defaults.
+ *
+ * @param {{defaultGraphUri?: string, timeout?: string,
+ *          strict?: string, debug?: string, report?: string}} opts
+ */
+export function hydrateSparqlOptions(opts) {
+  if (!opts || typeof opts !== 'object') return;
+
+  const dgu = document.getElementById('default-graph-uri');
+  if (dgu && opts.defaultGraphUri !== undefined) dgu.value = opts.defaultGraphUri;
+
+  const timeout = document.getElementById('timeout');
+  if (timeout && opts.timeout !== undefined) timeout.value = opts.timeout;
+
+  const strict = document.getElementById('strict');
+  if (strict && opts.strict !== undefined) strict.checked = opts.strict === 'true';
+
+  const debug = document.getElementById('debug');
+  if (debug && opts.debug !== undefined) debug.checked = opts.debug === 'true';
+
+  const report = document.getElementById('report');
+  if (report && opts.report !== undefined) report.checked = opts.report === 'true';
+}
+
+/**
  * Build an application/x-www-form-urlencoded POST body for a SPARQL
  * query. Empty `default-graph-uri` and `timeout` are omitted so the
  * endpoint sees "no opinion" rather than an empty value (some
