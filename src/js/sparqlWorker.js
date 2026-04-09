@@ -22,7 +22,7 @@
 const SPARQL_CONSTRUCT_TIMEOUT_MS = 60_000;
 
 self.onmessage = async function(event) {
-  const { id, type, query, endpoint } = event.data;
+  const { id, type, query, endpoint, options } = event.data;
 
   if (type !== 'sparql') {
     self.postMessage({
@@ -34,7 +34,7 @@ self.onmessage = async function(event) {
   }
 
   try {
-    const turtleData = await _runSparqlQuery(query, endpoint);
+    const turtleData = await _runSparqlQuery(query, endpoint, options);
     self.postMessage({ id, type: 'success', turtleData });
   } catch (error) {
     // Pass `name` and `message` through the structured-clone boundary
@@ -53,17 +53,32 @@ self.onmessage = async function(event) {
   }
 };
 
-async function _runSparqlQuery(query, endpoint) {
+async function _runSparqlQuery(query, endpoint, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SPARQL_CONSTRUCT_TIMEOUT_MS);
+  // Use the timeout from the Options panel when available; otherwise
+  // fall back to the built-in upper bound.
+  const timeoutMs = options.timeout
+    ? Math.min(Number(options.timeout), SPARQL_CONSTRUCT_TIMEOUT_MS)
+    : SPARQL_CONSTRUCT_TIMEOUT_MS;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    // Build the POST body with the same options the SELECT path
+    // sends via buildSparqlBody. Only non-empty values are appended
+    // so the endpoint sees "no opinion" rather than empty strings.
+    const params = new URLSearchParams({ query });
+    if (options.defaultGraphUri) params.set('default-graph-uri', options.defaultGraphUri);
+    if (options.timeout) params.set('timeout', options.timeout);
+    if (options.strict) params.set('strict', options.strict);
+    if (options.debug) params.set('debug', options.debug);
+    if (options.report) params.set('report', options.report);
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Accept': 'text/turtle',
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({ query }).toString(),
+      body: params.toString(),
       signal: controller.signal,
     });
 

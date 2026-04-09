@@ -26,7 +26,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 import {epoCompletionSource, getEpoData} from './epo-completion.js';
 import {classifyError} from './errorMessages.js';
-import {buildSparqlBody} from './sparqlRequest.js';
+import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 
 /**
  * Class representing the Query Editor.
@@ -303,6 +303,11 @@ export class QueryEditor {
         }
 
         if (parseError) {
+          // Clear any previous results and toolbar so the user does
+          // not see the new error banner on top of a stale table
+          // from a previous successful run.
+          this.queryResults?.setToolbarVisible(false);
+          this.resultsDiv.innerHTML = '';
           this._renderSelectLaneError(parseError);
           // Reveal the SELECT pane so the user sees the error
           // (the pane starts hidden; without this the error renders
@@ -326,7 +331,14 @@ export class QueryEditor {
           // need a try/catch here. If that contract ever changes
           // the unhandled rejection will surface the regression
           // immediately rather than being silently logged.
-          await this.explorerController.search({ type: 'query', query: queryText });
+          // Read the Options panel so CONSTRUCT/DESCRIBE queries
+          // honour timeout / strict / debug / report /
+          // default-graph-uri the same way SELECT queries do.
+          const sparqlOptions = readSparqlOptions();
+          await this.explorerController.search(
+            { type: 'query', query: queryText },
+            { sparqlOptions },
+          );
           this.setActiveResultTab('graph');
           this.showExplorerTab();
           return;

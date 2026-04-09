@@ -32,11 +32,11 @@ const DEFAULT_FORMAT = 'application/sparql-results+json';
 
 /**
  * Read the SPARQL options panel inputs from the DOM and return a
- * normalised object. Intended for all three builder callers, so they
- * all see the same values.
- * @private
+ * normalised object. Used by `buildSparqlBody` (for the SELECT
+ * lane) and by QueryEditor's CONSTRUCT/DESCRIBE routing (which
+ * passes these to ExplorerController → doSPARQL → sparqlWorker).
  */
-function _readOptions() {
+export function readSparqlOptions() {
   const defaultGraphUri = document.getElementById('default-graph-uri')?.value || '';
   const timeout = document.getElementById('timeout')?.value || '';
   const strict = document.getElementById('strict')?.checked ? 'true' : 'false';
@@ -57,7 +57,7 @@ function _readOptions() {
  * @returns {string} url-encoded POST body
  */
 export function buildSparqlBody(query, format = DEFAULT_FORMAT) {
-  const { defaultGraphUri, timeout, strict, debug, report } = _readOptions();
+  const { defaultGraphUri, timeout, strict, debug, report } = readSparqlOptions();
   let body = `query=${encodeURIComponent(query)}&format=${encodeURIComponent(format)}`;
   if (defaultGraphUri) body += `&default-graph-uri=${encodeURIComponent(defaultGraphUri)}`;
   if (timeout) body += `&timeout=${encodeURIComponent(timeout)}`;

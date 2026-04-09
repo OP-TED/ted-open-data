@@ -98,13 +98,19 @@ class ExplorerController extends EventTarget {
   // dropdown with siblings the user didn't explicitly look up. The facet
   // is still resolved to an existing history entry if one exists, so
   // enrichment stays consistent.
-  async search(facet, { addToHistory = true } = {}) {
+  async search(facet, { addToHistory = true, sparqlOptions = {} } = {}) {
     const stamped = this._withTimestamp(facet);
     const canonical = addToHistory
       ? this._addToHistory(stamped)
       : this._resolveExisting(stamped);
     this.breadcrumb = [canonical];
     this.breadcrumbIndex = 0;
+    // sparqlOptions are forwarded to doSPARQL so CONSTRUCT/DESCRIBE
+    // queries honour the Customize tab's Options panel (timeout,
+    // strict, debug, report, default-graph-uri). Notice-number
+    // searches pass no options because they use a canned query whose
+    // options are baked in.
+    this._sparqlOptions = sparqlOptions;
     await this._navigated();
   }
 
@@ -365,7 +371,7 @@ class ExplorerController extends EventTarget {
     this._emit('loading-changed');
 
     try {
-      const results = await this._doSPARQL(query);
+      const results = await this._doSPARQL(query, this._sparqlOptions || {});
       if (token !== this._queryToken) return;
       this.results = results;
       this._emit('results-changed');

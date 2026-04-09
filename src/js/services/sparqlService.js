@@ -149,7 +149,7 @@ function getWorker() {
 // must remove the entry we just inserted into pendingRequests, or the
 // promise leaks and the caller waits forever. The try/catch below
 // guarantees the entry and the promise stay in lockstep.
-function doSPARQL(query) {
+function doSPARQL(query, options = {}) {
   return new Promise((resolve, reject) => {
     let activeWorker;
     try {
@@ -166,6 +166,11 @@ function doSPARQL(query) {
         type: 'sparql',
         query,
         endpoint: getEndpoint(),
+        // Optional SPARQL options from the Customize tab's Options
+        // panel. Forwarded to the worker so CONSTRUCT/DESCRIBE
+        // queries honour the same timeout / strict / debug / report
+        // / default-graph-uri settings as SELECT queries.
+        options,
       });
     } catch (err) {
       pendingRequests.delete(id);
