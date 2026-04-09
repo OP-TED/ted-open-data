@@ -366,7 +366,7 @@ test('identity: breadcrumb[0] is the same reference as facetsList[0] after searc
     'breadcrumb[0] must be the same reference as facetsList[0]');
 });
 
-test('identity: re-searching the same notice rebinds to the enriched reference', async () => {
+test('identity: re-searching the same notice preserves enrichment after dedup', async () => {
   const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
 
   await controller.search(createPublicationNumberFacet(PUB_A));
@@ -374,17 +374,17 @@ test('identity: re-searching the same notice rebinds to the enriched reference',
     publicationDate: '2026-03-12+01:00',
     noticeType: 'can-standard',
   });
-  const enrichedRef = controller.facetsList[0];
-  assert.equal(enrichedRef.noticeType, 'can-standard');
+  assert.equal(controller.facetsList[0].noticeType, 'can-standard');
 
-  // Re-search the same notice. The breadcrumb must wire to the enriched
-  // entry, not a fresh bare copy.
+  // Re-search the same notice. addUnique bumps the existing entry
+  // to the end (most-recent position) and merges enrichment from
+  // the original entry into the new one.
   await controller.search(createPublicationNumberFacet('172531-2026'));
   assert.equal(controller.facetsList.length, 1, 'duplicate should not grow the list');
-  assert.equal(controller.breadcrumb[0], enrichedRef,
-    'breadcrumb[0] must be the pre-existing enriched reference');
   assert.equal(controller.currentFacet.noticeType, 'can-standard',
-    'currentFacet must expose enrichment because identity is preserved');
+    'currentFacet must expose enrichment because addUnique merges it');
+  assert.equal(controller.currentFacet.publicationDate, '2026-03-12+01:00',
+    'publicationDate enrichment also survives the merge');
 });
 
 test('enrichNoticeFacet mutates in place so the breadcrumb sees the update', async () => {

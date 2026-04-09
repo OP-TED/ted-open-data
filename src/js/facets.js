@@ -143,11 +143,30 @@ function facetEquals(a, b) {
   return safeQuery(a) === safeQuery(b);
 }
 
-// Add a facet to a list if it's not already there. Returns both the new list
-// and the final index of the facet (pre-existing or newly appended).
+// Add a facet to a list, or bump it to the end if it already exists.
+// Returns both the updated list and the final index of the facet.
+//
+// When a duplicate is found, the entry is moved to the end of the
+// list (the "most recent" position) rather than staying in its
+// original slot. The history dropdown reverses the list, so
+// bumping-to-end means re-running an old notice brings it back to
+// the top of "Most recent first" — which is what the label promises.
+// The existing entry's enrichment metadata (publicationDate,
+// noticeType, buyerCountry, etc.) is preserved via a merge with
+// the incoming facet so timeline data is not lost.
 function addUnique(facets, newFacet) {
   const existingIndex = facets.findIndex(f => facetEquals(f, newFacet));
-  if (existingIndex >= 0) return { facets, index: existingIndex };
+  if (existingIndex >= 0) {
+    // Merge: keep enrichment from the existing entry, update
+    // timestamp from the new one (the new search is the most recent).
+    const merged = { ...facets[existingIndex], ...newFacet };
+    const updated = [
+      ...facets.slice(0, existingIndex),
+      ...facets.slice(existingIndex + 1),
+      merged,
+    ];
+    return { facets: updated, index: updated.length - 1 };
+  }
   return { facets: [...facets, newFacet], index: facets.length };
 }
 

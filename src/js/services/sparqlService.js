@@ -274,6 +274,7 @@ export {
   doSPARQL,
   doSPARQLSelect,
   cancelAllSparqlRequests,
+  getEndpoint,
   _rehydrateWorkerError,
   __getPendingCountForTesting,
   __resetWorkerForTesting,

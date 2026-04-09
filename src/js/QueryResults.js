@@ -94,6 +94,27 @@ export class QueryResults {
   displayJsonResults(data) {
     this.resultsDiv.innerHTML = "";
 
+    // ASK queries return { boolean: true/false } rather than
+    // { results: { bindings: [...] } }. Render a single-cell table
+    // showing the boolean so the result is visible and downloadable,
+    // rather than falling through to "No results found".
+    if (typeof data.boolean === 'boolean') {
+      const table = document.createElement('table');
+      table.className = 'table table-striped sparql monospace';
+      const thead = table.createTHead();
+      const headerRow = thead.insertRow();
+      const th = document.createElement('th');
+      th.textContent = 'ASK';
+      headerRow.appendChild(th);
+      const tbody = table.createTBody();
+      const tr = tbody.insertRow();
+      const td = tr.insertCell();
+      td.textContent = String(data.boolean);
+      this.resultsDiv.appendChild(table);
+      this.setToolbarVisible(true);
+      return;
+    }
+
     if (data.results && data.results.bindings.length > 0) {
       const table = document.createElement("table");
       table.className = "table table-striped sparql monospace";

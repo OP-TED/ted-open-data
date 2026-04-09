@@ -304,6 +304,11 @@ export class QueryEditor {
 
         if (parseError) {
           this._renderSelectLaneError(parseError);
+          // Reveal the SELECT pane so the user sees the error
+          // (the pane starts hidden; without this the error renders
+          // into an invisible container).
+          this.setActiveResultTab('select');
+          this.queryResultsTab.show();
           return;
         }
 
@@ -392,13 +397,6 @@ export class QueryEditor {
           this.queryResults.displayTextResults(responseText, 'text');
         }
 
-        // Stage 12 — mutual exclusion: SELECT lane wins. Reveal the
-        // SELECT result tab and hide the graph result tab. Only runs
-        // on success; on error we stay on whatever tab the user is on
-        // (previously the tab-switch fell out of the try/catch and
-        // yanked the user to an empty SELECT tab after a failure).
-        this.setActiveResultTab('select');
-        this.queryResultsTab.show();
       } catch (error) {
         this._renderSelectLaneError(error);
       } finally {
@@ -411,6 +409,18 @@ export class QueryEditor {
         this.stopQueryButton.style.display = 'none';
         this.abortController = null;
         this.onEditorChange();
+
+        // Stage 12 — mutual exclusion: SELECT lane wins. Runs in
+        // `finally` so the user is taken to the Reuse SELECT pane
+        // on BOTH success (to see the table) AND error (to see the
+        // friendly error state). The original M8 fix placed this
+        // inside the success branch only, which meant a failed query
+        // rendered the error into a hidden pane and the user saw
+        // nothing. Scoping to the SELECT-path `finally` (not the
+        // outer one) ensures CONSTRUCT queries still route to the
+        // graph lane and never land here.
+        this.setActiveResultTab('select');
+        this.queryResultsTab.show();
       }
     } finally {
       // Outer finally — releases the top-level busy flag set at entry,

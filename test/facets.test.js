@@ -374,17 +374,36 @@ test('addUnique appends a new facet and returns its index', () => {
   assert.equal(facets[0].value, '00172531-2026');
 });
 
-test('addUnique collapses duplicates to the existing index', () => {
+test('addUnique deduplicates and bumps the entry to the end (most-recent position)', () => {
   const facetA = createPublicationNumberFacet(PUB_2026);
+  const facetB = createPublicationNumberFacet(PUB_2024);
+  const { facets: afterA } = addUnique([], facetA);
+  const { facets: afterAB } = addUnique(afterA, facetB);
+
+  // Re-add A. It already exists at index 0 — addUnique should move
+  // it to the end so the "most recent first" dropdown is accurate.
+  const facetADuplicate = createPublicationNumberFacet('172531-2026');
+  const { facets, index } = addUnique(afterAB, facetADuplicate);
+  assert.equal(facets.length, 2, 'no growth — deduplicated');
+  assert.equal(index, 1, 'bumped to the end');
+  // The entry at index 1 carries A's value and timestamp from the new facet.
+  assert.equal(facets[1].value, afterA[0].value);
+});
+
+test('addUnique preserves enrichment metadata from the original entry on dedup', () => {
+  const facetA = createPublicationNumberFacet(PUB_2026);
+  // Simulate enrichment that NoticeView attaches after the first lookup.
+  facetA.publicationDate = '2026-03-05';
+  facetA.noticeType = 'pin-buyer';
   const { facets: afterFirst } = addUnique([], facetA);
 
-  // Same publication number, fresh timestamp — should dedupe.
+  // Re-add the same notice without enrichment (as a fresh search would).
   const facetADuplicate = createPublicationNumberFacet('172531-2026');
-  const { facets, index } = addUnique(afterFirst, facetADuplicate);
+  const { facets } = addUnique(afterFirst, facetADuplicate);
   assert.equal(facets.length, 1);
-  assert.equal(index, 0);
-  // Original (possibly enriched) entry is kept, not replaced.
-  assert.equal(facets[0], afterFirst[0]);
+  // Enrichment from the original survives the merge.
+  assert.equal(facets[0].publicationDate, '2026-03-05');
+  assert.equal(facets[0].noticeType, 'pin-buyer');
 });
 
 test('addUnique distinguishes different publication numbers', () => {

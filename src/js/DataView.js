@@ -44,6 +44,7 @@ import { copyToClipboard } from './clipboardCopy.js';
 import { triggerBlobDownload } from './download.js';
 import { classifyError } from './errorMessages.js';
 import { getLabel, getQuery } from './facets.js';
+import { getEndpoint } from './services/sparqlService.js';
 import { showToast } from './toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
 
@@ -183,14 +184,16 @@ class DataView {
         extension = 'ttl';
       } else {
         // Re-fetch from the endpoint with the requested Accept header.
-        // Use the same /sparql route the worker uses; it preserves
-        // Accept and forwards to the real endpoint.
+        // Uses the same endpoint-selection logic as sparqlService so
+        // dev mode routes through the cors-proxy while production
+        // hits the real endpoint directly. The previous hard-coded
+        // `/sparql` only worked in dev.
         const query = getQuery(facet);
         if (!query) {
           showToast('Download failed', 'Could not build a download query for the current view.', { variant: 'danger' });
           return;
         }
-        const response = await fetch('/sparql', {
+        const response = await fetch(getEndpoint(), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
