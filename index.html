@@ -1,5 +1,5 @@
 <!--
-  Copyright 2022 European Union
+  Copyright 2024 European Union
 
   Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
   Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -20,20 +20,18 @@
     <title>TED Open Data Service</title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Custom TED Branding -->
-    <link rel="stylesheet" href="src/assets/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="src/assets/style.css">
 
     <!-- Favicon (if applicable) -->
-    <link rel="icon" type="image/png" href="/path-to-ted-favicon.png">
+    <link rel="icon" type="image/png" href="src/assets/ted-logo.png">
 
-    <!-- CodeMirror CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
+    <!-- CodeMirror v6 injects its own styles, no CSS links needed -->
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
 <body class="bg-light">
@@ -50,7 +48,7 @@
     <!-- Header -->
     <header class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand ms-4" href="#">
                 <img src="./src/assets/ted-logo.png" alt="TED - Publications Office of the EU" width="60"
                     class="d-inline-block align-middle mr-2"><span>TED Open Data Service</span>
             </a>
@@ -92,7 +90,7 @@
 
         <!-- Home -->
         <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
-            <div class="alert alert-warning" role="alert"><b>Please note</b>: This is a pre-release version of the TED SPARQL Editor. Some features may not be fully functional.</div>
+            <!-- <div class="alert alert-warning" role="alert"><b>Please note</b>: This is a pre-release version of the TED SPARQL Editor. Some features may not be fully functional.</div> -->
             <div class="jumbotron">
                 <h1 class="display-4">TED Open Data</h1>
                 <p class="lead">Explore and download TED Open Data using SPARQL queries.</p>
@@ -110,7 +108,7 @@
                     This application is developed by the Publications Office of the EU and is available as open
                     source on <a href="https://github.com/OP-TED/ted-sparql-editor">GitHub</a>. 
                     We welcome your feedback, suggestions for improvement as well as your contributions to the project. 
-                    Visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank">GitHub Discussions</a> forum to share your ideas and feedback.
+                    Visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> forum to share your ideas and feedback.
                 </p>
                 <button id="try-query-library" class="btn btn-primary">Try our query library</button>
                 <button id="start-tour" class="btn btn-primary">Write your own query</button>
@@ -127,6 +125,12 @@
                                 <!-- Categories and queries will be populated here -->
                             </div>
                         </div>
+                        <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
+                           class="small text-muted text-decoration-none mt-2 align-self-start"
+                           data-bs-toggle="tooltip" data-bs-placement="right"
+                           title="Want to contribute a query? See the contributing guide.">
+                            <i class="bi bi-info-circle"></i> Contribute a query
+                        </a>
                     </div>
                     <div class="col-md-8 d-flex flex-column">
                         <div id="selectQueryMessage" class="d-flex align-items-center justify-content-center flex-grow-1">
@@ -134,12 +138,12 @@
                         </div>
                         <div class="card flex-grow-1 border-0 m-0 p-0 d-none" id="queryCard">
                             <div class="card-body d-flex flex-column p-0">
-                                <textarea id="querySparql" class="d-none"></textarea>
+                                <div id="querySparql"></div>
                                 <div id="queryDetails" class="p-3">
                                     <h5 id="queryTitle" class="mt-3">Query Title</h5>
                                     <p id="queryDescription">Select a query to see its description.</p>
-                                    <div class="d-flex justify-content-end">
-                                        <button id="tryQueryButton" class="btn btn-primary mt-3" disabled>Try this query</button>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button id="tryQueryButton" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
                                 </div>
                             </div>
@@ -158,26 +162,24 @@
             <form id="queryForm" class="d-flex flex-column h-100">
                 <div class="mb-3 flex-grow-1 d-flex flex-column">
                     <div class="form-group flex-grow-1 d-flex flex-column">
-                        <label for="query" class="form-label">SPARQL Query</label>
-                        <textarea id="query" name="query" class="form-control flex-grow-1" placeholder="Add your SPARQL query here"></textarea>
+                        <label id="query-label" class="form-label">SPARQL Query</label>
+                        <div id="query" class="flex-grow-1" role="textbox" aria-labelledby="query-label" aria-multiline="true"></div>
                         <div id="syntax-error" class="text-danger mt-2" style="display: none;"></div> <!-- Syntax error display -->
                     </div>
                 </div>
 
                 <div class="form-floating mb-3">
                     <select id="format" name="format" class="form-select">
-                        <option value="auto" selected>Auto</option>
-                        <option value="text/html">HTML</option>
-                        <option value="text/x-html+tr">HTML (Basic Browsing Links)</option>
+                        <option value="text/html" selected>HTML</option>
+                        <option value="application/sparql-results+json">JSON</option>
+                        <option value="text/csv">CSV</option>
+                        <option value="text/tab-separated-values">TSV</option>
                         <option value="application/vnd.ms-excel">Spreadsheet</option>
                         <option value="application/sparql-results+xml">XML</option>
-                        <option value="application/sparql-results+json">JSON</option>
-                        <option value="application/javascript">Javascript</option>
                         <option value="text/turtle">Turtle</option>
                         <option value="application/rdf+xml">RDF/XML</option>
                         <option value="text/plain">N-Triples</option>
-                        <option value="text/csv">CSV</option>
-                        <option value="text/tab-separated-values">TSV</option>
+                        <option value="application/javascript">Javascript</option>
                     </select>
                     <label for="format">Results Format</label>
                 </div>
@@ -235,8 +237,8 @@
         <!-- Query Results -->
         <div class="tab-pane w-100 fade position-absolute" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
             <!-- Copy URL Alert Box -->
-            <div class="alert alert-info d-flex justify-content-between align-items-center mb-2" id="copy-url-alert" style="display: none!important;">
-                <span>You can run this query directly from Excel or any other application by using its URL.</span>
+            <div class="alert alert-info justify-content-between align-items-center mb-2 d-none" id="copy-url-alert">
+                <span id="alert-message">You can run this query directly from Excel or any other application by using its URL.</span>
                 <div>
                     <button id="copy-url-button" class="btn btn-secondary me-2">Copy URL</button>
                     <button id="open-url-button" class="btn btn-secondary">Download</button>
@@ -261,7 +263,7 @@
                         </p>
                         <p>
                             To use this tool you will need to develop some familiarity with the logic and syntax of SPARQL as well as the concepts defined in the eProcurement Ontology. 
-                            For detailed information and guidance on these topics, please visit our <a href="https://docs.ted.europa.eu/" target="_blank">documentation website</a>.</p>
+                            For detailed information and guidance on these topics, please visit our <a href="https://docs.ted.europa.eu/" target="_blank" rel="noopener noreferrer">documentation website</a>.</p>
                         </p>
                         <h3>How to use this tool</h3>
                         <p>
@@ -275,9 +277,27 @@
                                 <li>To download a copy of the data retrieved by your query you can use the <b>Download</b> button in the <b>Query Results</b> tab.</li>
                             </ul>
                         </p>
+                        <h3>Autocomplete feature</h3>
+                        <p>The query editor provides autocomplete suggestions as you type:</p>
+                        <ul>
+                            <li>Type <code>PREFIX </code> to see available namespace prefixes</li>
+                            <li>Type <code>epo:</code> followed by a class or property name to see ePO ontology suggestions</li>
+                            <li>Type <code>a </code> after a subject to see available ePO classes</li>
+                            <li>SPARQL keywords are suggested as you type</li>
+                            <li>Press <b>Ctrl+Space</b> to manually trigger suggestions at any time</li>
+                        </ul>
+                        <p class="small text-muted">Autocomplete is based on the eProcurement Ontology (ePO) v4.2.0.</p>
+
+                        <h3>Query Library</h3>
+                        <p>
+                            The Query Library provides example SPARQL queries to help you get started.
+                            If you'd like to contribute new queries, improve existing ones, or add comments to make them clearer,
+                            see the <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer">contributing guide</a>.
+                        </p>
+
                         <h3>Questions & feedback</h3>
                         <p>
-                            For questions and feedback, please visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank">GitHub Discussions</a> forum.
+                            For questions and feedback, please visit our <a href="https://github.com/OP-TED/ted-open-data/discussions" target="_blank" rel="noopener noreferrer">GitHub Discussions</a> forum.
                         </p>
                     </div>
 
@@ -289,16 +309,31 @@
                                 <h5 class="card-title mb-0">Third-Party Components</h5>
                             </div>
                             <div class="card-body">
-                                <h6>Frontend Components</h6>
+                                <h6>Application</h6>
                                 <ul class="list-unstyled">
                                     <li class="mb-3">
-                                        <strong>Bootstrap</strong> (v5.3.0-alpha3)
+                                        <strong>Bootstrap</strong> (v5.3.8)
                                         <br><small class="text-muted">CSS framework for styling and components</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
-                                        <strong>CodeMirror</strong> (v5.65.2)
-                                        <br><small class="text-muted">Code editor with SPARQL syntax highlighting</small>
+                                        <strong>Bootstrap Icons</strong> (v1.11.3)
+                                        <br><small class="text-muted">Icon library</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>CodeMirror</strong> (v6)
+                                        <br><small class="text-muted">Code editor</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>codemirror-lang-sparql</strong> (v2.0.0)
+                                        <br><small class="text-muted">SPARQL syntax highlighting for CodeMirror</small>
+                                        <br><small class="text-secondary">License: MIT</small>
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>sparqljs</strong> (v3.7.4)
+                                        <br><small class="text-muted">SPARQL query parser and generator</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
@@ -308,11 +343,11 @@
                                     </li>
                                 </ul>
 
-                                <h6 class="mt-4">Backend Components</h6>
+                                <h6 class="mt-4">Development Tools</h6>
                                 <ul class="list-unstyled">
                                     <li class="mb-3">
                                         <strong>Express</strong> (v4.17.1)
-                                        <br><small class="text-muted">Web server framework</small>
+                                        <br><small class="text-muted">Local CORS proxy server</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
@@ -322,17 +357,12 @@
                                     </li>
                                     <li class="mb-3">
                                         <strong>node-fetch</strong> (v2.6.1)
-                                        <br><small class="text-muted">Fetch API implementation for Node.js</small>
+                                        <br><small class="text-muted">Fetch API for Node.js</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                     <li class="mb-3">
                                         <strong>https-proxy-agent</strong> (v7.0.5)
-                                        <br><small class="text-muted">HTTP(s) proxy agent for Node.js</small>
-                                        <br><small class="text-secondary">License: MIT</small>
-                                    </li>
-                                    <li>
-                                        <strong>sparqljs</strong> (v3.7.3)
-                                        <br><small class="text-muted">SPARQL query parser and generator</small>
+                                        <br><small class="text-muted">Corporate proxy support</small>
                                         <br><small class="text-secondary">License: MIT</small>
                                     </li>
                                 </ul>
@@ -346,14 +376,20 @@
     </main>
 
     <!-- Footer -->
-    <footer class="d-flex w-100">
-        <!-- Legend -->
-        <div class="legend-container flex-grow-1 ml-3">
-            Developed by the Publications Office of the EU.
+    <footer class="d-flex w-100 align-items-center">
+        <div class="small text-muted ml-3 d-flex align-items-center">
+            <span id="data-period"></span>
+            <span id="data-period-info" class="bi bi-info-circle ms-1" tabindex="0" role="img"
+               aria-label="Data period information" style="display: none; cursor: help;"
+               data-bs-toggle="tooltip" data-bs-placement="top"
+               title="Publication dates of the earliest and most recent notices available in our dataset."></span>
         </div>
-        <div class="progress mr-3" style="width: 10%; min-width: 100px">
+        <div class="flex-grow-1 text-center small text-muted">&copy; Publications Office of the EU</div>
+        <div class="progress mr-3 position-relative" style="width: 10%; min-width: 100px">
             <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
+            <span id="query-timer" class="position-absolute w-100 text-center small text-muted" style="top: 0; left: 0; line-height: 1rem; font-size: 0.65rem; font-weight: 600;"></span>
         </div>
+        <button id="stopQueryButton" class="btn p-0 align-items-center justify-content-center" aria-label="Cancel query" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel query" style="display: none; font-size: 1.2rem; line-height: 1; margin-left: 0.5rem; color: #dc3545; border: none;"><i class="bi bi-x-circle-fill"></i></button>
         <div id="apiStatus" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
             <div class="toast-header">
                 <svg width="16" height="16" class="rounded mr-2">
@@ -384,14 +420,12 @@
     </div>
 
     <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- JavaScript File -->
     <script src="src/js/script.js" type="module" defer></script>
 
-    <!-- Add these before the closing body tag -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sparql/sparql.min.js"></script>
+    <!-- CodeMirror v6 is loaded as ES modules from within JS files -->
 </body>
 
 </html>

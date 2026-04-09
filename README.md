@@ -55,6 +55,15 @@ To run the application locally:
 2. Open `index.html` in your web browser
 3. That's it! No additional web server is needed
 
+### Updating CodeMirror
+
+The SPARQL editor uses a self-hosted CodeMirror v6 bundle (`src/vendor/codemirror-bundle.js`) to avoid CDN version drift issues. This bundle only needs to be rebuilt when updating CodeMirror versions:
+
+1. Update the versions in `package.json` under `devDependencies`
+2. Run `npm install`
+3. Run `npm run build:codemirror`
+4. Commit the updated bundle
+
 ### Corporate Proxy Configuration
 
 If you're behind a corporate proxy:
@@ -85,25 +94,40 @@ The endpoints are configured in `config.json`
 
 This project uses the following third-party components:
 
-### Frontend Components
-- **Bootstrap** (v5.3.0-alpha3)
+### Application
+- **Bootstrap** (v5.3.8)
   - Purpose: CSS framework for styling and components
   - License: MIT
   - Website: https://getbootstrap.com/
 
-- **CodeMirror** (v5.65.2)
-  - Purpose: Code editor with SPARQL syntax highlighting
+- **Bootstrap Icons** (v1.11.3)
+  - Purpose: Icon library
+  - License: MIT
+  - Website: https://icons.getbootstrap.com/
+
+- **CodeMirror** (v6)
+  - Purpose: Code editor
   - License: MIT
   - Website: https://codemirror.net/
+
+- **codemirror-lang-sparql** (v2.0.0)
+  - Purpose: SPARQL syntax highlighting for CodeMirror
+  - License: MIT
+  - Website: https://github.com/aatauil/codemirror-lang-sparql
+
+- **sparqljs** (v3.7.4)
+  - Purpose: SPARQL query parser and generator
+  - License: MIT
+  - Website: https://github.com/RubenVerborgh/SPARQL.js
 
 - **js-yaml** (v4.1.0)
   - Purpose: YAML parser and dumper
   - License: MIT
   - Website: https://github.com/nodeca/js-yaml
 
-### Backend Components
+### Development Tools
 - **Express** (v4.17.1)
-  - Purpose: Web server framework
+  - Purpose: Local CORS proxy server
   - License: MIT
   - Website: https://expressjs.com/
 
@@ -113,23 +137,18 @@ This project uses the following third-party components:
   - Website: https://github.com/expressjs/cors
 
 - **node-fetch** (v2.6.1)
-  - Purpose: Fetch API implementation for Node.js
+  - Purpose: Fetch API for Node.js
   - License: MIT
   - Website: https://github.com/node-fetch/node-fetch
 
 - **https-proxy-agent** (v7.0.5)
-  - Purpose: HTTP(s) proxy agent for Node.js
+  - Purpose: Corporate proxy support
   - License: MIT
   - Website: https://github.com/TooTallNate/node-https-proxy-agent
 
-- **sparqljs** (v3.7.3)
-  - Purpose: SPARQL query parser and generator
-  - License: MIT
-  - Website: https://github.com/RubenVerborgh/SPARQL.js
-
 All third-party components are used under their respective licenses.
 
-[^1]: _Copyright 2022 European Union_  
+[^1]: _Copyright 2024 European Union_  
 _Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission – subsequent versions of the EUPL (the "Licence");_
 _You may not use this work except in compliance with the Licence. You may obtain [a copy of the Licence here](LICENSE)._  
 _Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Licence for the specific language governing permissions and limitations under the Licence._

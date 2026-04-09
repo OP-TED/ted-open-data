@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -58,8 +58,7 @@ app.all('/proxy', async (req, res) => {
     options.agent = proxyAgent;
   } else {
     options.agent = new https.Agent({
-      rejectUnauthorized: false,
-      secureOptions: require('constants').SSL_OP_NO_TLSv1_2
+      rejectUnauthorized: false
     });
   }
 

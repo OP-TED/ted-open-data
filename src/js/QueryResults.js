@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -31,7 +31,20 @@ export class QueryResults {
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
 
+    this.lastResponseData = null;
+    this.lastResponseType = null;
+
     this.initEventListeners();
+  }
+
+  /**
+   * Store the raw response data for download.
+   * @param {string} data - The raw response text.
+   * @param {string} contentType - The response content type.
+   */
+  setResponseData(data, contentType) {
+    this.lastResponseData = data;
+    this.lastResponseType = contentType;
   }
 
   /**
@@ -48,13 +61,16 @@ export class QueryResults {
    * @returns {string} - The generated URL.
    */
   generateUrl() {
-    const query = this.queryEditor.editor.getValue();
+    const query = this.queryEditor.getQuery();
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
+    const strict = document.getElementById("strict").checked ? "true" : "false";
+    const debug = document.getElementById("debug").checked ? "true" : "false";
+    const report = document.getElementById("report").checked ? "true" : "false";
 
-    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
+    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
   }
 
   /**
@@ -88,10 +104,10 @@ export class QueryResults {
       });
 
       this.resultsDiv.appendChild(table);
-      this.copyUrlAlert.style.display = 'flex';
+      this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
     } else {
       this.resultsDiv.textContent = "No results found.";
-      this.copyUrlAlert.style.display = 'none';
+      this.copyUrlAlert.classList.add('d-none'); this.copyUrlAlert.classList.remove('d-flex');
     }
   }
 
@@ -119,7 +135,7 @@ export class QueryResults {
     }
 
     this.resultsDiv.appendChild(pre);
-    this.copyUrlAlert.style.display = 'flex';
+    this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
   }
 
   /**
@@ -140,16 +156,35 @@ export class QueryResults {
 
   /**
    * Handle open URL button click event.
-   * Generates a URL for the current query and triggers a download.
+   * Downloads the last query response as a file.
    */
   onOpenUrl() {
-    const url = this.generateUrl();
-    
+    if (this.lastResponseData == null) return;
+
+    const extensions = {
+      'application/sparql-results+json': '.json',
+      'application/sparql-results+xml': '.xml',
+      'text/html': '.html',
+      'application/vnd.ms-excel': '.xls',
+      'text/csv': '.csv',
+      'text/tab-separated-values': '.tsv',
+      'text/turtle': '.ttl',
+      'application/rdf+xml': '.rdf',
+      'text/plain': '.nt',
+      'application/javascript': '.js',
+    };
+
+    const requestedFormat = document.getElementById("format").value;
+    const baseType = this.lastResponseType?.split(';')[0]?.trim();
+    const ext = extensions[requestedFormat] || extensions[baseType] || '.txt';
+    const blob = new Blob([this.lastResponseData], { type: this.lastResponseType });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'query-results';
+    link.download = `query-results${ext}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }

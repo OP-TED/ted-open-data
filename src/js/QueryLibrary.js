@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -12,6 +12,14 @@
  * the Lic
  */
 import yaml from 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/+esm';
+import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
+        drawSelection, highlightSpecialChars, keymap,
+        EditorState,
+        defaultKeymap,
+        bracketMatching, foldGutter, foldKeymap,
+        syntaxHighlighting, defaultHighlightStyle,
+        sparql} from '../vendor/codemirror-bundle.js';
+import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
 
 /**
  * Class representing the Query Library.
@@ -33,15 +41,31 @@ export class QueryLibrary {
     this.queryCard = document.getElementById('queryCard');
     this.queryTitle = document.getElementById('queryTitle');
     this.queryDescription = document.getElementById('queryDescription');
-    this.querySparqlEditor = CodeMirror.fromTextArea(document.getElementById("querySparql"), {
-      mode: "sparql",
-      theme: "eclipse",
-      lineNumbers: true,
-      matchBrackets: true,
-      autoCloseBrackets: true,
-      lineWrapping: true,
-      readOnly: true,
-      viewportMargin: Infinity
+    this.querySparqlEditor = new EditorView({
+      state: EditorState.create({
+        doc: "",
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          foldGutter(),
+          drawSelection(),
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          bracketMatching(),
+          highlightActiveLine(),
+          EditorView.lineWrapping,
+          EditorState.readOnly.of(true),
+          EditorView.editable.of(false),
+          sparql(),
+          eclipseTheme,
+          eclipseHighlightStyle,
+          keymap.of([
+            ...defaultKeymap,
+            ...foldKeymap,
+          ]),
+        ]
+      }),
+      parent: document.getElementById("querySparql")
     });
     this.tryQueryButton = document.getElementById('tryQueryButton');
     this.selectedQueryElement = null;
@@ -117,6 +141,16 @@ export class QueryLibrary {
   }
 
   /**
+   * Set the content of the read-only SPARQL editor.
+   * @param {string} text - The text to set.
+   */
+  setSparqlEditorValue(text) {
+    this.querySparqlEditor.dispatch({
+      changes: { from: 0, to: this.querySparqlEditor.state.doc.length, insert: text }
+    });
+  }
+
+  /**
    * Handle query click event.
    * This method is triggered when a query is clicked in the accordion.
    * It fetches the SPARQL query file and displays its content in the query editor.
@@ -133,8 +167,7 @@ export class QueryLibrary {
 
         this.queryTitle.textContent = selectedQuery.title;
         this.queryDescription.textContent = selectedQuery.description;
-        this.querySparqlEditor.setValue(querySparqlText);
-        setTimeout(() => this.querySparqlEditor.refresh(), 0);
+        this.setSparqlEditorValue(querySparqlText);
         this.tryQueryButton.disabled = false;
         this.queryCard.classList.remove('d-none');
         this.selectQueryMessage.classList.add('d-none');
@@ -147,8 +180,7 @@ export class QueryLibrary {
       } else {
         this.queryTitle.textContent = 'Query Title';
         this.queryDescription.textContent = 'Select a query to see its description.';
-        this.querySparqlEditor.setValue('SPARQL query will be displayed here.');
-        setTimeout(() => this.querySparqlEditor.refresh(), 0);
+        this.setSparqlEditorValue('SPARQL query will be displayed here.');
         this.tryQueryButton.disabled = true;
         this.queryCard.classList.add('d-none');
         this.selectQueryMessage.classList.remove('d-none');
@@ -162,8 +194,8 @@ export class QueryLibrary {
    * It sets the selected query in the main query editor and switches to the query editor tab.
    */
   onTryQuery() {
-    const queryText = this.querySparqlEditor.getValue();
-    this.queryEditor.editor.setValue(queryText);
+    const queryText = this.querySparqlEditor.state.doc.toString();
+    this.queryEditor.setValue(queryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     queryEditorTab.show();
   }

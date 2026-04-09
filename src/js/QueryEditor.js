@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 European Union
+ * Copyright 2024 European Union
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European
  * Commission – subsequent versions of the EUPL (the "Licence"); You may not use this work except in
@@ -11,7 +11,20 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Lic
  */
-import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.3/+esm';
+import SparqlJs from 'https://cdn.jsdelivr.net/npm/sparqljs@3.7.4/+esm';
+import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
+        drawSelection, dropCursor, rectangularSelection, crosshairCursor,
+        highlightSpecialChars, placeholder, keymap,
+        EditorState,
+        history, defaultKeymap, historyKeymap,
+        bracketMatching, foldGutter, foldKeymap, indentOnInput,
+        syntaxHighlighting, defaultHighlightStyle,
+        autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap,
+        searchKeymap, highlightSelectionMatches,
+        linter, lintGutter, lintKeymap,
+        sparql} from '../vendor/codemirror-bundle.js';
+import {eclipseTheme, eclipseHighlightStyle} from './cm-theme.js';
+import {epoCompletionSource, getEpoData} from './epo-completion.js';
 
 /**
  * Class representing the Query Editor.
@@ -24,24 +37,126 @@ export class QueryEditor {
    */
   constructor(sparqlEndpoint) {
     this.sparqlEndpoint = sparqlEndpoint;
-    this.editor = CodeMirror.fromTextArea(document.getElementById("query"), {
-      mode: "sparql",
-      theme: "eclipse",
-      lineNumbers: true,
-      matchBrackets: true,
-      autoCloseBrackets: true,
-      lineWrapping: true,
-      extraKeys: {"Ctrl-Space": "autocomplete"},
-      placeholder: "Enter your SPARQL query here..."
-    });
     this.runQueryButton = document.getElementById('runQueryButton');
     this.queryForm = document.getElementById('queryForm');
     this.resultsDiv = document.getElementById("results");
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
+    this.alertMessage = document.getElementById('alert-message');
+    this.openUrlButton = document.getElementById('open-url-button');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
-    this.errorMarker = null;
+    this.stopQueryButton = document.getElementById('stopQueryButton');
     this.queryResults = null;
+    this.abortController = null;
+    this.isQueryRunning = false;
+    this.timerInterval = null;
+
+    const sparqlLinter = linter((view) => {
+      const doc = view.state.doc.toString();
+      if (!doc.trim()) return [];
+      const diagnostics = [];
+
+      // Syntax errors
+      const error = this.checkSparqlSyntax(doc);
+      if (error) {
+        if (error.hash && error.hash.loc && error.hash.loc.first_line) {
+          const loc = error.hash.loc;
+          const fromLine = view.state.doc.line(loc.first_line);
+          const from = fromLine.from + (loc.first_column || 0);
+          let to;
+          if (loc.last_line && loc.last_column) {
+            const toLine = view.state.doc.line(loc.last_line);
+            to = toLine.from + loc.last_column;
+          } else {
+            to = fromLine.to;
+          }
+          diagnostics.push({ from, to, severity: "error", message: error.message });
+        }
+        return diagnostics;
+      }
+
+      // ePO term validation — check epo:Term references against known terms
+      const epo = getEpoData();
+      if (epo) {
+        const allTerms = new Set([...epo.classes, ...epo.objectProperties, ...epo.datatypeProperties]);
+        const allTermsLower = new Map();
+        for (const term of allTerms) {
+          allTermsLower.set(term.toLowerCase(), term);
+        }
+
+        const regex = /epo:(\w+)/g;
+        let match;
+        while ((match = regex.exec(doc)) !== null) {
+          const term = match[1];
+          if (!allTerms.has(term)) {
+            const correctTerm = allTermsLower.get(term.toLowerCase());
+            const from = match.index;
+            const to = from + match[0].length;
+            if (correctTerm) {
+              diagnostics.push({
+                from, to,
+                severity: "warning",
+                message: `Unknown term "epo:${term}". Did you mean "epo:${correctTerm}"?`
+              });
+            } else {
+              diagnostics.push({
+                from, to,
+                severity: "warning",
+                message: `"epo:${term}" is not a known ePO class or property.`
+              });
+            }
+          }
+        }
+      }
+
+      return diagnostics;
+    });
+
+    this.editor = new EditorView({
+      state: EditorState.create({
+        doc: "",
+        extensions: [
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightSpecialChars(),
+          history(),
+          foldGutter(),
+          drawSelection(),
+          dropCursor(),
+          indentOnInput(),
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion({ override: [epoCompletionSource] }),
+          rectangularSelection(),
+          crosshairCursor(),
+          highlightActiveLine(),
+          highlightSelectionMatches(),
+          EditorView.lineWrapping,
+          placeholder("Enter your SPARQL query here... (Ctrl+Space for suggestions)"),
+          sparql(),
+          eclipseTheme,
+          eclipseHighlightStyle,
+          sparqlLinter,
+          lintGutter(),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...completionKeymap,
+            ...lintKeymap,
+          ]),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              this.onEditorChange();
+            }
+          }),
+        ]
+      }),
+      parent: document.getElementById("query")
+    });
 
     this.initEventListeners();
   }
@@ -55,87 +170,42 @@ export class QueryEditor {
   }
 
   /**
+   * Get the current query text.
+   * @returns {string} - The current query text.
+   */
+  getQuery() {
+    return this.editor.state.doc.toString();
+  }
+
+  /**
+   * Set the query text.
+   * @param {string} text - The query text to set.
+   */
+  setValue(text) {
+    this.editor.dispatch({
+      changes: { from: 0, to: this.editor.state.doc.length, insert: text }
+    });
+  }
+
+  /**
    * Initialize event listeners.
-   * Sets up event listeners for the query editor, form submission, and copy URL button.
+   * Sets up event listeners for form submission, copy URL button, and stop button.
    */
   initEventListeners() {
-    this.editor.on("change", this.onEditorChange.bind(this));
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
+    this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
   }
 
   /**
    * Handle editor change event.
-   * Checks the SPARQL syntax and updates the run query button state.
+   * Updates the run query button state based on syntax validity.
    */
   onEditorChange() {
-    const query = this.editor.getValue();
+    if (this.isQueryRunning) return;
+    const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
-
-    if (error) {
-      console.log('SPARQL Syntax Error:', error);
-      if (this.errorMarker) {
-        this.errorMarker.clear();
-      }
-      if (error.hash && error.hash.loc && error.hash.loc.first_line && error.hash.loc.last_line) {
-        const start = error.hash.loc;
-        this.errorMarker = this.editor.markText(
-          { line: start.first_line - 1, ch: start.first_column },
-          { line: start.last_line - 1, ch: start.last_column },
-          { className: 'syntax-error-highlight', title: `${error.message}` }
-        );
-        this.addTooltipToMarker(this.errorMarker, `${error.message}`);
-      } else if (error.hash && error.hash.loc && error.hash.loc.first_line) {
-        const start = error.hash.loc;
-        this.errorMarker = this.editor.markText(
-          { line: start.first_line - 1, ch: 0 },
-          { line: start.first_line - 1, ch: this.editor.getLine(start.first_line - 1).length },
-          { className: 'syntax-error-highlight', title: `${error.message}` }
-        );
-        this.addTooltipToMarker(this.errorMarker, `${error.message}`);
-      }
-      this.runQueryButton.disabled = true;
-    } else {
-      if (this.errorMarker) {
-        this.errorMarker.clear();
-        this.errorMarker = null;
-      }
-      this.runQueryButton.disabled = !query.trim();
-    }
-  }
-
-  /**
-   * Add a tooltip to the syntax error marker.
-   * @param {CodeMirror.TextMarker} marker - The syntax error marker.
-   * @param {string} message - The tooltip message.
-   */
-  addTooltipToMarker(marker, message) {
-    const markerElements = marker.replacedWith || [marker];
-    markerElements.forEach((element) => {
-      const from = element.from || marker.from;
-      const to = element.to || marker.to;
-      if (from && to) {
-        const lineHandle = this.editor.getLineHandle(from.line);
-        const lineElement = this.editor.getWrapperElement().querySelector(`.CodeMirror-line:nth-child(${from.line + 1})`);
-
-        if (lineElement) {
-          lineElement.addEventListener('mouseenter', function () {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'custom-tooltip';
-            tooltip.textContent = message;
-            document.body.appendChild(tooltip);
-
-            const rect = lineElement.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
-            tooltip.style.top = `${rect.bottom + window.scrollY}px`;
-
-            lineElement.addEventListener('mouseleave', function () {
-              tooltip.remove();
-            }, { once: true });
-          });
-        }
-      }
-    });
+    this.runQueryButton.disabled = error ? true : !query.trim();
   }
 
   /**
@@ -146,14 +216,34 @@ export class QueryEditor {
    */
   async onSubmit(event) {
     event.preventDefault();
+    if (this.isQueryRunning) return;
+    this.queryResults.setResponseData(null, null);
     const progressBar = document.querySelector('.progress-bar');
     const submitButton = this.queryForm.querySelector('button[type="submit"]');
+    const queryTimer = document.getElementById('query-timer');
     progressBar.style.width = '100%';
     progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+    queryTimer.textContent = '0s';
     submitButton.disabled = true;
+    this.stopQueryButton.style.display = 'flex';
+    this.isQueryRunning = true;
+    this.abortController = new AbortController();
+
+    const startTime = performance.now();
+    this.timerInterval = setInterval(() => {
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
+      queryTimer.textContent = `${elapsed}s`;
+    }, 1000);
+
+    this.copyUrlAlert.classList.add('d-none');
+    this.copyUrlAlert.classList.remove('d-flex', 'alert-danger');
+    this.copyUrlAlert.classList.add('alert-info');
+    this.alertMessage.textContent = 'You can run this query directly from Excel or any other application by using its URL.';
+    this.openUrlButton.classList.remove('d-none');
+    this.resultsDiv.innerHTML = '';
 
     try {
-      const query = this.editor.getValue();
+      const query = this.getQuery();
       const format = document.getElementById("format").value || "application/sparql-results+json";
       const defaultGraphUri = document.getElementById("default-graph-uri").value;
       const timeout = document.getElementById("timeout").value;
@@ -174,27 +264,29 @@ export class QueryEditor {
       const response = await fetch(this.sparqlEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body
+        body: body,
+        signal: this.abortController.signal
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const errorBody = await response.text();
+        const error = new Error(`HTTP error. Status: ${response.status}`);
+        error.serverMessage = errorBody;
+        throw error;
       }
 
       const contentType = response.headers.get('content-type');
-      let result;
+      const responseText = await response.text();
+      this.queryResults.setResponseData(responseText, contentType);
 
       if (contentType.includes('json')) {
-        const responseText = await response.text();
-        console.log(`Response text: ${responseText}`);
-        result = JSON.parse(responseText);
+        const result = JSON.parse(responseText);
         this.queryResults.displayJsonResults(result);
-      } else if (contentType.includes('html') || 
-                 format === 'text/html' || 
+      } else if (contentType.includes('html') ||
+                 format === 'text/html' ||
                  format === 'text/x-html+tr' ||
                  format === 'application/vnd.ms-excel') {
-        result = await response.text();
-        this.resultsDiv.innerHTML = result;
+        this.resultsDiv.innerHTML = responseText;
 
         const table = this.resultsDiv.querySelector('table');
         if (table) {
@@ -214,27 +306,62 @@ export class QueryEditor {
           });
         }
 
-        this.copyUrlAlert.style.display = 'flex';
+        this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
       } else if (contentType.includes('xml')) {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'xml');
+        this.queryResults.displayTextResults(responseText, 'xml');
       } else if (contentType.includes('csv')) {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'csv');
+        this.queryResults.displayTextResults(responseText, 'csv');
       } else {
-        result = await response.text();
-        this.queryResults.displayTextResults(result, 'text');
+        this.queryResults.displayTextResults(responseText, 'text');
       }
     } catch (error) {
-      this.resultsDiv.textContent = `Error: ${error.message}`;
-      this.copyUrlAlert.style.display = 'none';
+      let message;
+      if (error.name === 'AbortError') {
+        message = 'Query cancelled.';
+      } else if (error.message.includes('Status: 400')) {
+        message = 'The SPARQL endpoint could not process your query. Please check your query syntax, prefixes, and property names.';
+      } else if (error.message.includes('Status: 500')) {
+        message = 'The SPARQL endpoint encountered an internal error. The query may be too complex or the server may be temporarily unavailable.';
+      } else if (error.message.includes('Status: 504') || error.message.includes('timeout')) {
+        message = 'The query timed out. Try simplifying your query or adding more specific filters to reduce the result set.';
+      } else {
+        message = `Error: ${error.message}`;
+      }
+      this.alertMessage.textContent = message;
+      if (error.serverMessage) {
+        const details = document.createElement('pre');
+        details.className = 'mt-2 mb-0 small';
+        details.style.whiteSpace = 'pre-wrap';
+        details.textContent = error.serverMessage;
+        this.alertMessage.appendChild(details);
+      }
+      this.copyUrlAlert.classList.remove('d-none', 'alert-info');
+      this.copyUrlAlert.classList.add('d-flex', 'alert-danger');
+      this.openUrlButton.classList.add('d-none');
     } finally {
+      clearInterval(this.timerInterval);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
       progressBar.style.width = '0%';
       progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+      queryTimer.textContent = `${elapsed}s`;
       submitButton.disabled = false;
+      this.stopQueryButton.style.display = 'none';
+      this.isQueryRunning = false;
+      this.abortController = null;
+      this.onEditorChange();
     }
 
     this.queryResultsTab.show();
+  }
+
+  /**
+   * Handle stop query button click event.
+   * Aborts the currently running SPARQL query.
+   */
+  onStopQuery() {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
   }
 
   /**
@@ -242,14 +369,17 @@ export class QueryEditor {
    * Generates a URL for the current query and copies it to the clipboard.
    */
   onCopyUrl() {
-    const query = this.editor.getValue();
+    const query = this.getQuery();
     const minifiedQuery = this.minifySparqlQuery(query);
     const format = document.getElementById("format").value || "application/sparql-results+json";
     const defaultGraphUri = document.getElementById("default-graph-uri").value;
     const timeout = document.getElementById("timeout").value || 30000;
+    const strict = document.getElementById("strict").checked ? "true" : "false";
+    const debug = document.getElementById("debug").checked ? "true" : "false";
+    const report = document.getElementById("report").checked ? "true" : "false";
 
-    const url = `${this.sparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}`;
-    
+    const url = `${this.sparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
+
     console.log(`Generated URL: ${url}`);
     navigator.clipboard.writeText(url).then(() => {
       const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
