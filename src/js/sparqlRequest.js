@@ -61,20 +61,28 @@ export function readSparqlOptions() {
 export function hydrateSparqlOptions(opts) {
   if (!opts || typeof opts !== 'object') return;
 
+  // Always write ALL five fields, defaulting absent keys to their
+  // empty / unchecked state. The share URL's serialiser strips
+  // empty-string values (defaultGraphUri='', timeout='') to keep
+  // the URL short, so their absence in `opts` means "the sender
+  // left this blank". If we only wrote keys that are *present*,
+  // a recipient whose form already held a non-empty timeout or
+  // default-graph-uri would keep that stale local value and a
+  // re-run from Customize would diverge from the shared request.
   const dgu = document.getElementById('default-graph-uri');
-  if (dgu && opts.defaultGraphUri !== undefined) dgu.value = opts.defaultGraphUri;
+  if (dgu) dgu.value = opts.defaultGraphUri || '';
 
   const timeout = document.getElementById('timeout');
-  if (timeout && opts.timeout !== undefined) timeout.value = opts.timeout;
+  if (timeout) timeout.value = opts.timeout || '';
 
   const strict = document.getElementById('strict');
-  if (strict && opts.strict !== undefined) strict.checked = opts.strict === 'true';
+  if (strict) strict.checked = opts.strict === 'true';
 
   const debug = document.getElementById('debug');
-  if (debug && opts.debug !== undefined) debug.checked = opts.debug === 'true';
+  if (debug) debug.checked = opts.debug === 'true';
 
   const report = document.getElementById('report');
-  if (report && opts.report !== undefined) report.checked = opts.report === 'true';
+  if (report) report.checked = opts.report === 'true';
 }
 
 /**

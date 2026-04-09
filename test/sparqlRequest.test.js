@@ -24,7 +24,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { resetShims } from './_helpers.js';
-import { buildSparqlBody, buildSparqlUrl } from '../src/js/sparqlRequest.js';
+import { buildSparqlBody, buildSparqlUrl, hydrateSparqlOptions } from '../src/js/sparqlRequest.js';
 
 // Stage a minimal option block in the shared DOM shim. Individual
 // tests override only the fields they need to assert on.
@@ -147,4 +147,78 @@ test('buildSparqlUrl and buildSparqlBody produce the same parameter block for th
   const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
   const url = buildSparqlUrl('https://example.com/sparql', 'SELECT * WHERE { ?s ?p ?o }');
   assert.equal(url, `https://example.com/sparql?${body}`);
+});
+
+// ── hydrateSparqlOptions ──────────────────────────────────────────
+
+test('hydrateSparqlOptions writes all five fields into the DOM', () => {
+  // Pre-populate the form with non-default values to simulate a
+  // recipient who has already been using the Customize tab.
+  setOptions({
+    defaultGraphUri: 'http://stale.example.org/g',
+    timeout: '99999',
+    strict: true,
+    debug: true,
+    report: true,
+  });
+
+  // Hydrate with the sender's options — including blank text fields
+  // and false booleans.
+  hydrateSparqlOptions({
+    defaultGraphUri: 'http://example.org/g',
+    timeout: '5000',
+    strict: 'true',
+    debug: 'false',
+    report: 'false',
+  });
+
+  assert.equal(document.getElementById('default-graph-uri').value, 'http://example.org/g');
+  assert.equal(document.getElementById('timeout').value, '5000');
+  assert.equal(document.getElementById('strict').checked, true);
+  assert.equal(document.getElementById('debug').checked, false);
+  assert.equal(document.getElementById('report').checked, false);
+});
+
+test('hydrateSparqlOptions clears stale form values when opts keys are absent', () => {
+  // Recipient has a pre-existing timeout and default-graph-uri.
+  setOptions({
+    defaultGraphUri: 'http://stale.example.org/g',
+    timeout: '99999',
+    strict: true,
+    debug: true,
+    report: true,
+  });
+
+  // The sender left those fields blank, so the URL serialiser
+  // stripped them. The opts object arriving from JSON.parse has
+  // no `defaultGraphUri` and no `timeout` key at all.
+  hydrateSparqlOptions({
+    strict: 'false',
+    debug: 'false',
+    report: 'false',
+  });
+
+  // Both text fields must be cleared to match the sender's intent.
+  assert.equal(document.getElementById('default-graph-uri').value, '',
+    'stale default-graph-uri must be cleared when opts omits it');
+  assert.equal(document.getElementById('timeout').value, '',
+    'stale timeout must be cleared when opts omits it');
+  // Booleans must reflect the explicit false.
+  assert.equal(document.getElementById('strict').checked, false);
+  assert.equal(document.getElementById('debug').checked, false);
+  assert.equal(document.getElementById('report').checked, false);
+});
+
+test('hydrateSparqlOptions tolerates an empty opts object gracefully', () => {
+  setOptions({ timeout: '10000', strict: true });
+
+  // An empty opts means "the sender used all defaults". Every form
+  // field must reset to its default (blank / unchecked).
+  hydrateSparqlOptions({});
+
+  assert.equal(document.getElementById('default-graph-uri').value, '');
+  assert.equal(document.getElementById('timeout').value, '');
+  assert.equal(document.getElementById('strict').checked, false);
+  assert.equal(document.getElementById('debug').checked, false);
+  assert.equal(document.getElementById('report').checked, false);
 });
