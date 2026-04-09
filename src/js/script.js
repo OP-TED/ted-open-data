@@ -16,11 +16,13 @@ import { QueryLibrary } from './QueryLibrary.js';
 import { HomeTab } from './HomeTab.js';
 import { QueryResults } from './QueryResults.js';
 
-// Explorer port — Stage 6 wiring. These classes drive the new Search +
-// Explore tabs added in Stage 5. They run alongside the existing
+// Explorer port — Stage 6 wiring. These classes drive the Inspect
+// tab (`#app-tab-search`) and the Reuse tab's graph lane
+// (`#app-tab-explorer`), both of which were added in Stage 5 by
+// porting ted-open-data-explorer. They run alongside the existing
 // ted-open-data classes above and use a separate execution path
-// (worker-based, via services/sparqlService.js) until Stage 7 unifies
-// the SPARQL execution into a single pipeline.
+// (worker-based, via services/sparqlService.js) until Stage 7
+// unifies the SPARQL execution into a single pipeline.
 import { BacklinksView } from './BacklinksView.js';
 import { DataView } from './DataView.js';
 import { ExplorerController } from './ExplorerController.js';
@@ -44,12 +46,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const queryLibrary = new QueryLibrary(sparqlEndpoint, queryEditor, REMOTE_QUERIES_URL);
 
   // ── Explorer port (Stages 6-7) ──
-  // Wire up the new Search + Explore tabs. The ExplorerController is
-  // the model layer; SearchPanel/NoticeView/DataView/BacklinksView bind
-  // to the HTML scaffolding added in Stage 5. Stage 7 also wires the
-  // Query Editor to route CONSTRUCT/DESCRIBE queries to this controller
-  // (so they render on the Explore tab) while leaving SELECT/ASK on
-  // ted-open-data's existing tabular path.
+  // Wire up the Inspect tab (`#app-tab-search`) and the Reuse
+  // graph lane (`#app-tab-explorer`). ExplorerController is the
+  // model layer; SearchPanel/NoticeView/DataView/BacklinksView bind
+  // to the HTML scaffolding added in Stage 5. Stage 7 also wires
+  // the Customize tab to route CONSTRUCT/DESCRIBE queries to this
+  // controller (so they render on the Reuse graph lane) while
+  // leaving SELECT/ASK on ted-open-data's existing tabular path.
   bootstrapExplorer(queryEditor);
 
   // Initialize all Bootstrap tooltips
@@ -153,12 +156,13 @@ function bootstrapExplorer(queryEditor) {
   const controller = new ExplorerController();
   setController(controller);
 
-  // Switch to the Explore tab. Called only by direct user gestures
-  // (Search button, Enter, lucky link, timeline click, history pick,
-  // and — added in Stage 7 — running a CONSTRUCT/DESCRIBE in the
-  // Query Editor). Resets view mode to Tree and expands the procedure
-  // mini-card so the user lands in a consistent state regardless of
-  // where they came from.
+  // Switch to the Reuse tab's graph lane (`#app-tab-explorer`).
+  // Called only by direct user gestures (Inspect button, Enter,
+  // lucky link, timeline click, history pick, and — added in Stage
+  // 7 — running a CONSTRUCT/DESCRIBE in the Customize tab). Resets
+  // view mode to Tree and expands the procedure mini-card so the
+  // user lands in a consistent state regardless of where they
+  // came from.
   function showExplorerTab() {
     const treeRadio = document.getElementById('view-tree');
     if (treeRadio && !treeRadio.checked) {
@@ -173,20 +177,24 @@ function bootstrapExplorer(queryEditor) {
     if (tabBtn) new bootstrap.Tab(tabBtn).show();
   }
 
-  // Stage 8 — best-effort callback that drops a query string into the
-  // SPARQL editor as a side effect of a notice-search gesture. The
-  // notice-number facet path through the controller is unchanged; the
-  // editor reflection is purely visual so the user can see the query
-  // that produced what they are now looking at on the Explore tab.
+  // Stage 8 — best-effort callback that drops a query string into
+  // the Customize tab's editor as a side effect of a notice-search
+  // gesture. The notice-number facet path through the controller is
+  // unchanged; the editor reflection is purely visual so the user
+  // can see the query that produced what they are now looking at
+  // on the Reuse graph lane.
   const loadEditorText = (text) => queryEditor?.setValue?.(text);
 
-  // Stage 12 — mutual exclusion of the two result tabs. Both share the
-  // visible label "Query Results"; only one is shown at a time, based
-  // on which query type just ran. Cold load = both hidden.
-  //   'select' → ted-open-data's tabular results tab
-  //   'graph'  → explorer's tree/turtle/backlinks tab
+  // Stage 12 — mutual exclusion of the two Reuse-tab lanes. Both
+  // share the user-facing label "Reuse"; only one is shown at a
+  // time, based on which query type just ran. Cold load = both
+  // hidden.
+  //   'select' → SELECT/ASK tabular lane (`#query-results-tab-item`)
+  //   'graph'  → CONSTRUCT/DESCRIBE tree/turtle/backlinks lane
+  //              (`#app-tab-explorer-item`)
   //   'none'   → both hidden
-  // Declared BEFORE setExplorerRouting because that call passes it in.
+  // Declared BEFORE setExplorerRouting because that call passes it
+  // in as a callback.
   const setActiveResultTab = (kind) => {
     const selectItem = document.getElementById('query-results-tab-item');
     const graphItem = document.getElementById('app-tab-explorer-item');

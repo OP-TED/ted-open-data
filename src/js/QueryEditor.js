@@ -42,10 +42,11 @@ export class QueryEditor {
     this.runQueryButton = document.getElementById('runQueryButton');
     this.queryForm = document.getElementById('queryForm');
     this.resultsDiv = document.getElementById("results");
-    // Friendly error state on the Data tab (SELECT lane). Replaces the
-    // old red alert-danger banner with an empty-state view. The
-    // container wraps icon + title + message; we populate only the
-    // #results-error-message slot and toggle the wrapper's visibility.
+    // Friendly error state on the Reuse tab's SELECT lane
+    // (`#query-results`). Replaces the old red alert-danger banner
+    // with an empty-state view. The container wraps icon + title +
+    // message; we populate only the #results-error-message slot and
+    // toggle the wrapper's visibility.
     this.resultsErrorState = document.getElementById('results-error-state');
     this.resultsErrorMessage = document.getElementById('results-error-message');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
@@ -174,22 +175,26 @@ export class QueryEditor {
   }
 
   /**
-   * Wire the explorer routing — Stage 7. When set, queries with type
+   * Wire the explorer routing — Stage 7. When set, queries of type
    * CONSTRUCT or DESCRIBE are routed to the ExplorerController for
-   * tree/turtle/backlinks rendering on the Explore tab, instead of
-   * being fetched and rendered as text on the Query Results tab.
-   * SELECT and ASK queries continue to use the existing fetch path.
+   * tree / turtle / backlinks rendering on the Reuse tab's graph
+   * lane (`#app-tab-explorer`), instead of being fetched and rendered
+   * as text on the SELECT lane (`#query-results`). SELECT and ASK
+   * queries continue to use the existing fetch path.
    *
    * @param {ExplorerController} explorerController
-   * @param {() => void} showExplorerTab — switches the active Bootstrap
-   *   tab to the Explore tab and resets its view mode to Tree.
+   * @param {() => void} showExplorerTab - Switches the active
+   *   Bootstrap tab to the Reuse graph lane and resets its view mode
+   *   to Tree.
+   * @param {(lane: 'select' | 'graph' | 'none') => void} [setActiveResultTab]
+   *   - Stage 12 mutual-exclusion callback toggling which of the two
+   *   Reuse-tab lanes is visible (`#query-results-tab-item` vs
+   *   `#app-tab-explorer-item`). Optional — defaults to a no-op so
+   *   QueryEditor can still run standalone.
    */
   setExplorerRouting(explorerController, showExplorerTab, setActiveResultTab) {
     this.explorerController = explorerController;
     this.showExplorerTab = showExplorerTab;
-    // Stage 12 mutual exclusion of the two result tabs ("Query Results"
-    // SELECT lane vs graph lane). Optional — defaults to a no-op so
-    // QueryEditor can still run standalone.
     this.setActiveResultTab = setActiveResultTab || (() => {});
   }
 
@@ -271,11 +276,12 @@ export class QueryEditor {
 
     try {
       // Stage 7 — auto-route by query type. CONSTRUCT and DESCRIBE
-      // queries return RDF graphs, which the Explore tab is built to
-      // render (tree / turtle / backlinks). SELECT and ASK return
-      // tabular bindings, which the existing Query Results path below
-      // handles. ASK with no result tab support yet falls through to
-      // SELECT (the user sees the boolean as a one-row table).
+      // queries return RDF graphs, which the Reuse tab's graph lane
+      // (`#app-tab-explorer`) is built to render (tree / turtle /
+      // backlinks). SELECT and ASK return tabular bindings, which
+      // the Reuse tab's SELECT lane (`#query-results`) handles. ASK
+      // with no result-tab support yet falls through to SELECT (the
+      // user sees the boolean as a one-row table).
       //
       // The routing only kicks in when setExplorerRouting() has been
       // called from the bootstrap (script.js), which is always true in
@@ -353,7 +359,7 @@ export class QueryEditor {
         // The editor always requests SPARQL Results JSON — QueryResults
         // renders its own consistent table from the structured payload
         // (drops language tags, unwraps quoted literals, formats dates).
-        // Format choice for export has moved to the Data tab's
+        // Format choice for export has moved to the Reuse tab's
         // "Download as…" menu and no longer affects what the editor runs.
         const body = buildSparqlBody(query);
 

@@ -11,8 +11,8 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// Random notice picker. Used by the "click here to pick a random notice"
-// link on the Search tab.
+// Random notice picker. Used by the "click here to pick a random
+// notice" link on the Inspect tab (`#app-tab-search`).
 //
 // Strategy: pick a random day within the last LOOKBACK_DAYS and ask the
 // SPARQL endpoint for any notice published on that day. If none is found

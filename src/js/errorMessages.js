@@ -11,7 +11,7 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// Shared error-message classifier used by both lanes of the Data tab.
+// Shared error-message classifier used by both lanes of the Reuse tab.
 // Both QueryEditor (SELECT lane) and DataView (graph lane) turn the raw
 // error they catch into a structured pair for the friendly error
 // state. Having it in one place means both lanes present errors with

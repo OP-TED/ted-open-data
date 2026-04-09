@@ -11,13 +11,14 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// SearchPanel — the Search tab's notice input and history dropdown.
-// In the merged ted-open-data app there is no SPARQL mode toggle on
-// this panel; custom SPARQL is composed in the Query Editor tab,
-// which is the single editor surface for the whole app. Sharing of
-// the current view lives in DataView (next to the data card title)
-// since that's where the user is actually looking at what they want
-// to share.
+// SearchPanel — the Inspect tab's (`#app-tab-search`) notice input
+// and history dropdown. In the merged ted-open-data app there is no
+// SPARQL mode toggle on this panel; custom SPARQL is composed in the
+// Customize tab (`#query-editor`), which is the single editor
+// surface for the whole app. Sharing of the current view lives in
+// DataView (next to the data card title on the Reuse graph lane)
+// because that is where the user is actually looking at what they
+// want to share.
 
 import { createPublicationNumberFacet, getLabel, getQuery } from './facets.js';
 import { getRandomPublicationNumber } from './services/randomNotice.js';
@@ -105,7 +106,8 @@ class SearchPanel {
     this.controller.search(facet);
     // Stage 12 — graph lane wins, hide the SELECT lane's result tab.
     this.setActiveResultTab('graph');
-    // Direct user gesture (button or Enter) → switch to Explore tab.
+    // Direct user gesture (button or Enter) → switch to the Reuse
+    // graph lane (`#app-tab-explorer`).
     this.showExplorerTab();
   }
 
@@ -248,7 +250,8 @@ class SearchPanel {
       this.controller.selectFromHistory(facet);
       // Stage 12 — graph lane wins.
       this.setActiveResultTab('graph');
-      // Direct user gesture (history dropdown click) → switch to Explore tab.
+      // Direct user gesture (history dropdown click) → switch to
+      // the Reuse graph lane (`#app-tab-explorer`).
       this.showExplorerTab();
     });
 
@@ -294,11 +297,11 @@ class SearchPanel {
   }
 
   // Called once at startup. Loads a facet only if it was explicitly
-  // provided in the URL — otherwise the app stays put on the Search tab
-  // with an empty input. We deliberately do not auto-replay the most
-  // recent history entry: reload should restore the page, not invent
-  // activity the user did not request. The history dropdown is the
-  // explicit, user-initiated way to revisit a past search.
+  // provided in the URL — otherwise the app stays put on the Inspect
+  // tab with an empty input. We deliberately do not auto-replay the
+  // most recent history entry: reload should restore the page, not
+  // invent activity the user did not request. The history dropdown
+  // is the explicit, user-initiated way to revisit a past search.
   async init() {
     // Hydrate the history dropdown from whatever the controller loaded
     // out of sessionStorage at construction time. Without this, the
@@ -323,8 +326,8 @@ class SearchPanel {
       // Stage 9 — also drop the canned query into the SPARQL editor
       // as a side effect, mirroring the Stage 8 behaviour for typed
       // searches. Anyone landing on the merged app via a shared
-      // ?facet= URL sees the same editor + Explore state they would
-      // have seen if they'd typed the search themselves.
+      // ?facet= URL sees the same editor + Reuse-graph-lane state
+      // they would have seen if they had typed the search themselves.
       try {
         const query = getQuery(facet);
         if (query) this.loadEditorText(query);
@@ -333,12 +336,13 @@ class SearchPanel {
       }
       // Stage 12 — URL loading is always a graph lane gesture.
       this.setActiveResultTab('graph');
-      // Fresh navigation from a shared link carries explicit intent: the
-      // recipient was sent here to look at a notice, so jump straight to
-      // the Explore tab. Reloads (F5/⌘R) preserve the current tab so the
-      // user lands back where they were. If the Navigation Timing API is
-      // unavailable, default to switching — a fresh share URL is the
-      // overwhelmingly common case.
+      // Fresh navigation from a shared link carries explicit intent:
+      // the recipient was sent here to look at a notice, so jump
+      // straight to the Reuse graph lane (`#app-tab-explorer`).
+      // Reloads (F5/⌘R) preserve the current tab so the user lands
+      // back where they were. If the Navigation Timing API is
+      // unavailable, default to switching — a fresh share URL is
+      // the overwhelmingly common case.
       const navType = performance.getEntriesByType('navigation')[0]?.type;
       if (navType !== 'reload') {
         this.showExplorerTab();
@@ -347,9 +351,9 @@ class SearchPanel {
   }
 
   // Surfaces a dismissible Bootstrap alert when a shared ?facet= URL
-  // fails to parse or validate. Without this, the recipient of a broken
-  // link would land on a blank Search tab with no indication that a
-  // facet was even attempted.
+  // fails to parse or validate. Without this, the recipient of a
+  // broken link would land on a blank Inspect tab with no indication
+  // that a facet was even attempted.
   _showUrlLoadError(reason) {
     const el = document.getElementById('url-load-error');
     const textEl = document.getElementById('url-load-error-text');

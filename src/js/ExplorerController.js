@@ -16,7 +16,7 @@
 // The controller owns two navigation concepts:
 //
 //   facetsList  — the full search history (notice lookups + SPARQL queries).
-//                 Drives the History dropdown in the Search tab. Persisted
+//                 Drives the History dropdown in the Inspect tab. Persisted
 //                 in sessionStorage so it survives reloads but not new tabs.
 //
 //   breadcrumb  — the click path within the current exploration. A fresh
@@ -245,7 +245,7 @@ class ExplorerController extends EventTarget {
   //
   // The caller (SearchPanel.init) surfaces the invalid cases as a UI
   // banner so the recipient of a broken shared link actually sees the
-  // failure instead of a silently blank Search tab.
+  // failure instead of a silently blank Inspect tab.
   initFromUrlParams() {
     const facetParam = new URLSearchParams(window.location.search).get('facet');
     if (!facetParam) return { status: 'absent' };

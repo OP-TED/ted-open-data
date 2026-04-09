@@ -11,7 +11,7 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// DataView — owns the Explorer tab.
+// DataView — owns the graph lane of the Reuse tab (`#app-tab-explorer`).
 // Responsibilities:
 //   - breadcrumb rendering and navigation
 //   - switching between Tree, Turtle, Backlinks view modes
@@ -62,10 +62,11 @@ class DataView {
     this.titleEl = document.getElementById('data-card-title');
     this.shareBtn = document.getElementById('data-share-btn');
     this.loadingEl = document.getElementById('data-loading');
-    // Friendly error state on the Data tab (graph lane). Replaces
-    // the old red alert-danger banner with an empty-state view in
-    // the same register as #data-not-found: centred icon + title +
-    // message. We populate the message slot and toggle the wrapper.
+    // Friendly error state on the Reuse tab's graph lane
+    // (`#app-tab-explorer`). Replaces the old red alert-danger
+    // banner with an empty-state view in the same register as
+    // #data-not-found: centred icon + title + message. We populate
+    // the message slot and toggle the wrapper.
     this.errorStateEl = document.getElementById('data-error-state');
     this.errorMessageEl = document.getElementById('data-error-message');
     this.placeholderEl = document.getElementById('data-placeholder');
@@ -98,8 +99,9 @@ class DataView {
       });
     });
 
-    // "Pick a random notice" link in the not-found state. Routes to the
-    // same lucky flow as the Search tab's link so the two stay in sync.
+    // "Pick a random notice" link in the not-found state. Routes to
+    // the same lucky flow as the Inspect tab's link (`#lucky-link`)
+    // so the two stay in sync.
     const notFoundLucky = document.getElementById('data-not-found-lucky');
     if (notFoundLucky) {
       notFoundLucky.addEventListener('click', (e) => {
@@ -232,11 +234,12 @@ class DataView {
     if (!facet) {
       this.card.style.display = 'none';
       this.placeholderEl.style.display = '';
-      // Hide the Explore tab entirely — there's nothing to explore, so
-      // the affordance itself shouldn't exist. If the user happened to
-      // be sitting on the Explore tab when the facet cleared (e.g. a
-      // clearHistory from the dropdown), bounce them back to Search so
-      // they're not stranded on a tab that just vanished.
+      // Hide the Reuse tab's graph lane entirely — there is nothing
+      // to reuse, so the affordance itself should not exist. If the
+      // user happened to be sitting on `#app-tab-explorer` when the
+      // facet cleared (e.g. a clearHistory from the dropdown), bounce
+      // them back to the Inspect tab (`#app-tab-search`) so they are
+      // not stranded on a tab that just vanished.
       if (explorerTabItem) explorerTabItem.style.display = 'none';
       if (explorerTabBtn?.classList.contains('active')) {
         const searchTabBtn = document.getElementById('app-tab-search');
@@ -251,10 +254,10 @@ class DataView {
     // the new facet renders cleanly.
     this.errorStateEl.style.display = 'none';
     this.errorMessageEl.textContent = '';
-    // Reveal the Explore tab now that there's something to explore.
-    // SearchPanel / NoticeView may call showExplorerTab() after this to
-    // switch to it; the tab needs to be visible first for Bootstrap's
-    // Tab.show() to work.
+    // Reveal the Reuse graph-lane tab (`#app-tab-explorer`) now that
+    // there is something to render. SearchPanel / NoticeView may call
+    // showExplorerTab() after this to switch to it; the tab item
+    // needs to be visible first for Bootstrap's Tab.show() to work.
     if (explorerTabItem) explorerTabItem.style.display = '';
     this._renderBreadcrumb();
     this._updateBacklinksAvailability(facet);

@@ -11,13 +11,16 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// NoticeView — fetches procedure metadata from the TED API and renders a
-// horizontal timeline of all notices in the procedure. The timeline is shown
-// in two places:
-//   1. the Search tab, as the result of a notice-number search
-//   2. the Explorer tab, as a collapsible mini-card above the tree
-// Both copies stay in sync: a click navigates everywhere, a highlight-only
-// update (same procedure, different notice selected) avoids refetching.
+// NoticeView — fetches procedure metadata from the TED API and renders
+// a horizontal timeline of all notices in the procedure. The timeline
+// appears in two places:
+//   1. the Inspect tab (`#app-tab-search`), as the result of a
+//      notice-number search, and
+//   2. the Reuse tab's graph lane (`#app-tab-explorer`), as a
+//      collapsible mini-card above the tree.
+// Both copies stay in sync: a click navigates everywhere, a highlight-
+// only update (same procedure, different notice selected) avoids
+// re-fetching.
 
 import { createPublicationNumberFacet, getQuery } from './facets.js';
 import {
@@ -99,20 +102,21 @@ class NoticeView {
     // Stage 8 — same Search-tab editor reflection as SearchPanel: when
     // a timeline sibling is clicked, drop the canned CONSTRUCT for the
     // sibling notice into the SPARQL editor as a side effect, so the
-    // Query Editor tab stays in sync with what's currently being
-    // shown on Explore.
+    // Customize tab (`#query-editor`) stays in sync with what is
+    // currently being shown on the Reuse tab's graph lane.
     this.loadEditorText = loadEditorText || (() => {});
     // Stage 12 — graph lane wins on timeline navigation.
     this.setActiveResultTab = setActiveResultTab || (() => {});
 
-    // Search tab DOM refs
+    // Inspect tab (`#app-tab-search`) DOM refs
     this.resultsCard = document.getElementById('notice-results');
     this.procedureCardTitle = document.getElementById('procedure-card-title');
     this.proceduresContainer = document.getElementById('procedures-container');
     this.loadingEl = document.getElementById('notice-loading');
     this.errorEl = document.getElementById('notice-error');
 
-    // Explorer tab DOM refs (mini procedure card above the tree)
+    // Reuse graph-lane (`#app-tab-explorer`) DOM refs — mini
+    // procedure card above the tree.
     this.explorerProcedureMini = document.getElementById('explorer-procedure-mini');
     this.explorerProcedureTitle = document.getElementById('explorer-procedure-title');
     this.explorerProceduresContainer = document.getElementById('explorer-procedures-container');
@@ -209,13 +213,14 @@ class NoticeView {
       if (token !== this._fetchToken) return;
 
       if (!procedureIds.length) {
-        // Zero procedures means either the notice doesn't exist or it
-        // exists but has no procurement procedure attached. Both cases
-        // are handled by DataView's "Notice not found" state on the
-        // Explore tab (triggered by the SPARQL CONSTRUCT also returning
-        // zero triples, which happens in lockstep with this branch).
-        // Hide the entire procedure-timeline card here so the user
-        // doesn't see a second, less clear message on the Search tab.
+        // Zero procedures means either the notice does not exist, or
+        // it exists but has no procurement procedure attached. Both
+        // cases are handled by DataView's "Notice not found" state
+        // on the Reuse graph lane (triggered by the SPARQL CONSTRUCT
+        // also returning zero triples, which happens in lockstep
+        // with this branch). Hide the entire procedure-timeline card
+        // here so the user does not see a second, less clear message
+        // on the Inspect tab.
         this.loadingEl.style.display = 'none';
         this.resultsCard.style.display = 'none';
         this.explorerProcedureMini.style.display = 'none';
@@ -402,7 +407,8 @@ class NoticeView {
       this.controller.search(facet, { addToHistory: false });
       // Stage 12 — graph lane wins (lateral notice navigation).
       this.setActiveResultTab('graph');
-      // Direct user gesture (timeline click) → switch to Explore tab.
+      // Direct user gesture (timeline click) → switch to the Reuse
+      // graph lane (`#app-tab-explorer`).
       this.showExplorerTab();
     });
 

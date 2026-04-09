@@ -258,17 +258,19 @@ export class QueryLibrary {
 
   /**
    * Handle "Try this query" click: load the query into the editor
-   * and immediately run it. The user lands on the Data tab (via
-   * QueryEditor's auto-routing) without a detour through the Editor
-   * tab — this is for users who want to see the result, not to
-   * modify the query. Customise is the separate path for editing.
+   * and immediately run it. The user lands on the Reuse tab (via
+   * QueryEditor's auto-routing) without a detour through the
+   * Customize tab — this is for users who want to see the result,
+   * not to modify the query. Customise is the separate path for
+   * editing.
    */
   onTryQuery() {
     const queryText = this.querySparqlEditor.state.doc.toString();
     this.queryEditor.setValue(queryText);
-    // Submit the form programmatically. The Editor's onSubmit handler
-    // takes care of everything: syntax check, POST, auto-route to
-    // either the SELECT or graph lane of the Data tab.
+    // Submit the form programmatically. QueryEditor.onSubmit takes
+    // care of everything: syntax check, POST, auto-route to either
+    // the SELECT lane (`#query-results`) or the graph lane
+    // (`#app-tab-explorer`) of the Reuse tab.
     document.getElementById('queryForm')?.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );

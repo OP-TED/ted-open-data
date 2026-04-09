@@ -21,12 +21,13 @@ export class HomeTab {
     this.startTourButton = document.getElementById('start-tour');
     this.tryQueryLibraryButton = document.getElementById('try-query-library');
     // Stage 11 — third CTA: "Look up an existing notice" jumps to the
-    // Search tab. Mirrors the two existing CTAs.
+    // Inspect tab (`#app-tab-search`). Mirrors the two existing CTAs.
     this.lookupNoticeButton = document.getElementById('lookup-notice');
     this.queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     this.queryLibraryTab = new bootstrap.Tab(document.getElementById('query-library-tab'));
-    // Search tab is added by Stage 5; the bootstrap.Tab is built lazily
-    // because the element only exists in the merged app.
+    // The Inspect tab (`#app-tab-search`) is added by Stage 5; the
+    // bootstrap.Tab is built lazily because the element only exists
+    // in the merged app.
     const searchTabBtn = document.getElementById('app-tab-search');
     this.searchTab = searchTabBtn ? new bootstrap.Tab(searchTabBtn) : null;
 
@@ -103,7 +104,8 @@ export class HomeTab {
 
   /**
    * Stage 11 — handle the look-up-a-notice CTA.
-   * Switches to the Search tab and focuses the input.
+   * Switches to the Inspect tab (`#app-tab-search`) and focuses the
+   * publication-number input.
    */
   onLookupNotice() {
     this.searchTab.show();
