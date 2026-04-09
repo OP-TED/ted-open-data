@@ -256,14 +256,19 @@ class ExplorerController extends EventTarget {
     // share link would silently replay the same resource against
     // different endpoint behaviour.
     if (this._sparqlOptions && Object.keys(this._sparqlOptions).length) {
-      // Only include keys that carry a non-empty value so the URL
-      // doesn't bloat with `"strict":"false","debug":"false"` etc.
-      const nonEmpty = {};
+      // Include every key that carries a value — even `"false"`.
+      // The worker and the download path only append flags that are
+      // present in the restored options object, so stripping
+      // `"false"` would omit those flags on replay and break the
+      // "exact reproduction" contract if the endpoint treats
+      // omission differently from explicit `false`. Only truly
+      // empty strings are dropped (they mean "no opinion").
+      const meaningful = {};
       for (const [k, v] of Object.entries(this._sparqlOptions)) {
-        if (v && v !== 'false') nonEmpty[k] = v;
+        if (v !== undefined && v !== null && v !== '') meaningful[k] = v;
       }
-      if (Object.keys(nonEmpty).length) {
-        url.searchParams.set('opts', JSON.stringify(nonEmpty));
+      if (Object.keys(meaningful).length) {
+        url.searchParams.set('opts', JSON.stringify(meaningful));
       }
     }
     return url.toString();

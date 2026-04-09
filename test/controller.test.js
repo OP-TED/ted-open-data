@@ -268,6 +268,57 @@ test('URL round-trip: reports status:invalid reason:parse for malformed JSON', (
   assert.equal(controller.currentFacet, null);
 });
 
+test('URL round-trip: query facet with opts preserves SPARQL options', async () => {
+  // A custom CONSTRUCT run from the Customize tab carries sparqlOptions.
+  // getShareableUrl must serialise them as ?opts=, and initFromUrlParams
+  // must restore them so the replay and any subsequent download use the
+  // same endpoint behaviour the sender saw.
+  const producer = new ExplorerController({
+    doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }),
+  });
+
+  const sparqlOptions = {
+    defaultGraphUri: 'http://example.org/g',
+    timeout: '30000',
+    strict: 'true',
+    debug: 'false',
+    report: 'false',
+  };
+  await producer.search(
+    { type: 'query', query: 'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT 10' },
+    { sparqlOptions },
+  );
+  const shareUrl = producer.getShareableUrl();
+
+  // The URL must carry both ?facet= and ?opts=.
+  const parsed = new URL(shareUrl);
+  assert.ok(parsed.searchParams.has('facet'), 'share URL carries ?facet=');
+  assert.ok(parsed.searchParams.has('opts'), 'share URL carries ?opts=');
+
+  // The opts JSON must include ALL keys — including the "false" booleans.
+  const opts = JSON.parse(parsed.searchParams.get('opts'));
+  assert.equal(opts.defaultGraphUri, 'http://example.org/g');
+  assert.equal(opts.timeout, '30000');
+  assert.equal(opts.strict, 'true');
+  assert.equal(opts.debug, 'false', '"false" booleans must survive serialisation');
+  assert.equal(opts.report, 'false');
+
+  // Now replay via initFromUrlParams.
+  setLocation(shareUrl);
+  const consumer = new ExplorerController({
+    doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }),
+  });
+  const result = consumer.initFromUrlParams();
+  assert.equal(result.status, 'loaded');
+
+  // The consumer's _sparqlOptions must match the producer's.
+  assert.equal(consumer._sparqlOptions.defaultGraphUri, 'http://example.org/g');
+  assert.equal(consumer._sparqlOptions.timeout, '30000');
+  assert.equal(consumer._sparqlOptions.strict, 'true');
+  assert.equal(consumer._sparqlOptions.debug, 'false');
+  assert.equal(consumer._sparqlOptions.report, 'false');
+});
+
 test('URL round-trip: reports status:absent when no ?facet= is present', () => {
   setLocation('http://localhost:8080/');
   const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
