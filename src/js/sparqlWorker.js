@@ -25,7 +25,11 @@ self.onmessage = async function(event) {
   const { id, type, query, endpoint } = event.data;
 
   if (type !== 'sparql') {
-    self.postMessage({ id, type: 'error', error: 'Unknown message type' });
+    self.postMessage({
+      id,
+      type: 'error',
+      error: { message: 'Unknown message type', name: 'Error' },
+    });
     return;
   }
 
@@ -33,7 +37,19 @@ self.onmessage = async function(event) {
     const turtleData = await _runSparqlQuery(query, endpoint);
     self.postMessage({ id, type: 'success', turtleData });
   } catch (error) {
-    self.postMessage({ id, type: 'error', error: error.message });
+    // Pass `name` and `message` through the structured-clone boundary
+    // so the main thread can rehydrate an Error with the correct
+    // type. Without `name`, an AbortError round-trips as a plain
+    // Error and the cancelled-query branch in errorMessages cannot
+    // fire.
+    self.postMessage({
+      id,
+      type: 'error',
+      error: {
+        message: error?.message || String(error),
+        name: error?.name || 'Error',
+      },
+    });
   }
 };
 

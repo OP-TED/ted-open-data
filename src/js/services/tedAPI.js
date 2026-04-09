@@ -106,7 +106,7 @@ function _buildRequest({ query, fields, limit }) {
 function mapResponse(tedResponse) {
   const raw = tedResponse?.notices;
   if (raw != null && !Array.isArray(raw)) {
-    console.warn('TED API returned non-array `notices` field; ignoring.', raw);
+    console.warn('[tedAPI] schema drift: `notices` field is not an array; ignoring response.', raw);
     return [];
   }
   const notices = (raw || []).map(_mapNotice);
@@ -154,13 +154,18 @@ function _mapNotice(notice) {
   };
 }
 
-// The TED API mostly returns well-formed publication numbers (e.g. "572066-2024"),
-// but if the schema ever drifts we log once and fall back to the raw value so
-// one bad notice doesn't crash the whole timeline.
+// The TED API mostly returns well-formed publication numbers
+// (e.g. "572066-2024"), but if the schema ever drifts we log once
+// per session and fall back to the raw value so one bad notice
+// doesn't crash the whole timeline.
+let _publicationNumberDriftLogged = false;
 function _normalizePublicationNumber(raw) {
   const normalized = normalize(raw);
   if (normalized) return normalized;
-  if (raw) console.warn('TED API returned unexpected publication-number shape:', raw);
+  if (raw && !_publicationNumberDriftLogged) {
+    console.warn('[tedAPI] schema drift: unexpected publication-number shape — first occurrence:', raw);
+    _publicationNumberDriftLogged = true;
+  }
   return raw || null;
 }
 
@@ -204,12 +209,17 @@ function extractProcedureIds(tedResponse) {
 
   const ids = new Set();
   for (const notice of notices) {
-    const id = notice['procedure-identifier'];
+    // `procedure-identifier` is normally a bare string, but other
+    // coded fields (notice-type, form-type) come back as either
+    // string or `{value: string}` depending on the endpoint. Route
+    // through the same normaliser so a schema shift to the object
+    // shape cannot silently produce `[object Object]` entries here.
+    const id = _extractCodedValue(notice['procedure-identifier']);
     if (id) ids.add(id);
   }
   if (ids.size === 0) {
     console.warn(
-      'TED API returned notices but none had a procedure-identifier — possible schema drift.',
+      '[tedAPI] schema drift: notices response had no procedure-identifier fields — possible breaking change upstream.',
       notices,
     );
   }

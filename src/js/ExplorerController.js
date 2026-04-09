@@ -24,8 +24,17 @@
 //                 it; clicking a step jumps back and trims everything after.
 //                 Not persisted — rebuilding it requires re-traversing.
 //
-// UI panels subscribe to `facet-changed`, `results-changed`, `loading-changed`
-// and `breadcrumb-changed` events.
+// UI panels subscribe to the following events:
+//   facet-changed        — current facet changed (breadcrumb reset
+//                          or new search)
+//   results-changed      — query finished (results present OR an
+//                          error is on `.error`; see below)
+//   error-changed        — query failed; fired immediately before
+//                          results-changed so error-aware views can
+//                          render before the null-results path
+//   loading-changed      — `.isLoading` flipped
+//   facets-list-changed  — the persistent history changed (add /
+//                          clear / enrich)
 
 import { addUnique, getQuery, validateFacet } from './facets.js';
 import {
@@ -261,7 +270,15 @@ class ExplorerController extends EventTarget {
     const validated = validateFacet(parsed);
     if (!validated) return { status: 'invalid', reason: 'shape' };
 
-    this.search(validated);
+    // Fire-and-forget the search but attach a .catch so any rejection
+    // inside `_executeCurrentQuery` becomes a loud console.error
+    // rather than a silent unhandled-promise-rejection at boot.
+    // The result object is returned synchronously with `loaded` —
+    // the caller (SearchPanel.init) only uses it to decide which
+    // UI state to render, not to wait on the query.
+    this.search(validated).catch(err => {
+      console.error('[ExplorerController] initFromUrlParams search failed:', err);
+    });
     return { status: 'loaded' };
   }
 
@@ -322,11 +339,13 @@ class ExplorerController extends EventTarget {
     this._emit('facets-list-changed');
   }
 
-  // Shared tail of every navigation method: emit events, persist, and run
-  // the query for the newly current facet.
+  // Shared tail of every navigation method: emit events, persist,
+  // and run the query for the newly current facet. Views re-read
+  // the breadcrumb off `this.breadcrumb` inside their `facet-changed`
+  // handler, so no separate `breadcrumb-changed` emit is needed
+  // (a second emit would double-render on every navigation).
   async _navigated({ save = true } = {}) {
     this._emit('facet-changed');
-    this._emit('breadcrumb-changed');
     if (save) this._saveToSession();
     await this._executeCurrentQuery();
   }
@@ -363,6 +382,12 @@ class ExplorerController extends EventTarget {
         this.error = e;
         this.results = null;
         console.error('Query execution failed:', e);
+        // Emit `error-changed` FIRST so views that want to render an
+        // error state can do so before the (null) results-changed
+        // event reaches the normal render path. Subscribers should
+        // listen to both events because a refactor might one day
+        // route errors through only one of them.
+        this._emit('error-changed');
         this._emit('results-changed');
       }
     } finally {
@@ -380,8 +405,17 @@ class ExplorerController extends EventTarget {
   _saveToSession() {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.facetsList));
-    } catch {
-      // Quota or unavailable — silently ignore.
+    } catch (e) {
+      // Quota or unavailable. Log once per session on the first
+      // failure so a developer watching the console sees it, but
+      // don't spam on every subsequent add. The user-visible effect
+      // is that their history won't survive a reload, which is the
+      // right graceful degradation for a dev-console-invisible
+      // feature.
+      if (!this._sessionSaveWarned) {
+        console.warn('[ExplorerController] sessionStorage save failed; history will not persist:', e);
+        this._sessionSaveWarned = true;
+      }
     }
   }
 
@@ -389,8 +423,8 @@ class ExplorerController extends EventTarget {
     let stored;
     try {
       stored = sessionStorage.getItem(STORAGE_KEY);
-    } catch {
-      // Storage may be unavailable (Safari private mode, etc). Best effort.
+    } catch (e) {
+      console.warn('[ExplorerController] sessionStorage unavailable; starting with empty history:', e);
       return;
     }
     if (!stored) return;
@@ -400,9 +434,14 @@ class ExplorerController extends EventTarget {
       parsed = JSON.parse(stored);
     } catch (e) {
       // Distinguishes "no entry" (handled above) from "corrupt JSON".
-      // Visible to a developer with the console open; the user just sees
-      // an empty history, which is the right degradation.
-      console.warn('Could not parse explorer history from sessionStorage; ignoring.', e);
+      // Preserve the corrupt payload under a backup key so a
+      // developer can inspect it in devtools, then discard the
+      // primary key. The user just sees an empty history.
+      console.warn('[ExplorerController] Corrupt history in sessionStorage; moved to backup key.', e);
+      try {
+        sessionStorage.setItem(`${STORAGE_KEY}.corrupt`, stored);
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch { /* quota — nothing we can do */ }
       return;
     }
 

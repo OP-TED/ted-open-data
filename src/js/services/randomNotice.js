@@ -35,19 +35,31 @@ let _doSPARQL = defaultDoSPARQL;
 // than admitting the endpoint is unavailable.
 async function getRandomPublicationNumber() {
   let dayRange = 1;
+  // Stash the most recent endpoint error so the final "gave up"
+  // throw can include the real cause instead of a generic message.
+  // Without this, a misconfigured endpoint that 500s on every
+  // attempt looks identical to "the window happened to be empty
+  // ten times in a row".
+  let lastError = null;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const [startDate, endDate] = attempt === 0
       ? _singleDayWindow()
       : _expandedWindow(dayRange);
 
-    const result = await _queryRandomNoticeInRange(startDate, endDate);
+    const { result, error } = await _queryRandomNoticeInRange(startDate, endDate);
     if (result) return result;
+    if (error) lastError = error;
 
     dayRange = Math.min(dayRange * 2, MAX_RANGE_DAYS);
   }
 
-  throw new Error('Could not find a random notice — the SPARQL endpoint may be unavailable.');
+  const reason = lastError
+    ? ` Last endpoint error: ${lastError.message}`
+    : '';
+  throw new Error(
+    `Could not find a random notice — the SPARQL endpoint may be unavailable.${reason}`,
+  );
 }
 
 // Pick a random day in the last LOOKBACK_DAYS and return [start, start+1).
@@ -95,13 +107,16 @@ async function _queryRandomNoticeInRange(startDate, endDate) {
     const { quads } = await _doSPARQL(query);
     for (const quad of quads) {
       if (quad.predicate.value.includes('hasNoticePublicationNumber')) {
-        return quad.object.value;
+        return { result: quad.object.value, error: null };
       }
     }
-    return null;
+    return { result: null, error: null };
   } catch (error) {
     console.warn(`Failed to query notices for date range ${startDate} to ${endDate}:`, error);
-    return null;
+    // Return the error alongside so the retry loop can tell
+    // "empty window" apart from "endpoint failed" and surface the
+    // real reason if every attempt fails.
+    return { result: null, error };
   }
 }
 

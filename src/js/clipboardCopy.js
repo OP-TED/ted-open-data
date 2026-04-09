@@ -19,9 +19,17 @@
 // thinking the share worked.
 export async function copyToClipboard(text) {
   try {
+    if (!navigator.clipboard) {
+      return _fallbackCopy(text);
+    }
     await navigator.clipboard.writeText(text);
     return true;
-  } catch {
+  } catch (err) {
+    // Leave a breadcrumb so a developer watching "clipboard is
+    // silently failing in browser X" has something to start from.
+    // The return value (false) still lets the caller surface a
+    // user-facing error.
+    console.warn('[clipboard] navigator.clipboard.writeText failed, trying fallback:', err);
     return _fallbackCopy(text);
   }
 }
@@ -34,7 +42,8 @@ function _fallbackCopy(text) {
   let success = false;
   try {
     success = document.execCommand('copy');
-  } catch {
+  } catch (err) {
+    console.warn('[clipboard] execCommand("copy") fallback failed:', err);
     success = false;
   }
   document.body.removeChild(input);

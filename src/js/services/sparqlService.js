@@ -44,6 +44,18 @@ let worker = null;
 let messageIdCounter = 0;
 const pendingRequests = new Map();
 
+// Circuit-breaker state for the worker. A persistently crashing
+// worker (bad script, OOM, runaway loop) would otherwise produce an
+// invisible reject/respawn/reject loop — every individual error is
+// surfaced, but the user has no way to tell the problem is
+// systemic. After N consecutive crashes inside a short time window
+// we stop auto-respawning and surface a single structured failure
+// until the page is reloaded.
+const WORKER_CRASH_LIMIT = 3;
+const WORKER_CRASH_WINDOW_MS = 30_000;
+let workerCrashTimestamps = [];
+let workerDisabled = false;
+
 // In development (localhost) the dev server proxies /sparql to the real
 // endpoint to side-step CORS. In production the real URL is used directly.
 function getEndpoint() {
@@ -52,6 +64,9 @@ function getEndpoint() {
 }
 
 function getWorker() {
+  if (workerDisabled) {
+    throw new Error('SPARQL worker has been disabled after repeated crashes. Reload the page to retry.');
+  }
   if (worker) return worker;
 
   // Fail loudly if the N3 <script> tag is missing. Otherwise the first
@@ -77,7 +92,19 @@ function getWorker() {
         pending.reject(new Error(`Failed to parse SPARQL response: ${parseError.message}`));
       }
     } else if (type === 'error') {
-      pending.reject(new Error(error));
+      // The worker posts `{message, name}` on error so the name can
+      // round-trip the structured-clone boundary. Rehydrate both
+      // fields here so downstream checks like
+      // `err?.name === 'AbortError'` behave the same whether the
+      // error came from the worker or from a direct fetch.
+      //
+      // Handle the legacy shape (bare string) for defence-in-depth
+      // in case the worker ever falls out of sync.
+      const msg = typeof error === 'string' ? error : (error?.message || 'SPARQL worker error');
+      const name = typeof error === 'object' ? (error?.name || 'Error') : 'Error';
+      const err = new Error(msg);
+      err.name = name;
+      pending.reject(err);
     } else {
       // Unknown message type — reject explicitly instead of silently
       // leaking the promise. This guards against worker protocol drift
@@ -86,18 +113,36 @@ function getWorker() {
     }
   };
 
-  // If the worker itself throws (script load failure, syntax error, OOM),
-  // every in-flight promise would otherwise leak and the UI would spin
-  // forever. Reject all pending requests, clear the map, and null out the
-  // worker so the next call respawns it.
+  // If the worker itself throws (script load failure, syntax error,
+  // OOM), every in-flight promise would otherwise leak and the UI
+  // would spin forever. Reject all pending requests, clear the map,
+  // and null out the worker so the next call respawns it — unless
+  // we are hitting the crash limit, in which case the circuit
+  // breaker trips and no further worker is spawned this session.
   worker.onerror = (event) => {
     const message = event?.message || 'SPARQL worker crashed';
     console.error('SPARQL Worker error:', event);
-    const err = new Error(`SPARQL worker error: ${message}`);
+
+    // Track this crash in the rolling window. Anything older than
+    // WORKER_CRASH_WINDOW_MS is forgotten.
+    const now = Date.now();
+    workerCrashTimestamps = workerCrashTimestamps.filter(t => now - t < WORKER_CRASH_WINDOW_MS);
+    workerCrashTimestamps.push(now);
+
+    const userFacingMessage = workerCrashTimestamps.length >= WORKER_CRASH_LIMIT
+      ? `SPARQL worker crashed ${workerCrashTimestamps.length} times; aborting. Reload the page to retry.`
+      : `SPARQL worker error: ${message}`;
+
+    const err = new Error(userFacingMessage);
     for (const pending of pendingRequests.values()) pending.reject(err);
     pendingRequests.clear();
     try { worker?.terminate(); } catch { /* already dead */ }
     worker = null;
+
+    if (workerCrashTimestamps.length >= WORKER_CRASH_LIMIT) {
+      workerDisabled = true;
+      console.error('[sparqlService] Worker circuit breaker tripped; further SPARQL queries will fail fast.');
+    }
   };
 
   return worker;
@@ -157,7 +202,14 @@ async function doSPARQLSelect(query) {
       body: `query=${encodeURIComponent(query)}&format=${encodeURIComponent('application/sparql-results+json')}`,
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) {
+      // Mirror the sparqlWorker format so errorMessages.classifyError
+      // can key off the same `Status: NNN` prefix whether the error
+      // came from the worker (CONSTRUCT/DESCRIBE) or from this
+      // direct-fetch path (SELECT/ASK via ExplorerController).
+      const body = await response.text().catch(() => '');
+      throw new Error(`HTTP error. Status: ${response.status}\n${body}`);
+    }
     return await response.json();
   } catch (err) {
     if (err?.name === 'AbortError') {

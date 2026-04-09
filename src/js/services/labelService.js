@@ -32,6 +32,7 @@
 // here would complicate the batching/dedup logic without fixing any
 // observable bug.
 
+import { isSafeUri } from '../facets.js';
 import { ns } from '../namespaces.js';
 import { doSPARQL as defaultDoSPARQL } from './sparqlService.js';
 
@@ -142,20 +143,42 @@ async function _processPending() {
   });
 }
 
-// Returns { ok: true, results } on success, { ok: false, uris } on failure.
-// Callers distinguish so failed URIs don't get cached as permanent nulls.
+// Returns { ok: true, results } on success, { ok: false, uris } on
+// failure. Callers distinguish so failed URIs don't get cached as
+// permanent nulls.
+//
+// A persistently failing label endpoint is invisible to the user
+// (the UI just shows the short prefix:localname form, which is
+// indistinguishable from "no label exists"). To give a developer
+// watching the console something to notice, log the first failure
+// loudly and then downgrade to quieter warnings on subsequent ones.
+let _labelServiceFailuresLogged = 0;
 async function _fetchBatch(uris) {
   try {
     const { quads } = await _doSPARQL(_buildLabelsQuery(uris));
     return { ok: true, results: _parseResults(quads, uris) };
   } catch (error) {
-    console.error('Failed to fetch labels:', error);
+    _labelServiceFailuresLogged++;
+    if (_labelServiceFailuresLogged === 1) {
+      console.error(
+        `[labelService] First label batch failed (${uris.length} URIs). ` +
+        `Short-form labels will be used until it recovers. First URI: ${uris[0]}`,
+        error,
+      );
+    } else if (_labelServiceFailuresLogged % 10 === 0) {
+      console.warn(`[labelService] ${_labelServiceFailuresLogged} label batches have now failed.`);
+    }
     return { ok: false, uris };
   }
 }
 
 function _buildLabelsQuery(uris) {
-  const values = uris.map(uri => `<${uri}>`).join(' ');
+  // Defence-in-depth: even though URIs come from parsed RDF and are
+  // almost certainly safe, drop any that contain characters that
+  // could break out of the IRI wrapper. Matches the check in
+  // facets._describeTermQuery on the interpolation boundary.
+  const safe = uris.filter(isSafeUri);
+  const values = safe.map(uri => `<${uri}>`).join(' ');
   return `
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

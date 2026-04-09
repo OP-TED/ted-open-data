@@ -120,12 +120,25 @@ DESCRIBE <${term.value}>`;
 
 // ── List operations ──
 
-// Two facets are considered equal when their SPARQL queries are identical.
-// A Symbol fallback makes sure a broken facet (e.g. malformed URL) never
-// accidentally equals another broken facet.
+// Two facets are considered equal when their SPARQL queries are
+// identical. A Symbol fallback makes sure a broken facet (e.g.
+// malformed URL, unknown facet type) never accidentally equals
+// another broken facet — a getQuery throw returns a fresh Symbol,
+// which only compares equal to itself. A warning logs on the first
+// failure per session so a developer watching history dedup can
+// see that a facet is considered "never equal to anything".
+let _facetEqualsWarned = false;
 function facetEquals(a, b) {
   const safeQuery = (f) => {
-    try { return getQuery(f); } catch { return Symbol('invalid'); }
+    try {
+      return getQuery(f);
+    } catch (err) {
+      if (!_facetEqualsWarned) {
+        console.warn('[facets] facetEquals received a facet getQuery could not build:', f, err);
+        _facetEqualsWarned = true;
+      }
+      return Symbol('invalid');
+    }
   };
   return safeQuery(a) === safeQuery(b);
 }
