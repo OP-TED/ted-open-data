@@ -82,9 +82,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // the trigger icon only exists inside that tab's pane so it is
   // implicit that the tab is active when clicked.
   //
-  // Dynamic imports and the tour's internal driver.js CDN fetch can
-  // both fail (network, CSP, 404 after a deploy, corporate firewall).
-  // Catch around both so a dead play-button never happens silently.
+  // Dynamic imports can fail (network, CSP, 404 after a deploy).
+  // Catch so a dead play-button never happens silently.
   const TOURS = [
     { id: 'inspect-tour-trigger',      module: './tours/inspectTour.js',      fn: 'startInspectTour' },
     { id: 'explore-tour-trigger',      module: './tours/exploreTour.js',      fn: 'startExploreTour' },

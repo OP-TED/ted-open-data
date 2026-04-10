@@ -727,6 +727,7 @@ main {
 .search-hero-title-lane {
   flex: 34 1 0;
   justify-content: center;
+  text-align: center;
 }
 .search-hero-input-lane {
   flex: 66 1 0;
@@ -1321,83 +1322,56 @@ main {
   color: var(--ted-primary, #2c862d) !important;
 }
 
-/* Driver.js popover — override the library's default dark theme
-   with a TED-green accent on the Next button and a soft shadow so
-   the popover feels like part of this app, not a library drop-in. */
-.driver-popover.ted-tour {
-  /* placeholder — reserved in case we need per-tour theming. The
-     base styles below apply to all driver.js popovers since the
-     app only uses driver.js for tours. */
-}
-.driver-popover {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
+/* Bootstrap tour popover — matches the SDK Explorer style. */
+.tour-popover {
   max-width: 360px;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  z-index: 1070;
 }
-
-/* The popover arrow is drawn as a square rotated 45deg with just
-   a background colour — so box-shadow does not carry over and the
-   arrow visually detaches from the popover on light backgrounds.
-   Matching the popover's hairline border on the two outward-facing
-   edges of each arrow orientation pulls it back into the silhouette. */
-.driver-popover-arrow-side-top {
-  border-bottom: 1px solid #dee2e6;
-  border-right: 1px solid #dee2e6;
+.tour-popover.tour-no-arrow .popover-arrow {
+  display: none;
 }
-.driver-popover-arrow-side-bottom {
-  border-top: 1px solid #dee2e6;
-  border-left: 1px solid #dee2e6;
-}
-.driver-popover-arrow-side-left {
-  border-top: 1px solid #dee2e6;
-  border-right: 1px solid #dee2e6;
-}
-.driver-popover-arrow-side-right {
-  border-bottom: 1px solid #dee2e6;
-  border-left: 1px solid #dee2e6;
-}
-.driver-popover-title {
+.tour-popover .popover-header {
   font-weight: 600;
   color: #212529;
+  background: var(--ted-blue-5, #F3F6FC);
+  border-bottom: 1px solid #dee2e6;
 }
-.driver-popover-description {
+.tour-popover .popover-body {
   color: #495057;
   line-height: 1.5;
+  max-height: 60vh;
+  overflow-y: auto;
 }
-.driver-popover-description code {
+.tour-popover .popover-body code {
   background: #f1f3f5;
   padding: 0.1em 0.35em;
   border-radius: 3px;
   font-size: 0.9em;
 }
-.driver-popover-next-btn {
-  background: var(--ted-primary, #2c862d) !important;
-  color: #fff !important;
-  border: 1px solid var(--ted-primary, #2c862d) !important;
-  text-shadow: none !important;
-  font-weight: 500;
+.tour-popover .tour-next-btn,
+.tour-popover .tour-done-btn {
+  background: var(--ted-green, #2c862d);
+  color: #fff;
+  border-color: var(--ted-green, #2c862d);
 }
-.driver-popover-next-btn:hover {
-  background: var(--ted-green-dark) !important;
-  border-color: var(--ted-green-dark) !important;
+.tour-popover .tour-next-btn:hover,
+.tour-popover .tour-done-btn:hover {
+  background: var(--ted-green-dark, #236b24);
+  border-color: var(--ted-green-dark, #236b24);
 }
-.driver-popover-prev-btn {
-  color: #6c757d !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  text-shadow: none !important;
+.tour-popover .tour-prev-btn,
+.tour-popover .tour-cancel-btn {
+  color: var(--ted-blue, #0E47CB);
 }
-.driver-popover-prev-btn:hover {
-  color: #495057 !important;
+.tour-popover .tour-prev-btn:hover,
+.tour-popover .tour-cancel-btn:hover {
+  color: var(--ted-blue-hover, #0D40B7);
 }
-.driver-popover-close-btn {
-  color: #adb5bd !important;
+
+/* Toast header — eu-blue-5 background */
+.toast-header {
+  background: var(--ted-blue-5, #F3F6FC);
 }
-.driver-popover-close-btn:hover {
-  color: #495057 !important;
-}
-.driver-popover-progress-text {
-  color: #adb5bd;
-  font-size: 0.8rem;
-}
+

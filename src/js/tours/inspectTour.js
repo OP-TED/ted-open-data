@@ -11,84 +11,42 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
+// Guided tour for the Inspect tab — 4 steps.
 
-/**
- * Interactive guided tour for the Inspect tab.
- *
- * Walks the user through the canonical lookup flow: type a
- * publication number, use history, or pick a random notice. Four
- * steps, scoped to the elements visible on a cold Inspect tab.
- *
- * Driver.js is loaded once per session via the shared _driver module
- * and the driver instance is reused across opens (destroyed only
- * when a *new* open replaces it), so repeated clicks do not leak
- * window/resize listeners or overlay DOM.
- */
+import { startTour } from './tour.js';
 
-import { createTour, loadDriver } from './_driver.js';
-
-let activeTour = null;
-
-/**
- * Start the Inspect tab tour. Any previous instance is destroyed
- * first so only one tour is ever live at a time.
- */
-export async function startInspectTour() {
-  const driver = await loadDriver();
-
-  if (activeTour) {
-    try { activeTour.destroy(); } catch (e) { console.debug('[tour] destroy() threw:', e); }
-    activeTour = null;
-  }
-
-  activeTour = createTour(driver, [
+export function startInspectTour() {
+  startTour([
     {
       element: '#search-input',
-      popover: {
-        title: 'Look up a notice',
-        description:
-          'Type a TED publication number here — the format is usually something like ' +
-          '<code>123456-2024</code>. Press Enter or click the magnifying glass to fetch it.',
-        side: 'bottom',
-        align: 'center',
-      },
+      title: 'Look up a notice',
+      content:
+        'Type a TED publication number here — the format is usually something like ' +
+        '<code>123456-2024</code>. Press Enter or click the magnifying glass to fetch it.',
+      placement: 'bottom',
     },
     {
       element: '#history-btn',
-      popover: {
-        title: 'Your recent lookups',
-        description:
-          'Every notice you look up is remembered here so you can jump back to it without retyping. ' +
-          'The list lives in your browser — nothing is sent anywhere.',
-        side: 'bottom',
-        align: 'end',
-      },
+      title: 'Your recent lookups',
+      content:
+        'Every notice you look up is remembered here so you can jump back to it without retyping. ' +
+        'The list lives in your browser — nothing is sent anywhere.',
+      placement: 'bottom',
     },
     {
       element: '#lucky-link',
-      popover: {
-        title: 'Not sure where to start?',
-        description:
-          'Click this to pick a random notice from the dataset. Handy if you just want to see ' +
-          'what a notice looks like before you have a specific one in mind.',
-        side: 'bottom',
-        align: 'center',
-      },
+      title: 'Not sure where to start?',
+      content:
+        'Click this to pick a random notice from the dataset. Handy if you just want to see ' +
+        'what a notice looks like before you have a specific one in mind.',
+      placement: 'bottom',
     },
     {
-      // No element — driver.js renders a centered modal. The target
-      // would be the Reuse-tab graph-lane button (#app-tab-explorer),
-      // but that tab is hidden until the first lookup runs, so
-      // anchoring would fail on cold load.
-      popover: {
-        title: 'Then what?',
-        description:
-          'Once you press Enter, you are taken straight to the <strong>Reuse</strong> tab to ' +
-          'inspect the notice as a linked-data graph — browse every property, follow the ' +
-          'links between resources, and download the whole thing when you are done.',
-      },
+      title: 'Then what?',
+      content:
+        'Once you press Enter, you are taken straight to the <strong>Reuse</strong> tab to ' +
+        'inspect the notice as a linked-data graph — browse every property, follow the ' +
+        'links between resources, and download the whole thing when you are done.',
     },
   ]);
-
-  activeTour.drive();
 }

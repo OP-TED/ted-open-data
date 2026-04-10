@@ -158,11 +158,6 @@ This project uses the following third-party components:
   - License: MIT
   - Website: https://github.com/rdfjs/N3.js
 
-- **Zod** (v4)
-  - Purpose: Runtime validation for shareable URL parameters (`?facet=…`)
-  - License: MIT
-  - Website: https://zod.dev/
-
 - **js-yaml** (v4.1.0)
   - Purpose: YAML parser and dumper
   - License: MIT

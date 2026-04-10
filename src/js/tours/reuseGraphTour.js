@@ -11,112 +11,65 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
+// Guided tour for the Reuse tab — graph lane — 5 steps.
+// No priming needed — the trigger only exists when a graph is loaded.
 
-/**
- * Interactive guided tour for the Reuse tab — graph lane.
- *
- * Shown when the current view is a linked-data graph (a single
- * notice from the Inspect tab or the output of a CONSTRUCT /
- * DESCRIBE query). The tour walks through the navigation chrome
- * (breadcrumb, view-mode toggle) and the two reuse actions (Share
- * view and Download as…).
- *
- * No priming is needed — the trigger only exists inside the data
- * card, which is hidden until a graph has actually loaded.
- */
+import { startTour } from './tour.js';
 
-import { createTour, loadDriver } from './_driver.js';
-
-let activeTour = null;
-
-/**
- * Start the Reuse (graph lane) tour. Any previous instance is
- * destroyed first so only one tour is ever live at a time.
- */
-export async function startReuseGraphTour() {
-  const driver = await loadDriver();
-
-  if (activeTour) {
-    try { activeTour.destroy(); } catch (e) { console.debug('[tour] destroy() threw:', e); }
-    activeTour = null;
-  }
-
-  activeTour = createTour(driver, [
+export function startReuseGraphTour() {
+  startTour([
     {
       element: '#data-breadcrumb',
-      popover: {
-        title: 'Where you are',
-        description:
-          'The breadcrumb trail shows the path you have taken through the graph. Click any step ' +
-          'to jump back to an earlier resource.',
-        side: 'bottom',
-        align: 'start',
-      },
+      title: 'Where you are',
+      content:
+        'The breadcrumb trail shows the path you have taken through the graph. Click any step ' +
+        'to jump back to an earlier resource.',
+      placement: 'bottom',
     },
     {
-      // Target the view-mode toggle by its own id, not by the
-      // generic `.btn-group[role="group"]` selector. The old selector
-      // returned the first such element anywhere in the document,
-      // which would silently steal the anchor if any future button
-      // group landed above it.
       element: '#data-view-mode-toggle',
-      popover: {
-        title: 'Three ways to look at the same data',
-        description:
-          '<strong>Tree</strong> presents the graph as a clickable outline. ' +
-          '<strong>Turtle</strong> shows the raw RDF serialisation, for when you want to read ' +
-          'the underlying statements. <strong>Backlinks</strong> lists the other resources in ' +
-          'the dataset that reference the one you are currently looking at.',
-        side: 'bottom',
-        align: 'end',
-      },
+      title: 'Three ways to look at the same data',
+      content:
+        '<strong>Tree</strong> presents the graph as a clickable outline. ' +
+        '<strong>Turtle</strong> shows the raw RDF serialisation, for when you want to read ' +
+        'the underlying statements. <strong>Backlinks</strong> lists the other resources in ' +
+        'the dataset that reference the one you are currently looking at.',
+      placement: 'bottom',
     },
     {
       element: '#data-share-btn',
-      popover: {
-        title: 'Share this view',
-        description:
-          'Copies a URL that reproduces exactly what you are looking at right now — the same ' +
-          'resource, the same view mode, the same breadcrumb. Save it for later or send it to ' +
-          'a colleague; when they open it, they will see what you see.',
-        side: 'bottom',
-        align: 'end',
-      },
+      title: 'Share this view',
+      content:
+        'Copies a URL that reproduces exactly what you are looking at right now — the same ' +
+        'resource, the same view mode, the same breadcrumb. Save it for later or send it to ' +
+        'a colleague; when they open it, they will see what you see.',
+      placement: 'bottom',
     },
     {
       element: '#data-download-btn',
-      popover: {
-        title: 'Download the graph',
-        description:
-          'Save the whole graph as a file, in the RDF serialisation of your choice: Turtle, ' +
-          'RDF/XML or N-Triples.',
-        side: 'bottom',
-        align: 'end',
-      },
+      title: 'Download the graph',
+      content:
+        'Save the whole graph as a file, in the RDF serialisation of your choice: Turtle, ' +
+        'RDF/XML or N-Triples.',
+      placement: 'bottom',
     },
     {
-      // Centered modal — explains how to read the tree, using
-      // colour references that match the actual CSS classes.
-      popover: {
-        title: 'Reading the results',
-        description:
-          'Each card is a node in the graph — a notice, an organisation, a contract, or any other entity. ' +
-          'The contents of the card show you the node\'s properties and links to other nodes. ' +
-          'You can click on any element to dig deeper into the connected data. ' +
-          'Use the <span style="color:#000000; font-size:13.6px;">&#9654;</span> arrows to expand or collapse nested nodes. ' +
-          'The breadcrumb at the top tracks your path — click any step to go back.' +
-          '<br><br><b>Color coding:</b><br>' +
-          '<span style="color:#b56217; font-weight:500; text-decoration:underline;">link or property name</span><span style="font-weight:500;"> → </span><br>' +
-          '<span style="color:#2a00ff;">"property value"</span>' +
-          '<span style="color:#666666; font-size:0.75em;">^^datatype@language</span><br>' +
-          '<span style="color:#2c862d; font-weight:700; text-decoration:underline;">linked node type</span><br>' +
-          '<span style="display:inline-flex; border-radius:999px; border:1px solid #666666; overflow:hidden; font-size:1em; line-height:1;">' +
-            '<span style="background:#666666; color:#fff; padding:0.25em 0.6em;">linked node type</span>' +
-            '<span style="background:#fff; color:#2a00ff; padding:0.25em 0.6em;">identifier</span>' +
-          '</span>',
-      },
+      title: 'Reading the results',
+      content:
+        'Each card is a node in the graph — a notice, an organisation, a contract, or any other entity. ' +
+        'The contents of the card show you the node\'s properties and links to other nodes. ' +
+        'You can click on any element to dig deeper into the connected data. ' +
+        'Use the <span style="color:#000000; font-size:13.6px;">&#9654;</span> arrows to expand or collapse nested nodes. ' +
+        'The breadcrumb at the top tracks your path — click any step to go back.' +
+        '<br><br><b>Color coding:</b><br>' +
+        '<span style="color:#b56217; font-weight:500; text-decoration:underline;">link or property name</span><span style="font-weight:500;"> → </span><br>' +
+        '<span style="color:#2a00ff;">"property value"</span>' +
+        '<span style="color:#666666; font-size:0.75em;">^^datatype@language</span><br>' +
+        '<span style="color:#2c862d; font-weight:700; text-decoration:underline;">linked node type</span><br>' +
+        '<span style="display:inline-flex; border-radius:999px; border:1px solid #666666; overflow:hidden; font-size:1em; line-height:1;">' +
+          '<span style="background:#666666; color:#fff; padding:0.25em 0.6em;">linked node type</span>' +
+          '<span style="background:#fff; color:#2a00ff; padding:0.25em 0.6em;">identifier</span>' +
+        '</span>',
     },
   ]);
-
-  activeTour.drive();
 }
