@@ -82,11 +82,11 @@ function getLabel(facet) {
 // actually kicks in (a malformed facet compares unequal to every other
 // facet, including another differently-malformed one, so they can't
 // silently collapse in addUnique).
-function getQuery(facet) {
+function getQuery(facet, { noticeNumber } = {}) {
   if (!facet) return null;
   if (facet.type === 'query') return facet.query;
   if (facet.type === 'notice-number') return _noticeByPublicationNumberQuery(facet.value);
-  if (facet.type === 'named-node') return _describeTermQuery(facet.term);
+  if (facet.type === 'named-node') return _describeTermQuery(facet.term, noticeNumber);
   throw new Error(`Unknown facet type: ${facet.type}`);
 }
 
@@ -115,9 +115,31 @@ WHERE {
 // FORBIDDEN_URI_CHARS check here at the point of interpolation. Any URI
 // that would let `>` or quote characters break out of the IRI literal
 // gets thrown before the query is built.
-function _describeTermQuery(term) {
+function _describeTermQuery(term, noticeNumber) {
   if (!_isSafeUri(term?.value)) {
     throw new Error(`Unsafe URI for DESCRIBE: ${JSON.stringify(term?.value)}`);
+  }
+  // When a root notice context is available, scope the query to the
+  // graph containing that notice. Without this, the bare DESCRIBE
+  // returns triples from every named graph where the URI appears,
+  // merging data from multiple notices in the same procedure.
+  if (noticeNumber && /^\d{8}-\d{4}$/.test(noticeNumber)) {
+    // Graph-scoped CBD: fetch the direct triples of the resource plus
+    // one level of blank-node expansion (mirrors DESCRIBE CBD behaviour
+    // but restricted to the graph containing the given notice).
+    return `PREFIX epo: <http://data.europa.eu/a4g/ontology#>
+
+CONSTRUCT {
+  <${term.value}> ?p ?o .
+  ?o ?p2 ?o2 .
+}
+WHERE {
+  GRAPH ?g {
+    ?notice epo:hasNoticePublicationNumber "${noticeNumber}" .
+    <${term.value}> ?p ?o .
+    OPTIONAL { FILTER(isBlank(?o)) ?o ?p2 ?o2 . }
+  }
+}`;
   }
   return `DEFINE sql:describe-mode "CBD"
 DESCRIBE <${term.value}>`;

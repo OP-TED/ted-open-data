@@ -247,6 +247,12 @@ export class ExplorerController extends EventTarget {
     if (!stripped) return null;
     const url = new URL(window.location.href);
     url.searchParams.set('facet', JSON.stringify(stripped));
+    // Include the root notice number so named-node share links
+    // reproduce the same graph-scoped view the sharer sees.
+    const root = this.breadcrumb[0];
+    if (facet.type === 'named-node' && root?.type === 'notice-number') {
+      url.searchParams.set('root', root.value);
+    }
     // Serialise SPARQL options whenever the controller holds non-empty
     // ones — not just for query facets. A user who ran a CONSTRUCT
     // with custom options and then drilled into a named-node via the
@@ -308,6 +314,24 @@ export class ExplorerController extends EventTarget {
     const optsParam = params.get('opts');
     if (optsParam) {
       try { sparqlOptions = JSON.parse(optsParam); } catch (e) { console.debug('[ExplorerController] Malformed ?opts= parameter, using defaults:', e); }
+    }
+
+    // Restore root notice context for named-node share links so
+    // the scoped query reproduces the original graph-scoped view.
+    // Sets up the full breadcrumb atomically before emitting any
+    // events, avoiding races with user navigation and preventing
+    // a double procedure-timeline fetch.
+    const rootParam = params.get('root');
+    if (validated.type === 'named-node' && rootParam && /^\d{8}-\d{4}$/.test(rootParam)) {
+      const rootFacet = this._withTimestamp({ type: 'notice-number', value: rootParam });
+      const namedNode = this._withTimestamp(validated);
+      this.breadcrumb = [rootFacet, namedNode];
+      this.breadcrumbIndex = 1;
+      this._sparqlOptions = sparqlOptions;
+      this._navigated({ save: false }).catch(err => {
+        console.error('[ExplorerController] initFromUrlParams root+named-node failed:', err);
+      });
+      return { status: 'loaded' };
     }
 
     // Fire-and-forget the search but attach a .catch so any rejection
@@ -393,7 +417,9 @@ export class ExplorerController extends EventTarget {
   async _executeCurrentQuery() {
     const facet = this.currentFacet;
     if (!facet) return;
-    const query = getQuery(facet);
+    const root = this.breadcrumb[0];
+    const noticeNumber = root?.type === 'notice-number' ? root.value : undefined;
+    const query = getQuery(facet, { noticeNumber });
     if (!query) return;
 
     // Capture the token for this query. If the user navigates while the

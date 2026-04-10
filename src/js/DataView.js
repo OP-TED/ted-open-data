@@ -191,7 +191,9 @@ export class DataView {
         // dev mode routes through the cors-proxy while production
         // hits the real endpoint directly. The previous hard-coded
         // `/sparql` only worked in dev.
-        const query = getQuery(facet);
+        const root = this.controller.breadcrumb?.[0];
+        const noticeNumber = root?.type === 'notice-number' ? root.value : undefined;
+        const query = getQuery(facet, { noticeNumber });
         if (!query) {
           showToast('Download failed', 'Could not build a download query for the current view.', { variant: 'danger' });
           return;

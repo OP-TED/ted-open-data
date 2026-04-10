@@ -132,20 +132,26 @@ export class BacklinksView {
   }
 
   _buildQuery(uri, offset) {
+    const root = this.controller.breadcrumb?.[0];
+    const noticeNumber = root?.type === 'notice-number' ? root.value : null;
+    const graphClause = noticeNumber && /^\d{8}-\d{4}$/.test(noticeNumber)
+      ? `GRAPH ?g {\n      ?_notice <http://data.europa.eu/a4g/ontology#hasNoticePublicationNumber> "${noticeNumber}" .\n      `
+      : '';
+    const graphClose = graphClause ? '\n    }' : '';
     return `CONSTRUCT {
   ?s ?p ?o .
 }
 WHERE {
   {
     SELECT DISTINCT ?s ?p WHERE {
-      VALUES ?o { <${uri}> }
-      ?s ?p ?o .
+      ${graphClause}VALUES ?o { <${uri}> }
+      ?s ?p ?o .${graphClose}
     }
     LIMIT ${BATCH_SIZE}
     OFFSET ${offset}
   }
-  VALUES ?o { <${uri}> }
-  ?s ?p ?o .
+  ${graphClause}VALUES ?o { <${uri}> }
+  ?s ?p ?o .${graphClose}
 }`;
   }
 
