@@ -56,43 +56,221 @@
 body {
     display: flex;
     flex-direction: column;
-    height: 100vh;
     min-height: 100vh;
     margin: 0;
-    overflow: hidden; /* Prevent page-level scrolling */
 }
 
-body > header {
-    background-color: var(--dark-background-color);
-    border-bottom: 6px solid var(--op-green-color);
-    height: 84px;
-    flex-shrink: 0; /* Prevent header from shrinking */
+.sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    background-color: #f5f5f5;
 }
 
-body > footer {
-    height: 42px;
-    background-color: var(--ted-blue-5); /* eu-blue-5 */
-    border-top: 1px solid var(--border-color);
+/* EU Global Banner — matches webtools.europa.eu globan */
+.eu-globan {
+    background-color: #444;
+    color: #fff;
+    font-family: Inter, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 28px;
+    height: 28px;
+    position: relative;
+    z-index: 2;
+}
+
+.eu-globan__content {
+    display: flex;
     align-items: center;
-    padding: 0 20px;
-    flex-shrink: 0; /* Prevent footer from shrinking */
+    position: relative;
+}
+
+.eu-globan__flag {
+    max-height: 16px;
+    margin: 0 8px 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.eu-globan__text {
+    color: #fff;
+}
+
+.eu-globan__button {
+    color: #fff;
+    background-color: transparent;
+    border: 3px solid #444;
+    font-size: 14px;
+    font-family: Inter, Arial, sans-serif;
+    font-weight: 400;
+    margin: 0 0 0 8px;
+    padding: 0 7px;
+    height: 28px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    white-space: nowrap;
+}
+
+.eu-globan__button:hover {
+    background: #fff;
+    border-color: #fff;
+    color: #004494;
+}
+
+.eu-globan__button[aria-expanded="true"],
+.eu-globan__button:focus-visible {
+    background: #fff;
+    border-color: #ffd617;
+    color: #004494;
+}
+
+.eu-globan__button[aria-expanded="true"] .eu-globan__arrow {
+    transform: rotate(180deg);
+}
+
+.eu-globan__arrow {
+    width: 12px;
+    height: 12px;
+    margin: 0 0 0 8px;
+    transition: transform 0.2s;
+}
+
+.eu-globan__arrow path {
+    stroke: currentColor;
+    stroke-width: 5px;
+}
+
+.eu-globan__dropdown {
+    background-color: #fff;
+    position: absolute;
+    right: auto;
+    left: 0;
+    top: 100%;
+    padding: 12px 16px;
+    max-width: 500px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.4);
+    color: #444;
+    font-size: 14px;
+    line-height: 1.4;
+    z-index: 1030;
+}
+
+.eu-globan__dropdown p {
+    margin: 0;
+    padding: 0;
+}
+
+.eu-globan__dropdown-link {
+    margin-top: 10px !important;
+}
+
+.eu-globan__dropdown a {
+    color: #004494;
+    text-decoration: none;
+}
+
+.eu-globan__dropdown a:hover {
+    text-decoration: underline;
+}
+
+/* Site Header — mirrors developer.ted.europa.eu */
+.site-header {
+    background-color: #fff;
+    font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", sans-serif;
+    color: #515560;
+}
+
+.site-header--sticky {
+    border-bottom: 8px solid #339900;
+}
+
+.site-header__wrapper {
+    padding: 0 24px;
+}
+
+.site-header__upper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 2px solid #cfdaf5;
+}
+
+.site-header__logo-desktop {
+    height: 48px;
+}
+
+.site-header__logo-mobile {
+    height: 48px;
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .site-header__logo-desktop { display: none; }
+    .site-header__logo-mobile { display: inline; }
+}
+
+.site-header__data-period {
+    color: #999;
+    font-size: 12px;
+}
+
+.site-header__lower {
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 10px 0;
+}
+
+.site-header__title {
+    color: #515560;
+    font-size: 28px;
+    text-decoration: none;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.site-header__title:hover {
+    color: #004494;
+    text-decoration: none;
+}
+
+.site-header__subtitle {
+    color: #515560;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    background-color: #f5f5f5;
+    border-left: 6px solid #339900;
+    padding: 4px 12px;
+    margin-right: 10px;
+}
+
+.site-header__subtitle:hover {
+    color: #004494;
+    text-decoration: none;
+}
+
+.site-header__dot {
+    color: #515560;
+    font-size: 10px;
+    vertical-align: middle;
+}
+
+.site-header__description {
+    color: #515560;
+    font-size: 15px;
+    font-weight: 400;
+    margin-left: 12px;
 }
 
 main {
     flex: 1;
-    overflow: hidden; /* Contain scrolling within tabs */
     display: flex;
     flex-direction: column;
-}
-
-/* Navbar */
-.navbar-brand img {
-    margin-right: 10px;
-}
-
-.navbar-dark .navbar-brand {
-    font-weight: 600;
-    font-size: 1.25rem;
+    min-height: calc(100vh - var(--header-total-height, 251px));
 }
 
 /* Page Header */
@@ -276,30 +454,21 @@ main {
 
 /* Tab Styles */
 .tab-pane {
-    flex: 1;
     display: none; /* Hide by default */
     padding: 20px;
-    height: 100%;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
 }
 
 .tab-pane.active {
-    display: flex; /* Show when active */
+    display: flex;
     flex-direction: column;
-    z-index: 1;
+    flex: 1;
 }
 
 .tab-content {
     flex: 1;
     display: flex;
-    overflow: hidden;
+    flex-direction: column;
     background-color: white;
-    min-height: 0; /* Important for nested flex containers */
-    position: relative;
 }
 
 .tab-pane.active.show {
@@ -308,7 +477,7 @@ main {
 }
 
 .nav-tabs {
-    margin-top: 10px; /* Adjust the value as needed */
+    margin-top: 10px;
 }
 
 /* Margin spacers at either end of the tablist. Using <li> with an
@@ -352,12 +521,9 @@ main {
 
 /* Institutional footer — exact copy from docs.ted.europa.eu */
 .ted-institutional-footer {
-    margin-top: 3rem;
-    margin-left: -40px;
-    margin-right: -40px;
-    margin-bottom: -20px;
-    width: calc(100% + 80px);
+    width: 100%;
     box-sizing: border-box;
+    flex-shrink: 0;
     background-color: rgb(243, 246, 252);
     color: rgb(93, 93, 93);
     font-size: 0.83333rem;
@@ -469,11 +635,10 @@ main {
 }
 
 /* Query Editor Styles */
-#query-editor {
+#query-editor.active.show {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding: 20px;
 }
 
@@ -555,11 +720,13 @@ main {
 /* CodeMirror Styles */
 #query {
     overflow: hidden;
-    min-height: 0;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 .cm-editor {
-    height: 100% !important;
+    flex: 1;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 14px;
     border: 1px solid var(--border-color);
@@ -667,11 +834,11 @@ main {
 }
 
 .accordion-container {
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: calc(100vh - 200px); /* Further adjust height to fit within the tab */
-    border: 1px solid #dee2e6; /* Add border */
-    border-radius: 0.25rem; /* Add border radius */
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    overflow-y: auto;
+    max-height: calc(100vh - var(--header-total-height, 251px) - 80px);
 }
 
 .query-library-accordion-header {
@@ -714,6 +881,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 .search-hero-title-lane,
 .search-hero-input-lane {
@@ -725,12 +893,13 @@ main {
   align-items: center;
 }
 .search-hero-title-lane {
-  flex: 34 1 0;
-  justify-content: center;
+  flex: 1 1 0;
+  justify-content: flex-end;
+  padding-bottom: 1.5rem;
   text-align: center;
 }
 .search-hero-input-lane {
-  flex: 66 1 0;
+  flex: 1 1 0;
   justify-content: flex-start;
 }
 .search-hero-inner {
@@ -1182,7 +1351,7 @@ main {
    would push the slide content past the bottom of the visible area
    and the page would grow a scrollbar. */
 .home-carousel {
-  height: 100%;
+  height: calc(100vh - var(--header-total-height, 251px));
   display: flex;
   flex-direction: column;
   padding: 1rem 4rem;
@@ -1192,6 +1361,7 @@ main {
 .home-carousel .carousel-inner {
   flex: 1;
   min-height: 0;
+  height: 100%;
 }
 
 .home-carousel .carousel-item {
@@ -1280,6 +1450,51 @@ main {
   .home-carousel .carousel-control-next {
     width: 2rem;
   }
+}
+
+@media (max-height: 700px) {
+  .home-carousel-slide {
+    transform: scale(0.85);
+    transform-origin: center center;
+  }
+}
+
+@media (max-height: 500px) {
+  .home-carousel-slide {
+    transform: scale(0.7);
+  }
+}
+
+/* TED danger button */
+.btn-ted-danger {
+  background-color: #cc2129;
+  color: #fff;
+  border: none;
+}
+
+.btn-ted-danger:hover {
+  background-color: #de232d;
+  color: #fff;
+}
+
+.btn-ted-danger-icon {
+  color: #cc2129;
+  font-size: 1.2rem;
+  line-height: 1;
+  border: none;
+}
+
+.btn-ted-danger-icon:hover {
+  color: #de232d;
+}
+
+/* Query progress bar */
+#query-progress-toast .progress {
+  background-color: #F3F6FC;
+}
+
+#query-progress-toast .progress-bar {
+  background-color: #697188;
 }
 
 /* ──────────────────────────────────────────────────────────────

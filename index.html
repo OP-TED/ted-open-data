@@ -35,7 +35,7 @@
 
 </head>
 
-<body class="bg-light">
+<body>
     <!-- Piwik PRO WEB Analytics code -->
     <script type="text/javascript">
         (function (window, document, dataLayerName, id) {
@@ -46,19 +46,57 @@
         })(window, document, 'dataLayer', '363c8269-fce7-42d6-88eb-0abc9e22ea96');
     </script>
     <!-- End Piwik PRO WEB Analytics code -->
-    <!-- Header -->
-    <header class="navbar navbar-expand-lg navbar-light">
-        <div class="container-fluid">
-            <a class="navbar-brand ms-4" href="#">
-                <img src="./src/assets/ted-logo.png" alt="TED - Publications Office of the EU" width="60"
-                    class="d-inline-block align-middle me-2"><span>TED Open Data Service</span>
-            </a>
-            <div class="d-flex align-items-center arrow">
-                <!-- not used for now -->
+    <!-- Scrollable header — globan + EU logo row -->
+    <!-- EU Global Banner -->
+    <div class="eu-globan">
+        <div class="eu-globan__content">
+            <img src="./src/assets/eu.svg" class="eu-globan__flag" alt="" loading="lazy">
+            <span class="eu-globan__text">An official website of the European Union</span>
+            <button class="eu-globan__button" aria-expanded="false" aria-controls="eu-globan-dropdown">
+                How do you know?
+                <svg aria-hidden="true" focusable="false" class="eu-globan__arrow" width="12" height="12" viewBox="0 0 48 48" fill="currentColor"><path d="m45 30.12-2.73 2.82-18.24-18.36L5.73 33 3 30.18 24.03 9z"></path></svg>
+            </button>
+            <div id="eu-globan-dropdown" class="eu-globan__dropdown" hidden>
+                <p>All official European Union website addresses are in the <b>europa.eu</b> domain.</p>
+                <p class="eu-globan__dropdown-link"><a href="https://european-union.europa.eu/institutions-law-budget/institutions-and-bodies/search-all-eu-institutions-and-bodies_en" target="_blank" rel="noopener noreferrer">See all EU institutions and bodies</a></p>
+            </div>
+        </div>
+    </div>
+    <header class="site-header site-header--scrollable">
+        <div class="site-header__wrapper">
+            <div class="site-header__upper">
+                <a href="https://european-union.europa.eu/index_en" target="_blank" rel="noopener noreferrer">
+                    <img src="./src/assets/logo-eu--en.svg" alt="European Union" class="site-header__logo-desktop">
+                    <img src="./src/assets/logo-eu--mobile.svg" alt="European Union" class="site-header__logo-mobile">
+                </a>
             </div>
         </div>
     </header>
 
+    <!-- Sticky header — title row + nav tabs -->
+    <div class="sticky-nav">
+    <header class="site-header site-header--sticky">
+        <div class="site-header__wrapper">
+            <div class="site-header__lower">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="https://ted.europa.eu" target="_blank" rel="noopener noreferrer" class="site-header__title">EU tenders</a>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <a href="#" class="site-header__subtitle">Ted <span class="site-header__dot">&#9632;</span> Open Data Service</a>
+                        <span class="site-header__description">Explore and reuse EU public procurement data</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span id="data-period" class="small site-header__data-period"></span>
+                        <span id="data-period-info" class="bi bi-info-circle ms-1 site-header__data-period" tabindex="0" role="img"
+                           aria-label="Data period information" style="display: none; cursor: help;"
+                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                           title="Publication dates of the earliest and most recent notices available in our dataset."></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
     <nav>
         <ul class="nav nav-tabs w-100 d-flex align-items-center" role="tablist">
             <li role="presentation" aria-hidden="true" class="nav-tabs-spacer-left"></li>
@@ -112,6 +150,7 @@
             <li role="presentation" aria-hidden="true" class="nav-tabs-spacer-right"></li>
         </ul>
     </nav>
+    </div>
 
     <main class="tab-content h-100">
 
@@ -121,7 +160,7 @@
              institutional copy has reading time. Slides 2-4 reuse the
              existing button IDs (lookup-notice, try-query-library,
              start-tour) so HomeTab.js wires them up unchanged. -->
-        <div class="tab-pane w-100 fade show active position-absolute" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
+        <div class="tab-pane w-100 fade show active" id="home-tab-content" role="tabpanel" aria-labelledby="home-tab">
             <div id="home-carousel" class="carousel slide home-carousel" data-bs-ride="false" data-bs-interval="false" aria-roledescription="carousel" aria-label="TED Open Data capabilities">
                 <div class="carousel-indicators">
                     <button type="button" data-bs-target="#home-carousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Welcome"></button>
@@ -239,7 +278,7 @@
              Trimmed from explorer's index.html: the SPARQL mode toggle and
              the panel-sparql wrapper are removed because the merged app
              has only one editor (in the Query Editor tab). -->
-        <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-search" role="tabpanel" aria-labelledby="app-tab-search">
+        <div class="tab-pane w-100 fade pt-2 px-3 pb-3" id="app-search" role="tabpanel" aria-labelledby="app-tab-search">
             <div id="panel-notice" class="search-hero">
 
                 <!-- Top half: search area, split into title-lane + input-lane -->
@@ -305,45 +344,54 @@
         </div>
 
         <!-- Query Library -->
-        <div class="tab-pane w-100 h-100 fade position-absolute" id="query-library" role="tabpanel" aria-labelledby="query-library-tab">
-            <div class="container-fluid h-100">
-                <div class="row h-100">
-                    <div class="col-md-4 d-flex flex-column h-100">
+        <div class="tab-pane w-100 fade" id="query-library" role="tabpanel" aria-labelledby="query-library-tab">
+            <div class="container-fluid d-flex flex-column flex-grow-1">
+                <div class="row flex-grow-1">
+                    <div class="col-md-4 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            <h5 class="mb-0">Query Library</h5>
+                            <a href="#" id="explore-tour-trigger"
+                               class="ms-2 text-muted"
+                               data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="Take a quick tour of this tab">
+                                <i class="bi bi-play-circle"></i>
+                            </a>
+                            <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
+                               id="contribute-query-link"
+                               class="ms-auto small text-muted text-decoration-none"
+                               data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="Want to contribute a query? See the contributing guide.">
+                                <i class="bi bi-info-circle"></i> Contribute
+                            </a>
+                        </div>
                         <div class="accordion-container">
                             <div class="accordion accordion-flush flex-grow-1" id="query-accordion">
                                 <!-- Categories and queries will be populated here -->
                             </div>
                         </div>
-                        <div class="library-footer mt-2 d-flex align-items-center gap-3">
-                            <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
-                               id="contribute-query-link"
-                               class="small text-muted text-decoration-none"
-                               data-bs-toggle="tooltip" data-bs-placement="top"
-                               title="Want to contribute a query? See the contributing guide.">
-                                <i class="bi bi-info-circle"></i> Contribute a query
-                            </a>
-                            <a href="#" id="explore-tour-trigger"
-                               class="small text-muted text-decoration-none"
-                               data-bs-toggle="tooltip" data-bs-placement="top"
-                               title="A short walkthrough of this tab">
-                                <i class="bi bi-play-circle"></i> Take a quick tour
-                            </a>
-                        </div>
                     </div>
                     <div class="col-md-8 d-flex flex-column" id="query-library-display">
-                        <div id="select-query-message" class="d-flex align-items-center justify-content-center flex-grow-1">
+                        <div id="select-query-message" class="text-center" style="margin-top: 33vh;">
                             <p class="tab-prompt">Select a query from the available categories on the left.</p>
                         </div>
+                        <h5 id="query-title" class="mb-2 d-none">Query Title</h5>
                         <div class="card flex-grow-1 border-0 m-0 p-0 d-none" id="query-card">
                             <div class="card-body d-flex flex-column p-0">
-                                <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
-                                <div id="query-details" class="p-3">
-                                    <h5 id="query-title" class="mt-3">Query Title</h5>
-                                    <p id="query-description">Select a query to see its description.</p>
-                                    <div id="query-action-buttons" class="d-flex justify-content-end mt-3 gap-2">
+                                <div id="query-details" class="px-0 pb-2">
+                                    <p id="query-description" class="mb-2">Select a query to see its description.</p>
+                                    <div id="query-action-buttons" class="d-flex justify-content-start mb-3 gap-2">
                                         <button type="button" id="customise-query-button" class="btn btn-outline-secondary" disabled>Customise</button>
                                         <button type="button" id="try-query-button" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
+                                </div>
+                                <div class="d-flex align-items-end mb-2">
+                                    <h6 class="text-muted mb-0">SPARQL query</h6>
+                                    <button type="button" id="copy-sparql-button" class="btn btn-sm btn-outline-secondary ms-auto" title="Copy SPARQL to clipboard"><i class="bi bi-clipboard"></i> Copy</button>
+                                </div>
+                                <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
+                                <div id="query-action-buttons-bottom" class="d-flex justify-content-end p-3 gap-2">
+                                    <button type="button" class="btn btn-outline-secondary query-customise-btn" disabled>Customise</button>
+                                    <button type="button" class="btn btn-primary query-try-btn" disabled>Try this query</button>
                                 </div>
                             </div>
                         </div>
@@ -353,41 +401,37 @@
         </div> <!-- Close query-library div -->
 
         <!-- Main Container -->
-        <div class="tab-pane w-100 fade position-absolute" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
+        <div class="tab-pane w-100 fade" id="query-editor" role="tabpanel" aria-labelledby="query-editor-tab">
             <!-- Query Form -->
             <form id="query-form" class="d-flex flex-column h-100">
-                <div class="mb-3 flex-grow-1 d-flex flex-column">
-                    <div class="form-group flex-grow-1 d-flex flex-column">
-                        <div class="tab-prompt mb-1">
-                            <label id="query-label" for="query" class="mb-0">Compose or refine your query in SPARQL</label>
-                            <button type="button" class="tour-trigger" id="customize-tour-trigger"
-                                    data-bs-toggle="tooltip" data-bs-placement="top"
-                                    title="Take a quick tour of this tab"
-                                    aria-label="Take a quick tour of this tab">
-                                <i class="bi bi-play-circle"></i>
-                            </button>
-                        </div>
-                        <div id="query" class="flex-grow-1" role="textbox" aria-labelledby="query-label" aria-multiline="true"></div>
+                <div class="d-flex align-items-center mb-1">
+                    <div class="mb-0">
+                        <h5 class="mb-0 d-inline">Query Editor</h5>
+                        <button type="button" class="tour-trigger" id="customize-tour-trigger"
+                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="Take a quick tour of this tab"
+                                aria-label="Take a quick tour of this tab">
+                            <i class="bi bi-play-circle"></i>
+                        </button>
                     </div>
-                </div>
-
-                <!-- Results format dropdown removed: the editor now always
-                     requests SPARQL Results JSON and QueryResults renders its
-                     own consistent table. Format choice has moved to the
-                     "Download as…" button on the Data tab, where it is a
-                     download concern rather than a view concern. -->
-
-
-                <div class="mb-3 d-flex justify-content-between align-items-center">
-                    <button class="btn btn-secondary" type="button" id="options-button"
+                    <button class="btn btn-sm btn-outline-secondary ms-auto" type="button" id="copy-editor-sparql" title="Copy SPARQL to clipboard">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="clear-editor" title="Clear the editor">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="options-button"
                             data-bs-toggle="collapse" data-bs-target="#options-collapse"
                             aria-expanded="false" aria-controls="options-collapse">
-                        Options
+                        <i class="bi bi-gear"></i> Options
                     </button>
-                    <button type="submit" class="btn btn-primary" id="run-query-button" disabled>Run Query</button>
+                    <button type="submit" class="btn btn-sm btn-primary ms-1" id="run-query-button-top" disabled>
+                        <i class="bi bi-play-fill"></i> Run
+                    </button>
                 </div>
+                <p class="small text-muted mb-2" id="query-label">Compose or refine your query in SPARQL</p>
 
-                <div class="collapse" id="options-collapse">
+                <div class="collapse mb-2" id="options-collapse">
                     <div class="card card-body">
                         <div class="row">
                             <!-- First Column: Checkboxes -->
@@ -427,11 +471,21 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="flex-grow-1 d-flex flex-column">
+                    <div class="form-group flex-grow-1 d-flex flex-column">
+                        <div id="query" class="flex-grow-1" role="textbox" aria-labelledby="query-label" aria-multiline="true"></div>
+                    </div>
+                </div>
+
+                <div class="mt-2 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary" id="run-query-button" disabled>Run Query</button>
+                </div>
             </form>
         </div> <!-- Close query-editor div -->
 
         <!-- Query Results (SELECT lane) -->
-        <div class="tab-pane w-100 fade position-absolute" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
+        <div class="tab-pane w-100 fade" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
             <!-- Slim results toolbar — hint on the left, Copy URL +
                  Download as… on the right. Mirrors the visual weight
                  of the breadcrumb bar on the graph lane: flat, a
@@ -500,7 +554,7 @@
              RDF graph (a single notice or a custom CONSTRUCT/DESCRIBE
              result). The tab itself is hidden via #app-tab-explorer-item
              above until DataView._onFacetChanged reveals it. -->
-        <div class="tab-pane w-100 fade position-absolute pt-2 px-3 pb-3" id="app-explorer" role="tabpanel" aria-labelledby="app-tab-explorer">
+        <div class="tab-pane w-100 fade pt-2 px-3 pb-3" id="app-explorer" role="tabpanel" aria-labelledby="app-tab-explorer">
 
             <div id="data-card" style="display: none;">
                 <!-- Top row: breadcrumb on the left, view mode radios on the right -->
@@ -554,7 +608,7 @@
                         <i class="bi bi-play-circle"></i>
                     </button>
                     <button type="button" id="data-share-btn"
-                            class="btn btn-sm btn-outline-secondary ms-auto"
+                            class="btn btn-sm btn-outline-secondary ms-auto text-nowrap"
                             title="Copy shareable URL" style="display: none;">
                         <i class="bi bi-share"></i> Share view
                     </button>
@@ -565,7 +619,7 @@
                          memory), N-Triples (re-fetched), RDF/XML (re-fetched). -->
                     <div class="dropdown" id="data-download-menu" style="display: none;">
                         <button type="button"
-                                class="btn btn-sm btn-outline-primary dropdown-toggle"
+                                class="btn btn-sm btn-outline-primary dropdown-toggle text-nowrap"
                                 id="data-download-btn"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-download"></i> Download as…
@@ -637,7 +691,7 @@
         </div> <!-- Close app-explorer div -->
 
         <!-- Help -->
-        <div class="tab-pane w-100 fade position-absolute" id="help" role="tabpanel" aria-labelledby="help-tab">
+        <div class="tab-pane w-100 fade" id="help" role="tabpanel" aria-labelledby="help-tab">
             <div class="container-fluid mt-4">
                 <div class="row">
                     <!-- Left Column - Help Content -->
@@ -809,106 +863,108 @@
                 </div>
             </div>
 
-            <!-- Institutional footer (mirrors docs.ted.europa.eu) -->
-            <div class="ted-institutional-footer">
-                <div class="three-columns">
-                    <div class="col-md-12 col-lg-4">
-                        <div class="ls-footer-logo-DD" style="margin-bottom: 0.75rem;">
-                            <a href="https://ted.europa.eu/"><img alt="TED Open Data" src="src/assets/ted-logo-footer.png" height="48"></a>
-                        </div>
-                        <div class="ted-footer__rich-text">
-                            <p>This website is managed by the <br/>
-                                <a href="https://op.europa.eu/en/home" target="_blank" rel="noopener noreferrer">Publications Office of the European Union</a>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="col-md-12 col-lg-4">
-                        <h3 class="ted-footer__title">Need Help?</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/help-page" target="_blank" rel="noopener noreferrer">Help</a></li>
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/contact" target="_blank" rel="noopener noreferrer">Contact the TED Helpdesk</a></li>
-                        </ul>
-                        <h3 class="ted-footer__title">Follow us</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer">
-                                <a href="https://x.com/EUPublications" target="_blank" rel="noopener noreferrer"><img src="src/assets/x-logo.png" class="icon-footer" alt="X" style="height:18px;width:18px;vertical-align:middle;display:inline;margin-right:0.35rem;"><span>X/Twitter</span></a>
-                                <a href="https://www.youtube.com/playlist?list=PLT5rARDev_rkQdFimoHlpv2Och1H0uBLs" target="_blank" rel="noopener noreferrer" style="margin-left:2rem;"><img src="src/assets/yt-logo.png" class="icon-footer-2nd" alt="YouTube" style="height:18px;width:18px;vertical-align:middle;display:inline;margin-right:0.35rem;"><span>YouTube</span></a>
-                            </li>
-                        </ul>
-                        <h3 class="ted-footer__title">Legal</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/legal-notice" target="_blank" rel="noopener noreferrer">Legal Notice</a></li>
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/cookie-choice" target="_blank" rel="noopener noreferrer">Cookies</a></li>
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/accessibility" target="_blank" rel="noopener noreferrer">Accessibility</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-12 col-lg-4">
-                        <h3 class="ted-footer__title">About us</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://ted.europa.eu/en/about-ted" target="_blank" rel="noopener noreferrer">About TED</a></li>
-                        </ul>
-                        <h3 class="ted-footer__title">Other services</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://ted.europa.eu/TED/main/HomePage.do" target="_blank" rel="noopener noreferrer">EU tenders</a></li>
-                            <li class="li-footer"><a href="https://data.europa.eu/en" target="_blank" rel="noopener noreferrer">European data</a></li>
-                            <li class="li-footer"><a href="https://op.europa.eu/en/web/eu-vocabularies" target="_blank" rel="noopener noreferrer">EU vocabularies</a></li>
-                            <li class="li-footer"><a href="https://cordis.europa.eu/" target="_blank" rel="noopener noreferrer">EU research results</a></li>
-                            <li class="li-footer"><a href="https://op.europa.eu/en/web/who-is-who" target="_blank" rel="noopener noreferrer">EU Whoiswho</a></li>
-                            <li class="li-footer"><a href="https://op.europa.eu/en/web/librarians-corner" target="_blank" rel="noopener noreferrer">EU publications</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="three-columns">
-                    <div class="col-md-12 col-lg-4">
-                        <div class="ls-footer-logo" style="margin-bottom: 0.75rem; margin-top: 2.5rem;">
-                            <img alt="European Union" src="src/assets/EU-flag.png" style="max-height:54px;width:auto;">
-                        </div>
-                        <div class="ted-footer__rich-text">
-                            <p class="byline-footer">Discover more on <a href="https://europa.eu/en/home" target="_blank" rel="noopener noreferrer">europa.eu</a></p>
-                        </div>
-                    </div>
-                    <div class="col-md-12 col-lg-4">
-                        <h3 class="ted-footer__title">Contact the EU</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="tel:0080067891011">Call us 00 800 6 7 8 9 10 11</a></li>
-                            <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/call-us_en" target="_blank" rel="noopener noreferrer">Use other Telephone options</a></li>
-                            <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/write-us_en" target="_blank" rel="noopener noreferrer">Write to us via our contact forms</a></li>
-                            <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/meet-us_en" target="_blank" rel="noopener noreferrer">Meet us at one of the EU centres</a></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-12 col-lg-4">
-                        <h3 class="ted-footer__title">Social Media</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/social-media-channels_en#/search" target="_blank" rel="noopener noreferrer">Search of EU social media channels</a></li>
-                        </ul>
-                        <h3 class="ted-footer__title">EU institutions and bodies</h3>
-                        <ul class="ul-footer">
-                            <li class="li-footer"><a href="https://european-union.europa.eu/institutions-law-budget/institutions-and-bodies/search-all-eu-institutions-and-bodies_en" target="_blank" rel="noopener noreferrer">Search all EU institutions and bodies</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
     </main>
 
-    <!-- Footer -->
-    <footer class="d-flex w-100 align-items-center">
-        <div class="small text-muted ms-3 d-flex align-items-center">
-            <span id="data-period"></span>
-            <span id="data-period-info" class="bi bi-info-circle ms-1" tabindex="0" role="img"
-               aria-label="Data period information" style="display: none; cursor: help;"
-               data-bs-toggle="tooltip" data-bs-placement="top"
-               title="Publication dates of the earliest and most recent notices available in our dataset."></span>
+    <!-- Institutional footer — page-level zone, full width, below main -->
+    <div class="ted-institutional-footer">
+        <div class="three-columns">
+            <div class="col-md-12 col-lg-4">
+                <div class="ls-footer-logo-DD" style="margin-bottom: 0.75rem;">
+                    <a href="https://ted.europa.eu/"><img alt="TED Open Data" src="src/assets/ted-logo-footer.png" height="48"></a>
+                </div>
+                <div class="ted-footer__rich-text">
+                    <p>This website is managed by the <br/>
+                        <a href="https://op.europa.eu/en/home" target="_blank" rel="noopener noreferrer">Publications Office of the European Union</a>
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-12 col-lg-4">
+                <h3 class="ted-footer__title">Need Help?</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/help-page" target="_blank" rel="noopener noreferrer">Help</a></li>
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/contact" target="_blank" rel="noopener noreferrer">Contact the TED Helpdesk</a></li>
+                </ul>
+                <h3 class="ted-footer__title">Follow us</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer">
+                        <a href="https://x.com/EUPublications" target="_blank" rel="noopener noreferrer"><img src="src/assets/x-logo.png" class="icon-footer" alt="X" style="height:18px;width:18px;vertical-align:middle;display:inline;margin-right:0.35rem;"><span>X/Twitter</span></a>
+                        <a href="https://www.youtube.com/playlist?list=PLT5rARDev_rkQdFimoHlpv2Och1H0uBLs" target="_blank" rel="noopener noreferrer" style="margin-left:2rem;"><img src="src/assets/yt-logo.png" class="icon-footer-2nd" alt="YouTube" style="height:18px;width:18px;vertical-align:middle;display:inline;margin-right:0.35rem;"><span>YouTube</span></a>
+                    </li>
+                </ul>
+                <h3 class="ted-footer__title">Legal</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/legal-notice" target="_blank" rel="noopener noreferrer">Legal Notice</a></li>
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/cookie-choice" target="_blank" rel="noopener noreferrer">Cookies</a></li>
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/accessibility" target="_blank" rel="noopener noreferrer">Accessibility</a></li>
+                </ul>
+            </div>
+            <div class="col-md-12 col-lg-4">
+                <h3 class="ted-footer__title">About us</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://ted.europa.eu/en/about-ted" target="_blank" rel="noopener noreferrer">About TED</a></li>
+                </ul>
+                <h3 class="ted-footer__title">Other services</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://ted.europa.eu/TED/main/HomePage.do" target="_blank" rel="noopener noreferrer">EU tenders</a></li>
+                    <li class="li-footer"><a href="https://data.europa.eu/en" target="_blank" rel="noopener noreferrer">European data</a></li>
+                    <li class="li-footer"><a href="https://op.europa.eu/en/web/eu-vocabularies" target="_blank" rel="noopener noreferrer">EU vocabularies</a></li>
+                    <li class="li-footer"><a href="https://cordis.europa.eu/" target="_blank" rel="noopener noreferrer">EU research results</a></li>
+                    <li class="li-footer"><a href="https://op.europa.eu/en/web/who-is-who" target="_blank" rel="noopener noreferrer">EU Whoiswho</a></li>
+                    <li class="li-footer"><a href="https://op.europa.eu/en/web/librarians-corner" target="_blank" rel="noopener noreferrer">EU publications</a></li>
+                </ul>
+            </div>
         </div>
-        <div class="flex-grow-1 text-center small text-muted">&copy; Publications Office of the European Union</div>
-        <div class="progress me-3 position-relative" style="width: 10%; min-width: 100px">
-            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%"></div>
-            <span id="query-timer" class="position-absolute w-100 text-center small text-muted" style="top: 0; left: 0; line-height: 1rem; font-size: 0.65rem; font-weight: 600;"></span>
+        <div class="three-columns">
+            <div class="col-md-12 col-lg-4">
+                <div class="ls-footer-logo" style="margin-bottom: 0.75rem; margin-top: 2.5rem;">
+                    <img alt="European Union" src="src/assets/EU-flag.png" style="max-height:54px;width:auto;">
+                </div>
+                <div class="ted-footer__rich-text">
+                    <p class="byline-footer">Discover more on <a href="https://europa.eu/en/home" target="_blank" rel="noopener noreferrer">europa.eu</a></p>
+                </div>
+            </div>
+            <div class="col-md-12 col-lg-4">
+                <h3 class="ted-footer__title">Contact the EU</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="tel:0080067891011">Call us 00 800 6 7 8 9 10 11</a></li>
+                    <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/call-us_en" target="_blank" rel="noopener noreferrer">Use other Telephone options</a></li>
+                    <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/write-us_en" target="_blank" rel="noopener noreferrer">Write to us via our contact forms</a></li>
+                    <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/meet-us_en" target="_blank" rel="noopener noreferrer">Meet us at one of the EU centres</a></li>
+                </ul>
+            </div>
+            <div class="col-md-12 col-lg-4">
+                <h3 class="ted-footer__title">Social Media</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://european-union.europa.eu/contact-eu/social-media-channels_en#/search" target="_blank" rel="noopener noreferrer">Search of EU social media channels</a></li>
+                </ul>
+                <h3 class="ted-footer__title">EU institutions and bodies</h3>
+                <ul class="ul-footer">
+                    <li class="li-footer"><a href="https://european-union.europa.eu/institutions-law-budget/institutions-and-bodies/search-all-eu-institutions-and-bodies_en" target="_blank" rel="noopener noreferrer">Search all EU institutions and bodies</a></li>
+                </ul>
+            </div>
         </div>
-        <button type="button" id="stop-query-button" class="btn p-0 align-items-center justify-content-center" aria-label="Cancel query" data-bs-toggle="tooltip" data-bs-placement="top" title="Cancel query" style="display: none; font-size: 1.2rem; line-height: 1; margin-left: 0.5rem; color: #dc3545; border: none;"><i class="bi bi-x-circle-fill"></i></button>
-    </footer>
+    </div>
+
+    <!-- Clear editor confirmation modal -->
+    <div class="modal fade" id="clear-confirm-modal" tabindex="-1" aria-labelledby="clear-confirm-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #f5f5f5;">
+                    <h6 class="modal-title" id="clear-confirm-label">Clear editor</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    This will remove all text from the editor. Continue?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-ted-danger" id="clear-confirm-ok">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Container — one shared toast reused by both Copy URL
          buttons (SELECT lane in the editor, graph lane on the data
@@ -922,6 +978,15 @@
             </div>
             <div class="toast-body" id="copy-url-toast-body">
                 The URL is on your clipboard.
+            </div>
+        </div>
+        <div id="query-progress-toast" class="toast" aria-hidden="true" data-bs-autohide="false">
+            <div class="toast-body d-flex align-items-center gap-2 py-2 px-3">
+                <div class="progress flex-grow-1 position-relative" style="min-width: 120px; height: 1rem;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    <span id="query-timer" class="position-absolute w-100 text-center small text-white" style="top: 0; left: 0; line-height: 1rem; font-size: 0.65rem; font-weight: 600;"></span>
+                </div>
+                <button type="button" id="stop-query-button" class="btn btn-sm p-0 btn-ted-danger-icon" aria-label="Cancel query"><i class="bi bi-x-circle-fill"></i></button>
             </div>
         </div>
     </div>

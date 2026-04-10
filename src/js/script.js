@@ -116,14 +116,39 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Ensure CM6 editors re-measure when their Bootstrap tabs become visible,
-  // and hide the footer on the Help tab (no status info needed there).
-  const footer = document.querySelector('body > footer');
+  // Measure actual header height and set CSS variable for layout calculations.
+  const measureHeader = () => {
+    const globan = document.querySelector('.eu-globan');
+    const scrollableHeader = document.querySelector('.site-header--scrollable');
+    const stickyNav = document.querySelector('.sticky-nav');
+    const total = (globan?.offsetHeight || 0) + (scrollableHeader?.offsetHeight || 0) + (stickyNav?.offsetHeight || 0);
+    document.documentElement.style.setProperty('--header-total-height', total + 'px');
+  };
+  measureHeader();
+  window.addEventListener('resize', measureHeader);
+
+  // EU globan "How do you know?" toggle
+  const globanBtn = document.querySelector('.eu-globan__button');
+  const globanDropdown = document.getElementById('eu-globan-dropdown');
+  if (globanBtn && globanDropdown) {
+    globanBtn.addEventListener('click', () => {
+      const expanded = globanBtn.getAttribute('aria-expanded') === 'true';
+      globanBtn.setAttribute('aria-expanded', String(!expanded));
+      globanDropdown.hidden = expanded;
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.eu-globan__content')) {
+        globanBtn.setAttribute('aria-expanded', 'false');
+        globanDropdown.hidden = true;
+      }
+    });
+  }
+
+  // Ensure CM6 editors re-measure when their Bootstrap tabs become visible.
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('shown.bs.tab', (e) => {
+    tab.addEventListener('shown.bs.tab', () => {
       queryEditor.editor.requestMeasure();
       queryLibrary.querySparqlEditor.requestMeasure();
-      if (footer) footer.classList.toggle('d-none', e.target.id === 'help-tab');
     });
   });
 
@@ -169,6 +194,7 @@ SELECT ?earliestDate ?latestDate WHERE {
           infoIcon.style.display = 'inline';
           bootstrap.Tooltip.getOrCreateInstance(infoIcon);
         }
+        measureHeader();
       }
     })
     .catch(err => {

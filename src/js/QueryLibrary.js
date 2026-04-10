@@ -21,6 +21,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
+import { copyToClipboard } from './utils/clipboardCopy.js';
 
 /**
  * Class representing the Query Library.
@@ -70,6 +71,8 @@ export class QueryLibrary {
     });
     this.tryQueryButton = document.getElementById('try-query-button');
     this.customiseQueryButton = document.getElementById('customise-query-button');
+    this.tryQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-try-btn');
+    this.customiseQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-customise-btn');
     this.selectedQueryElement = null;
     this.queries = [];
 
@@ -96,6 +99,20 @@ export class QueryLibrary {
     });
     this.tryQueryButton.addEventListener('click', this.onTryQuery.bind(this));
     this.customiseQueryButton?.addEventListener('click', this.onCustomise.bind(this));
+    this.tryQueryButtonBottom?.addEventListener('click', this.onTryQuery.bind(this));
+    this.customiseQueryButtonBottom?.addEventListener('click', this.onCustomise.bind(this));
+
+    const copySparqlBtn = document.getElementById('copy-sparql-button');
+    if (copySparqlBtn) {
+      copySparqlBtn.addEventListener('click', async () => {
+        const text = this.querySparqlEditor.state.doc.toString();
+        const ok = await copyToClipboard(text);
+        copySparqlBtn.innerHTML = ok ? '<i class="bi bi-check"></i> Copied' : '<i class="bi bi-x"></i> Failed';
+        setTimeout(() => {
+          copySparqlBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+        }, 2000);
+      });
+    }
   }
 
   /**
@@ -142,19 +159,20 @@ export class QueryLibrary {
         header.className = 'query-library-accordion-header';
         header.id = `${categoryId}-header`;
 
+        const isFirst = categoryCounter === 1;
         const headerButton = document.createElement('button');
-        headerButton.className = 'accordion-button collapsed';
+        headerButton.className = isFirst ? 'accordion-button' : 'accordion-button collapsed';
         headerButton.type = 'button';
         headerButton.setAttribute('data-bs-toggle', 'collapse');
         headerButton.setAttribute('data-bs-target', `#${categoryId}`);
-        headerButton.setAttribute('aria-expanded', 'false');
+        headerButton.setAttribute('aria-expanded', isFirst ? 'true' : 'false');
         headerButton.setAttribute('aria-controls', categoryId);
         headerButton.textContent = category;
         header.appendChild(headerButton);
 
         const collapse = document.createElement('div');
         collapse.id = categoryId;
-        collapse.className = 'accordion-collapse collapse';
+        collapse.className = isFirst ? 'accordion-collapse collapse show' : 'accordion-collapse collapse';
         collapse.setAttribute('aria-labelledby', `${categoryId}-header`);
         collapse.setAttribute('data-bs-parent', '#query-accordion');
 
@@ -277,7 +295,10 @@ export class QueryLibrary {
       this.setSparqlEditorValue('SPARQL query will be displayed here.');
       this.tryQueryButton.disabled = true;
       if (this.customiseQueryButton) this.customiseQueryButton.disabled = true;
+      if (this.tryQueryButtonBottom) this.tryQueryButtonBottom.disabled = true;
+      if (this.customiseQueryButtonBottom) this.customiseQueryButtonBottom.disabled = true;
       this.queryCard.classList.add('d-none');
+      this.queryTitle.classList.add('d-none');
       this.selectQueryMessage.classList.remove('d-none');
       return;
     }
@@ -307,9 +328,13 @@ export class QueryLibrary {
     this.queryTitle.textContent = selectedQuery.title;
     this.queryDescription.textContent = selectedQuery.description;
     this.setSparqlEditorValue(querySparqlText);
-    this.tryQueryButton.disabled = false;
-    if (this.customiseQueryButton) this.customiseQueryButton.disabled = false;
+    const queryRunning = this.queryEditor.isQueryRunning;
+    this.tryQueryButton.disabled = queryRunning;
+    if (this.customiseQueryButton) this.customiseQueryButton.disabled = queryRunning;
+    if (this.tryQueryButtonBottom) this.tryQueryButtonBottom.disabled = queryRunning;
+    if (this.customiseQueryButtonBottom) this.customiseQueryButtonBottom.disabled = queryRunning;
     this.queryCard.classList.remove('d-none');
+    this.queryTitle.classList.remove('d-none');
     this.selectQueryMessage.classList.add('d-none');
 
     if (this.selectedQueryElement) {

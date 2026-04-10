@@ -27,6 +27,7 @@ import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
+import {copyToClipboard} from './utils/clipboardCopy.js';
 
 /**
  * Class representing the Query Editor.
@@ -52,6 +53,8 @@ export class QueryEditor {
     this.resultsErrorDetail = document.getElementById('results-error-detail');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.stopQueryButton = document.getElementById('stop-query-button');
+    this.queryProgressToast = bootstrap.Toast.getOrCreateInstance(
+      document.getElementById('query-progress-toast'));
     this.queryResults = null;
     this.abortController = null;
     this.isQueryRunning = false;
@@ -243,6 +246,33 @@ export class QueryEditor {
   initEventListeners() {
     this.queryForm.addEventListener('submit', this.onSubmit.bind(this));
     this.stopQueryButton.addEventListener('click', this.onStopQuery.bind(this));
+
+    const copyBtn = document.getElementById('copy-editor-sparql');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        const ok = await copyToClipboard(this.getQuery());
+        copyBtn.innerHTML = ok ? '<i class="bi bi-check"></i> Copied' : '<i class="bi bi-x"></i> Failed';
+        setTimeout(() => {
+          copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+        }, 2000);
+      });
+    }
+
+    const clearBtn = document.getElementById('clear-editor');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (!this.getQuery().trim()) return;
+        const modal = new bootstrap.Modal(document.getElementById('clear-confirm-modal'));
+        document.getElementById('clear-confirm-ok').onclick = () => {
+          this.editor.dispatch({
+            changes: { from: 0, to: this.editor.state.doc.length, insert: '' },
+          });
+          this.onEditorChange();
+          modal.hide();
+        };
+        modal.show();
+      });
+    }
   }
 
   /**
@@ -253,7 +283,8 @@ export class QueryEditor {
     if (this.isQueryRunning) return;
     const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
-    this.runQueryButton.disabled = error ? true : !query.trim();
+    const disabled = error ? true : !query.trim();
+    this.queryForm.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = disabled);
   }
 
   /**
@@ -347,13 +378,15 @@ export class QueryEditor {
 
       // ── SELECT / ASK path ────────────────────────────────────────
       const progressBar = document.querySelector('.progress-bar');
-      const submitButton = this.queryForm.querySelector('button[type="submit"]');
+      const submitButtons = this.queryForm.querySelectorAll('button[type="submit"]');
       const queryTimer = document.getElementById('query-timer');
       progressBar.style.width = '100%';
       progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
       queryTimer.textContent = '0s';
-      submitButton.disabled = true;
-      this.stopQueryButton.style.display = 'flex';
+      submitButtons.forEach(b => b.disabled = true);
+      document.querySelectorAll('#try-query-button, .query-try-btn, #customise-query-button, .query-customise-btn').forEach(b => b.disabled = true);
+      this.queryProgressToast.show();
+      document.getElementById('query-progress-toast').removeAttribute('aria-hidden');
       this.abortController = new AbortController();
 
       const startTime = performance.now();
@@ -417,8 +450,11 @@ export class QueryEditor {
         progressBar.style.width = '0%';
         progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
         queryTimer.textContent = `${elapsed}s`;
-        submitButton.disabled = false;
-        this.stopQueryButton.style.display = 'none';
+        submitButtons.forEach(b => b.disabled = false);
+        const hasLibrarySelection = document.querySelector('#query-accordion .list-group-item.active') !== null;
+        document.querySelectorAll('#try-query-button, .query-try-btn, #customise-query-button, .query-customise-btn').forEach(b => b.disabled = !hasLibrarySelection);
+        this.queryProgressToast.hide();
+        document.getElementById('query-progress-toast').setAttribute('aria-hidden', 'true');
         this.abortController = null;
         this.onEditorChange();
 

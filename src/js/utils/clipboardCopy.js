@@ -35,8 +35,9 @@ export async function copyToClipboard(text) {
 }
 
 function _fallbackCopy(text) {
-  const input = document.createElement('input');
+  const input = document.createElement('textarea');
   input.value = text;
+  input.style.cssText = 'position:fixed;opacity:0;';
   document.body.appendChild(input);
   input.select();
   let success = false;
