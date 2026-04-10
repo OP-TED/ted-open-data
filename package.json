@@ -1,16 +1,19 @@
 {
-  "name": "ted-sparql-editor",
-  "version": "1.0.0",
-  "description": "TED SPARQL Query Editor",
-  "main": "index.js",
+  "name": "ted-open-data",
+  "version": "2.0.0",
+  "description": "TED Open Data Service — SPARQL playground and notice browser for the European public procurement dataset",
+  "type": "module",
   "scripts": {
-    "start": "node src/js/cors-proxy.js",
-    "build:codemirror": "node scripts/build-codemirror.js"
+    "start": "node src/js/cors-proxy.cjs",
+    "build:codemirror": "node scripts/build-codemirror.cjs",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
+    "codemirror-lang-turtle": "^0.0.2",
     "cors": "^2.8.6",
     "express": "^4.17.1",
     "https-proxy-agent": "^7.0.5",
+    "n3": "^2.0.3",
     "node-fetch": "^2.6.1",
     "sparqljs": "^3.7.4"
   },

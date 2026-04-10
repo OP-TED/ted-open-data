@@ -12,59 +12,265 @@
  * the Licence
  */
 
-/* TED Branding */
+/* TED colour system
+   ────────────────────────────────────────────────────────
+   Names follow the OP Global Style / EU Web Guide where
+   possible. See style-guide/tokens/tokens.css for the
+   canonical reference and provenance of each value.       */
 :root {
-    --op-green-color: #2c862d;
-    --dark-background-color: #EEEEEE;
-    --light-background-color: #f8f9fa;
-    --border-color: #ddd;
+    /* Brand */
+    --ted-green: #2c862d;            /* EU Web Guide forest-110 */
+    --ted-green-dark: #236b24;       /* forest-120, hover on green */
 
-    --ted-primary: #2c862d; /* TED blue */
-    --ted-secondary: #0055cc; /* Lighter blue */
-    --ted-text-color: #fff; /* Text color */
+    /* EU blue ramp (OP Global Style eu-blue-*) */
+    --ted-blue: #0E47CB;             /* eu-blue-100, links & primary actions */
+    --ted-blue-hover: #0D40B7;       /* eu-blue-110 */
+    --ted-blue-10: #E7EDFA;          /* eu-blue-10, hover backgrounds */
+    --ted-blue-5: #F3F6FC;           /* eu-blue-5, subtle backgrounds */
+
+    /* Text */
+    --ted-text: #333333;             /* gray-100, headings & body */
+    --ted-text-muted: #666666;       /* muted text, badge type, type links */
+    --ted-text-on-dark: #fff;        /* white text on coloured backgrounds */
+
+    /* Semantic — tree view */
+    --ted-color-predicate: #b56217;  /* ecl-orange 700 */
+    --ted-color-predicate-hover: #8b4c11; /* ecl-orange 800 */
+    --ted-color-literal: #2a00ff;    /* Eclipse theme, values & identifiers */
+    --ted-color-type: #666666;       /* same as ted-text-muted */
+
+    /* Surfaces */
+    --ted-border: #ddd;
+    --ted-surface: #f8f9fa;
+
+    /* Legacy aliases (kept for backward compat) */
+    --op-green-color: var(--ted-green);
+    --ted-primary: var(--ted-green);
+    --ted-text-color: var(--ted-text-on-dark);
+    --dark-background-color: #EEEEEE;
+    --light-background-color: var(--ted-surface);
+    --border-color: var(--ted-border);
 }
 
 /* General Styles */
 body {
     display: flex;
     flex-direction: column;
-    height: 100vh;
     min-height: 100vh;
     margin: 0;
-    overflow: hidden; /* Prevent page-level scrolling */
 }
 
-body > header {
-    background-color: var(--dark-background-color);
-    border-bottom: 6px solid var(--op-green-color);
-    height: 84px;
-    flex-shrink: 0; /* Prevent header from shrinking */
+.sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    background-color: #f5f5f5;
 }
 
-body > footer {
-    height: 42px;
-    background-color: var(--light-background-color);
-    border-top: 1px solid var(--border-color);
+/* EU Global Banner — matches webtools.europa.eu globan */
+.eu-globan {
+    background-color: #444;
+    color: #fff;
+    font-family: Inter, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 28px;
+    height: 28px;
+    position: relative;
+    z-index: 2;
+}
+
+.eu-globan__content {
+    display: flex;
     align-items: center;
-    padding: 0 20px;
-    flex-shrink: 0; /* Prevent footer from shrinking */
+    position: relative;
+}
+
+.eu-globan__flag {
+    max-height: 16px;
+    margin: 0 8px 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.eu-globan__text {
+    color: #fff;
+}
+
+.eu-globan__button {
+    color: #fff;
+    background-color: transparent;
+    border: 3px solid #444;
+    font-size: 14px;
+    font-family: Inter, Arial, sans-serif;
+    font-weight: 400;
+    margin: 0 0 0 8px;
+    padding: 0 7px;
+    height: 28px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+    white-space: nowrap;
+}
+
+.eu-globan__button:hover {
+    background: #fff;
+    border-color: #fff;
+    color: #004494;
+}
+
+.eu-globan__button[aria-expanded="true"],
+.eu-globan__button:focus-visible {
+    background: #fff;
+    border-color: #ffd617;
+    color: #004494;
+}
+
+.eu-globan__button[aria-expanded="true"] .eu-globan__arrow {
+    transform: rotate(180deg);
+}
+
+.eu-globan__arrow {
+    width: 12px;
+    height: 12px;
+    margin: 0 0 0 8px;
+    transition: transform 0.2s;
+}
+
+.eu-globan__arrow path {
+    stroke: currentColor;
+    stroke-width: 5px;
+}
+
+.eu-globan__dropdown {
+    background-color: #fff;
+    position: absolute;
+    right: auto;
+    left: 0;
+    top: 100%;
+    padding: 12px 16px;
+    max-width: 500px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.4);
+    color: #444;
+    font-size: 14px;
+    line-height: 1.4;
+    z-index: 1030;
+}
+
+.eu-globan__dropdown p {
+    margin: 0;
+    padding: 0;
+}
+
+.eu-globan__dropdown-link {
+    margin-top: 10px !important;
+}
+
+.eu-globan__dropdown a {
+    color: #004494;
+    text-decoration: none;
+}
+
+.eu-globan__dropdown a:hover {
+    text-decoration: underline;
+}
+
+/* Site Header — mirrors developer.ted.europa.eu */
+.site-header {
+    background-color: #fff;
+    font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", sans-serif;
+    color: #515560;
+}
+
+.site-header--sticky {
+    border-bottom: 8px solid #339900;
+}
+
+.site-header__wrapper {
+    padding: 0 24px;
+}
+
+.site-header__upper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 2px solid #cfdaf5;
+}
+
+.site-header__logo-desktop {
+    height: 48px;
+}
+
+.site-header__logo-mobile {
+    height: 48px;
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .site-header__logo-desktop { display: none; }
+    .site-header__logo-mobile { display: inline; }
+}
+
+.site-header__data-period {
+    color: #999;
+    font-size: 12px;
+}
+
+.site-header__lower {
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 10px 0;
+}
+
+.site-header__title {
+    color: #515560;
+    font-size: 28px;
+    text-decoration: none;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.site-header__title:hover {
+    color: #004494;
+    text-decoration: none;
+}
+
+.site-header__subtitle {
+    color: #515560;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    background-color: #f5f5f5;
+    border-left: 6px solid #339900;
+    padding: 4px 12px;
+    margin-right: 10px;
+}
+
+.site-header__subtitle:hover {
+    color: #004494;
+    text-decoration: none;
+}
+
+.site-header__dot {
+    color: #515560;
+    font-size: 10px;
+    vertical-align: middle;
+}
+
+.site-header__description {
+    color: #515560;
+    font-size: 15px;
+    font-weight: 400;
+    margin-left: 12px;
 }
 
 main {
     flex: 1;
-    overflow: hidden; /* Contain scrolling within tabs */
     display: flex;
     flex-direction: column;
-}
-
-/* Navbar */
-.navbar-brand img {
-    margin-right: 10px;
-}
-
-.navbar-dark .navbar-brand {
-    font-weight: 600;
-    font-size: 1.25rem;
+    min-height: calc(100vh - var(--header-total-height, 251px));
 }
 
 /* Page Header */
@@ -86,6 +292,21 @@ main {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Explorer-port card headers should NOT inherit the global
+   green .card-header treatment; they were styled grey in the original
+   standalone explorer and the user prefers the grey. Two scoped
+   overrides revert these specific cards to Bootstrap defaults. */
+#explorer-procedure-mini { margin-top: 8px; }
+#explorer-procedure-title > span:first-child,
+#procedure-card-title > span:first-child { color: var(--ted-primary, #2c862d); }
+#explorer-procedure-mini .card-header,
+#notice-results .card-header {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: inherit;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
 /* Buttons */
 .btn-primary {
     background-color: var(--ted-primary);
@@ -95,8 +316,26 @@ main {
 .btn-primary:hover,
 .btn-primary:focus,
 .btn-primary:active {
-    background-color: #236b24; /* Darker shade of TED green */
-    border-color: #236b24;
+    background-color: var(--ted-green-dark); /* Darker shade of TED green */
+    border-color: var(--ted-green-dark);
+}
+
+/* Outline variant of the primary button — used by the carousel's
+   slide-5 "Get started →" CTA. Normal state is a plain outline so
+   it doesn't compete with the "Try it now" solid greens on slides
+   2-4; on hover it fills in with the same TED green as those CTAs
+   for visual consistency at the moment of interaction. */
+.btn-outline-primary {
+    color: var(--ted-primary);
+    border-color: var(--ted-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    background-color: var(--ted-primary);
+    border-color: var(--ted-primary);
+    color: #fff;
 }
 
 .btn-primary:disabled {
@@ -148,7 +387,7 @@ main {
 #results table tr:first-child th { /* For tables without thead */
     position: sticky;
     top: 0;
-    background: white;
+    background: #f8f9fa;
     z-index: 2; /* Higher z-index to ensure header stays on top */
     box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* Optional: adds subtle shadow under sticky header */
     margin: 0; /* Remove any margin */
@@ -156,7 +395,7 @@ main {
 }
 
 #results table th {
-    background: white; /* Ensure each th has background */
+    background: #f8f9fa; /* Pale grey header background */
     margin: 0;
     padding: 0.75rem;
     border: none; /* Remove all borders */
@@ -179,10 +418,13 @@ main {
     font-size: inherit;
 }
 
-/* Table row styling */
-#results table tr:nth-child(even),
-.sparql tr.even {
-    background-color: rgba(0, 0, 0, 0.02);
+/* Zebra striping — even rows get a very pale tint, lighter than
+   the header shading (#f8f9fa) so the stripes don't compete with
+   or overpower the header. Uses Bootstrap's --bs-table-striped-bg
+   CSS variable override to correctly cascade through the
+   .table > * > * background-color pattern. */
+#results table.table-striped {
+    --bs-table-striped-bg: #fbfbfc;
 }
 
 #results table tr:hover,
@@ -212,30 +454,21 @@ main {
 
 /* Tab Styles */
 .tab-pane {
-    flex: 1;
     display: none; /* Hide by default */
     padding: 20px;
-    height: 100%;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
 }
 
 .tab-pane.active {
-    display: flex; /* Show when active */
+    display: flex;
     flex-direction: column;
-    z-index: 1;
+    flex: 1;
 }
 
 .tab-content {
     flex: 1;
     display: flex;
-    overflow: hidden;
+    flex-direction: column;
     background-color: white;
-    min-height: 0; /* Important for nested flex containers */
-    position: relative;
 }
 
 .tab-pane.active.show {
@@ -244,50 +477,198 @@ main {
 }
 
 .nav-tabs {
-    margin-top: 10px; /* Adjust the value as needed */
+    margin-top: 10px;
+}
+
+/* Margin spacers at either end of the tablist. Using <li> with an
+   inline style was invalid HTML (a <div> cannot be a direct child
+   of <ul>); valid markup + a CSS rule gives the same visual. */
+.nav-tabs-spacer-left,
+.nav-tabs-spacer-right {
+    width: 20px;
+    list-style: none;
+}
+
+/* Give the icons inside tab buttons a touch of breathing
+   space before the label so they don't visually fuse with the text. */
+.nav-tabs .nav-link i.bi {
+    margin-right: 0.3rem;
+}
+
+/* And a touch more breathing room to the right of the label so the
+   tab doesn't feel cramped against the next one. */
+.nav-tabs .nav-link {
+    padding-right: 1.5rem;
+}
+.nav-tabs .nav-link:not(.active) {
+    color: var(--ted-blue); /* eu-blue-100 */
 }
 
 #help .container {
     padding-left: 0; /* Remove left padding */
     margin-left: 0; /* Remove left margin */
 }
+#help {
+    overflow-x: hidden;
+}
+#help h2, #help h3, #help h4, #help h5 {
+    color: var(--ted-green);
+}
+/* Override: institutional footer headings stay dark grey, not green */
+.ted-institutional-footer h3 {
+    color: rgb(51, 51, 51) !important;
+}
+
+/* Institutional footer — exact copy from docs.ted.europa.eu */
+.ted-institutional-footer {
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background-color: rgb(243, 246, 252);
+    color: rgb(93, 93, 93);
+    font-size: 0.83333rem;
+    line-height: 1.6;
+    padding: 1.5rem;
+}
+.ted-institutional-footer a {
+    text-decoration: none;
+}
+.ted-institutional-footer a:hover {
+    text-decoration: underline;
+    color: rgb(8, 43, 122);
+}
+.ted-institutional-footer a:focus,
+.ted-institutional-footer a:focus-visible {
+    text-decoration: none;
+    outline: rgb(14, 71, 203) solid 2px;
+    outline-offset: 4px;
+    border-radius: 0.015rem;
+}
+.ted-institutional-footer .three-columns {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: rgb(243, 246, 252);
+    border-bottom: 1px solid rgb(207, 218, 245);
+    justify-content: center;
+}
+.ted-institutional-footer .three-columns > div {
+    flex: 1 1 0%;
+    min-width: 20%;
+    box-sizing: border-box;
+    padding: 1rem;
+}
+.ted-institutional-footer .three-columns > div:first-child {
+    flex: 0 0 30%;
+}
+.ted-institutional-footer .three-columns > div:not(:first-child) {
+    flex: 0 0 35%;
+}
+.ted-institutional-footer .ted-footer__title {
+    font-size: 20px;
+    font-weight: 400;
+    color: rgb(51, 51, 51);
+    border-bottom: 1px solid rgb(207, 218, 245);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    display: block;
+    line-height: 1.2;
+    margin-top: 1.5rem;
+}
+.ted-institutional-footer .ted-footer__title--main {
+    border: unset;
+    padding: 0;
+}
+.ted-institutional-footer .ted-footer__rich-text {
+    padding-right: 60px;
+    font-family: arial, sans-serif;
+    font-weight: 400;
+}
+.ted-institutional-footer .ted-footer__rich-text p {
+    font-size: 16px;
+    color: rgb(51, 51, 51);
+    margin: 0;
+}
+.ted-institutional-footer .ted-footer__rich-text a {
+    font-size: 16px;
+    color: rgb(14, 71, 203);
+}
+.ted-institutional-footer .ul-footer {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    text-underline-offset: 0.15em;
+}
+.ted-institutional-footer .li-footer,
+.ted-institutional-footer .ul-footer {
+    line-height: 2rem;
+    font-size: 0.917rem;
+    font-family: arial, sans-serif;
+}
+.ted-institutional-footer .li-footer {
+    color: rgb(14, 71, 203);
+    text-decoration: none;
+    text-underline-offset: 0.15rem;
+    font-weight: 300;
+}
+.ted-institutional-footer .li-footer a {
+    color: rgb(14, 71, 203);
+    text-decoration: none;
+}
+.ted-institutional-footer .li-footer a:hover {
+    text-decoration: underline;
+    color: rgb(8, 43, 122);
+}
+.ted-institutional-footer .byline-footer {
+    line-height: 1.35;
+    margin-bottom: 0;
+    font-size: 0.917rem;
+    font-weight: 300;
+    color: rgb(23, 26, 34);
+    font-family: arial, sans-serif;
+    margin-top: 1.5rem;
+}
+@media (max-width: 991px) {
+    .ted-institutional-footer .three-columns > div {
+        flex: 0 0 100% !important;
+    }
+}
 
 /* Query Editor Styles */
-#query-editor {
+#query-editor.active.show {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding: 20px;
 }
 
-#queryForm {
+#query-form {
     flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-#queryForm .form-label {
+#query-form .form-label {
     margin-bottom: 0;
 }
 
-#optionsCollapse {
+#options-collapse {
     margin-top: 10px;
 }
 
-#optionsCollapse .form-check {
+#options-collapse .form-check {
     flex: 1 1 auto;
 }
 
-#queryForm .mb-3.flex-grow-1 {
+#query-form .mb-3.flex-grow-1 {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-#queryForm .form-group {
+#query-form .form-group {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -321,13 +702,9 @@ main {
     vertical-align: top;
 }
 
-.sparql tr:nth-child(even) {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.sparql tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
+/* Zebra striping for .sparql tables is handled by Bootstrap's
+   .table-striped above via --bs-table-striped-bg. The old manual
+   rules here are gone. */
 
 /* SPARQL Results Table Styling */
 .sparql, .monospace {
@@ -343,11 +720,13 @@ main {
 /* CodeMirror Styles */
 #query {
     overflow: hidden;
-    min-height: 0;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 .cm-editor {
-    height: 100% !important;
+    flex: 1;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 14px;
     border: 1px solid var(--border-color);
@@ -363,7 +742,7 @@ main {
 }
 
 /* Adjust query editor container for CodeMirror */
-#queryForm .form-group {
+#query-form .form-group {
     min-height: 200px;
 }
 
@@ -385,24 +764,55 @@ main {
 /* Query Library Styles */
 .list-group-item-action:hover {
     cursor: pointer;
+    background-color: var(--ted-blue-10) !important; /* eu-blue-10 */
 }
 
 .list-group-item-action {
     user-select: none; /* Prevent caret from appearing */
 }
 
-#queryCard {
+/* Individual queries inside a category — visually distinct from the
+   category accordion header: smaller font, muted text, indented, with
+   a chevron icon before the title. The active item gets full-colour
+   text and a green chevron. */
+.query-library-item {
+    padding-left: 1.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+.query-library-item .query-library-item-icon {
+    color: var(--ted-text-muted);
+    font-size: 0.95rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+.query-library-item.active .query-library-item-icon {
+    color: #fff;
+}
+.list-group-item.active.query-library-item {
+    background-color: var(--ted-blue) !important; /* eu-blue-100 */
+    border-color: var(--ted-blue) !important;
+    color: #fff !important;
+}
+.list-group-item.active.query-library-item:hover {
+    background-color: var(--ted-blue-hover) !important; /* eu-blue-110 */
+    border-color: var(--ted-blue-hover) !important;
+}
+
+#query-card {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-#querySparql {
+#query-sparql {
     flex-grow: 1;
     overflow-y: auto;
 }
 
-#queryDetails {
+#query-details {
     flex-shrink: 0;
 }
 
@@ -424,14 +834,759 @@ main {
 }
 
 .accordion-container {
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: calc(100vh - 200px); /* Further adjust height to fit within the tab */
-    border: 1px solid #dee2e6; /* Add border */
-    border-radius: 0.25rem; /* Add border radius */
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    overflow-y: auto;
+    max-height: calc(100vh - var(--header-total-height, 251px) - 80px);
 }
 
 .query-library-accordion-header {
-    background-color: #daf7a6;
     margin-bottom: 0;
 }
+.query-library-accordion-header .accordion-button:not(.collapsed) {
+    background-color: var(--ted-blue-5); /* eu-blue-5 — selected category only */
+    box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Explorer-derived rules
+   ─────────────────────────────────────────────────────────────────
+   Brought over from ted-open-data-explorer/src/assets/style.css to
+   support the Inspect and Reuse tab content. Selectors are
+   unique to the explorer port; nothing here clobbers existing
+   ted-open-data styling.
+
+   Skipped from the explorer CSS:
+     - Unscoped `.cm-editor` rules — ted-open-data has its own that
+       must keep applying to the Query Editor tab.
+     - `#panel-sparql` rules — that element does not exist in the
+       merged app (decision §3.2: only one editor).
+   ───────────────────────────────────────────────────────────────── */
+
+/* ── Search hero (notice search input + history + lucky link) ── */
+
+.search-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+.search-hero-top,
+.search-hero-bottom {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.search-hero-title-lane,
+.search-hero-input-lane {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.search-hero-title-lane {
+  flex: 1 1 0;
+  justify-content: flex-end;
+  padding-bottom: 1.5rem;
+  text-align: center;
+}
+.search-hero-input-lane {
+  flex: 1 1 0;
+  justify-content: flex-start;
+}
+.search-hero-inner {
+  width: 100%;
+  max-width: 700px;
+}
+/* Canonical "main prompt" style shared across tabs.
+   Every action tab (Inspect, Explore, Customize) has one short
+   orienting sentence at the top; they must look identical regardless
+   of where each tab chooses to place the sentence. Colour, size and
+   weight come from here; alignment is up to each tab's own layout. */
+.tab-prompt {
+  font-size: 1.05rem;
+  color: var(--ted-text-muted); /* matches Bootstrap's text-muted */
+  font-weight: 400;
+  margin-bottom: 0;
+}
+.search-hero-input {
+  flex: 1;
+}
+.search-hero-btn {
+  background: #fff;
+  border: 1px solid #ced4da;
+  color: var(--ted-text-muted);
+}
+.search-hero-btn:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  color: #495057;
+}
+.search-hero-btn:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  border-color: #86b7fe;
+}
+.search-hero #notice-results {
+  width: fit-content;
+  max-width: calc(100% - 40px);
+  margin: 0 20px;
+  align-self: center;
+}
+
+.lucky-hint {
+  font-size: 0.85rem;
+  color: var(--ted-text-muted);
+  text-align: center;
+}
+.lucky-hint a {
+  color: var(--ted-blue); /* eu-blue-100 */
+  text-decoration: underline;
+}
+.lucky-hint a:hover {
+  color: var(--ted-blue);
+}
+
+/* ── Procedure timeline ── */
+
+.procedure-timeline {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 1rem 1.25rem 0.5rem 1.25rem;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #ced4da transparent;
+}
+.procedure-timeline::-webkit-scrollbar { height: 6px; }
+.procedure-timeline::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 3px;
+}
+.procedure-timeline::-webkit-scrollbar-track { background: transparent; }
+.procedure-timeline::-webkit-scrollbar-button { display: none; }
+
+.timeline-item {
+  position: relative;
+  padding: 8px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  background: white;
+  transition: background 0.15s;
+}
+.timeline-item:hover { background: #f0f7ff; }
+.timeline-item.success { border-left: 3px solid #2c862d; }
+.timeline-item.warning { border-left: 3px solid #ffc107; }
+.timeline-item.current { background: #e8f4fd; border-color: #0d6efd; }
+
+.timeline-item .pub-number { font-weight: 600; }
+.timeline-item .pub-date { color: #666; font-size: 0.75rem; }
+.timeline-item .pub-date-segment + .pub-date-segment { margin-left: 0.75rem; }
+.timeline-item .notice-meta { color: #777; font-size: 0.75rem; }
+.timeline-item .ted-link { font-size: 0.7rem; }
+
+.timeline-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  color: #999;
+}
+
+/* Slim results toolbar on the SELECT lane of the Reuse tab.
+   Visually matches the .data-sticky-header on the graph lane:
+   a flat row with a single bottom border, no fill, minimal
+   padding. Hosts the Copy URL + Download as… actions and a
+   muted hint text on the left. Toggled via .d-none by JS.
+   No vertical padding — the row's height is dictated by the
+   button's natural height, so top/bottom whitespace is zero. */
+/* Override the 20px padding that .tab-pane applies globally.
+   The SELECT lane uses its own internal spacing: the toolbar and
+   the results table each carry 1rem of horizontal padding via
+   .results-toolbar and #results' own margins, so the tab itself
+   can be padding-zero. */
+#query-results.tab-pane {
+  padding: 0;
+}
+
+/* The results table sits flush against the tab's left and right
+   edges — the toolbar's own horizontal padding is the only
+   indentation on this lane. The error banner keeps the toolbar's
+   horizontal alignment since it's a message, not data. */
+#query-results #results-error-state {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+/* Drop the rounded-card treatment on #results inside #query-results
+   since the table is now flush to the tab edges: rounded corners
+   touching straight tab edges looks broken. Keep the white
+   background and the subtle horizontal separators via the border
+   top/bottom only. */
+#query-results #results:has(table) {
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid #e9ecef;
+}
+.results-toolbar-hint {
+  flex: 1;
+  min-width: 0;
+  /* Single-line with an ellipsis on narrow viewports so the toolbar
+     stays at a consistent compact height. The full text remains
+     available on hover via the title attribute on the span. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.results-toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+/* A little vertical breathing room on the toolbar buttons — keep
+   them noticeably slimmer than a default btn-sm (which is 31px tall
+   and dominates the row), but give the icon + label enough space to
+   feel unhurried. */
+.results-toolbar .btn {
+  padding: 0.35rem 1rem;
+}
+
+/* Graph-lane buttons get the same horizontal padding so both lanes
+   feel equally spacious. */
+#data-share-btn,
+#data-download-btn {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Breathing space between the icon and the label in the toolbar
+   action buttons (both lanes). */
+#data-share-btn i.bi,
+#data-download-btn i.bi,
+#copy-url-button i.bi,
+#download-as-button i.bi {
+  margin-right: 0.3rem;
+}
+
+/* ── Reuse tab (graph lane) ── */
+
+.data-sticky-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 0 0 8px 0;
+  margin: 0 !important;
+  border-bottom: none;
+  position: relative;
+}
+.data-sticky-header::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  bottom: 100%;
+  height: 0.5rem;
+  background: #fff;
+  pointer-events: none;
+}
+.data-sticky-header::after {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  bottom: 0;
+  height: 1px;
+  background: #e9ecef;
+  pointer-events: none;
+}
+
+#data-breadcrumb {
+  font-size: 0.9rem;
+}
+#data-breadcrumb a {
+  color: var(--ted-blue);
+  text-decoration: none;
+}
+#data-breadcrumb a:hover {
+  color: var(--ted-blue);
+  text-decoration: underline;
+}
+#data-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+  content: "›";
+}
+
+/* (Removed: the old circular .data-share-btn styling. The graph-lane
+   Share URL + Download as… buttons now use plain btn-sm
+   btn-outline-secondary so they visually match the SELECT lane.) */
+
+.explorer-procedure-chevron {
+  transition: transform 0.2s;
+}
+[aria-expanded="true"] .explorer-procedure-chevron {
+  transform: rotate(90deg);
+}
+
+/* ── Tree view ── */
+
+.tree-view {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+}
+.tree-node { padding: 1px 0; }
+.tree-card {
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+.tree-card-header {
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 500;
+}
+.tree-card-header .predicate { text-decoration: none; color: var(--ted-color-predicate); font-weight: 500; }
+.tree-card-header .predicate:hover { text-decoration: underline; color: var(--ted-color-predicate-hover); }
+.tree-card-body { padding: 4px 8px 4px 16px; }
+
+.tree-toggle {
+  cursor: pointer;
+  user-select: none;
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+}
+.tree-toggle:hover { color: #0d6efd; }
+
+.tree-type-badge {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  margin-left: 4px;
+  text-decoration: none !important;
+}
+
+/* Split badge — two-tone pill with border */
+.split-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  margin-left: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  text-decoration: none !important;
+  line-height: 1;
+  border: 1px solid var(--ted-text-muted);
+}
+.split-badge-type {
+  padding: 0.25em 0.6em;
+  background-color: var(--ted-text-muted);
+  color: #fff;
+}
+.split-badge-id {
+  padding: 0.25em 0.6em;
+  background-color: #fff;
+  color: var(--ted-color-literal);
+}
+.split-badge-clickable {
+  cursor: pointer;
+}
+.split-badge-clickable:hover .split-badge-type {
+  background-color: var(--ted-primary, #2c862d);
+}
+.split-badge-clickable:hover .split-badge-id {
+  background-color: #fff;
+  color: var(--ted-primary, #2c862d);
+}
+
+/* Solid badge for non-ePO URIs */
+.tree-badge-solid {
+  background-color: var(--ted-text-muted);
+  color: #fff;
+}
+.tree-badge-solid:hover {
+  background-color: var(--ted-primary, #2c862d);
+  color: #fff;
+}
+
+.tree-node .predicate { color: var(--ted-color-predicate); /* ecl-orange 700 */ }
+.tree-node .literal { color: var(--ted-color-literal); font-weight: 300; }
+.tree-node .datatype { font-size: 0.75em; margin-left: 2px; color: var(--ted-text-muted); }
+.tree-node .language { font-size: 0.75em; margin-left: 2px; color: var(--ted-text-muted); }
+.tree-node .uri-link {
+  color: var(--ted-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.tree-node .uri-link:hover {
+  color: var(--ted-primary, #2c862d);
+  text-decoration: underline;
+}
+
+.tree-node .predicate .uri-link,
+.tree-node .predicate.uri-link {
+  color: var(--ted-color-predicate); /* ecl-orange 700 */
+  font-weight: 500;
+  text-decoration: none;
+}
+.tree-node .predicate .uri-link:hover,
+.tree-node .predicate.uri-link:hover {
+  color: var(--ted-color-predicate-hover); /* ecl-orange 800 — darker on hover */
+  text-decoration: underline;
+}
+
+/* ── Backlinks view ── */
+
+.backlink-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.backlink-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.backlink-subject {
+  cursor: pointer;
+  text-decoration: none !important;
+}
+.backlink-relation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.backlink-arrow {
+  display: inline-block;
+  width: 30px;
+  height: 2px;
+  background: #999;
+  position: relative;
+  vertical-align: middle;
+}
+.backlink-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border-left: 6px solid #999;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+/* The Turtle editor inside the Reuse tab grows to fit its content
+   rather than scrolling internally. Scoped to #turtle-container so it
+   does NOT affect the Query Editor tab's CodeMirror, which keeps the
+   ted-open-data .cm-editor styling. */
+#turtle-container .cm-editor { height: auto; }
+#turtle-container .cm-editor .cm-scroller {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible;
+}
+
+/* ── Loading overlay (Reuse tab) ── */
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .backlink-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .backlink-subjects {
+    justify-content: center;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Home tab carousel
+   ─────────────────────────────────────────────────────────────────
+   Bootstrap's default carousel is designed for full-bleed photo
+   slides on dark backgrounds. We use it for centered text on a
+   white background, so the controls and indicators need to be
+   re-coloured to be visible. Each slide has a min-height so the
+   carousel doesn't jump as you flip between short and tall slides.
+   ───────────────────────────────────────────────────────────────── */
+
+/* The carousel fills its tab-pane vertically and never overflows it.
+   Without explicit flex sizing, the carousel + its inner padding
+   would push the slide content past the bottom of the visible area
+   and the page would grow a scrollbar. */
+.home-carousel {
+  height: calc(100vh - var(--header-total-height, 251px));
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 4rem;
+  overflow: hidden;
+}
+
+.home-carousel .carousel-inner {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.home-carousel .carousel-item {
+  height: 100%;
+}
+
+.home-carousel-slide {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+  /* Asymmetric padding: more at the bottom so the centred content
+     leaves a clear strip for the carousel indicators (~23px tall +
+     a bit of breathing room). Without this, full-width buttons on
+     slides 2-5 sit right on top of the dots and hide them. */
+  padding: 1rem 1rem 3rem 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.home-carousel-icon {
+  font-size: 4rem;
+  color: var(--ted-text-muted);
+  display: block;
+}
+
+.home-carousel-body {
+  margin-bottom: 0.5rem;
+}
+
+/* CTA row on slide 1 — three buttons side by side on wide screens,
+   stacked on narrow screens. */
+.home-carousel-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+/* Breathing space between the numbered icon and its label on the
+   slide-1 CTAs. */
+.home-carousel-cta-row .btn i.bi {
+  margin-right: 0.35rem;
+}
+
+/* Dark prev/next icons (default white-on-transparent is invisible
+   on a white background). Filter inverts the SVG colour. */
+.home-carousel .carousel-control-prev-icon,
+.home-carousel .carousel-control-next-icon {
+  filter: invert(1) grayscale(100%);
+}
+
+/* Push the controls slightly outside the slide content so they
+   don't overlap text. Bootstrap defaults to 15% width which is
+   too wide; trim it. */
+.home-carousel .carousel-control-prev,
+.home-carousel .carousel-control-next {
+  width: 4rem;
+  opacity: 0.6;
+}
+.home-carousel .carousel-control-prev:hover,
+.home-carousel .carousel-control-next:hover {
+  opacity: 1;
+}
+
+/* Dark indicator dots — Bootstrap's default white dots are
+   invisible on a white background. */
+.home-carousel .carousel-indicators [data-bs-target] {
+  background-color: var(--ted-text-muted);
+}
+.home-carousel .carousel-indicators .active {
+  background-color: var(--ted-primary, #2c862d);
+}
+
+/* Responsive squeeze for narrow viewports. The default 4rem side
+   padding + 4rem control-button width eats 128px of horizontal
+   space before slide content, which crushes the slide-1 CTA row
+   below ~576px. Shrink the padding and the controls on small
+   screens so the content can breathe. */
+@media (max-width: 576px) {
+  .home-carousel {
+    padding: 0.5rem 1rem;
+  }
+  .home-carousel .carousel-control-prev,
+  .home-carousel .carousel-control-next {
+    width: 2rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .home-carousel-slide {
+    transform: scale(0.85);
+    transform-origin: center center;
+  }
+}
+
+@media (max-height: 500px) {
+  .home-carousel-slide {
+    transform: scale(0.7);
+  }
+}
+
+/* TED danger button */
+.btn-ted-danger {
+  background-color: #cc2129;
+  color: #fff;
+  border: none;
+}
+
+.btn-ted-danger:hover {
+  background-color: #de232d;
+  color: #fff;
+}
+
+.btn-ted-danger-icon {
+  color: #cc2129;
+  font-size: 1.2rem;
+  line-height: 1;
+  border: none;
+}
+
+.btn-ted-danger-icon:hover {
+  color: #de232d;
+}
+
+/* Query progress bar */
+#query-progress-toast .progress {
+  background-color: #F3F6FC;
+}
+
+#query-progress-toast .progress-bar {
+  background-color: #697188;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Per-tab guided tours
+   ──────────────────────────────────────────────────────────────
+   A small play-circle icon at the end of each tab's hint sentence
+   is the entry point to that tab's Driver.js tour. Style is
+   deliberately quiet: muted grey at rest, TED green on hover, no
+   border/background — it should look like part of the sentence,
+   not a button competing with it. */
+.tour-trigger {
+  background: none;
+  border: none;
+  padding: 0 0 0 0.35rem;
+  color: #9aa0a6;
+  font-size: 1.05rem;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.tour-trigger:hover,
+.tour-trigger:focus {
+  color: var(--ted-primary, #2c862d);
+  outline: none;
+}
+.tour-trigger:focus-visible {
+  outline: 2px solid var(--ted-primary, #2c862d);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Library footer row — "Contribute a query" and "Take a quick tour"
+   links live side by side in a muted grey row below the accordion.
+   Both are secondary meta-actions about the library as a whole and
+   should read as a quiet pair, not competing with the library
+   content above. On hover they pick up TED green, matching the rest
+   of the app's interaction vocabulary. */
+.library-footer a.text-muted:hover {
+  color: var(--ted-primary, #2c862d) !important;
+}
+
+/* Bootstrap tour popover — matches the SDK Explorer style. */
+.tour-popover {
+  max-width: 360px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  z-index: 1070;
+}
+.tour-popover.tour-no-arrow .popover-arrow {
+  display: none;
+}
+.tour-popover .popover-header {
+  font-weight: 600;
+  color: #212529;
+  background: var(--ted-blue-5, #F3F6FC);
+  border-bottom: 1px solid #dee2e6;
+}
+.tour-popover .popover-body {
+  color: #495057;
+  line-height: 1.5;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.tour-popover .popover-body code {
+  background: #f1f3f5;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.tour-popover .tour-next-btn,
+.tour-popover .tour-done-btn {
+  background: var(--ted-green, #2c862d);
+  color: #fff;
+  border-color: var(--ted-green, #2c862d);
+}
+.tour-popover .tour-next-btn:hover,
+.tour-popover .tour-done-btn:hover {
+  background: var(--ted-green-dark, #236b24);
+  border-color: var(--ted-green-dark, #236b24);
+}
+.tour-popover .tour-prev-btn,
+.tour-popover .tour-cancel-btn {
+  color: var(--ted-blue, #0E47CB);
+}
+.tour-popover .tour-prev-btn:hover,
+.tour-popover .tour-cancel-btn:hover {
+  color: var(--ted-blue-hover, #0D40B7);
+}
+
+/* Toast header — eu-blue-5 background */
+.toast-header {
+  background: var(--ted-blue-5, #F3F6FC);
+}
+
