@@ -367,7 +367,9 @@ export class SearchPanel {
       // ?facet= URL sees the same editor + Reuse-graph-lane state
       // they would have seen if they had typed the search themselves.
       try {
-        const query = getQuery(facet);
+        const root = this.controller.breadcrumb?.[0];
+        const noticeNumber = root?.type === 'notice-number' ? root.value : undefined;
+        const query = getQuery(facet, { noticeNumber });
         if (query) this.loadEditorText(query);
       } catch (err) {
         // Best-effort — never break URL loading on editor
