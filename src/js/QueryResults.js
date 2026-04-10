@@ -9,8 +9,14 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the Licence
  * is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the Licence for the specific language governing permissions and limitations under
- * the Lic
+ * the Licence.
  */
+
+import { copyToClipboard } from './utils/clipboardCopy.js';
+import { triggerBlobDownload } from './utils/download.js';
+import { classifyError } from './utils/errorMessages.js';
+import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
+import { showToast } from './utils/toast.js';
 
 /**
  * Class representing the Query Results.
@@ -27,50 +33,58 @@ export class QueryResults {
     this.originalSparqlEndpoint = originalSparqlEndpoint;
     this.resultsDiv = document.getElementById("results");
     this.copyUrlButton = document.getElementById('copy-url-button');
-    this.openUrlButton = document.getElementById('open-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
-
-    this.lastResponseData = null;
-    this.lastResponseType = null;
 
     this.initEventListeners();
   }
 
   /**
-   * Store the raw response data for download.
-   * @param {string} data - The raw response text.
-   * @param {string} contentType - The response content type.
-   */
-  setResponseData(data, contentType) {
-    this.lastResponseData = data;
-    this.lastResponseType = contentType;
-  }
-
-  /**
    * Initialize event listeners.
-   * Sets up event listeners for the copy URL button and the open URL button.
+   * Wires the Copy URL button and every dropdown item in the
+   * "Download as…" menu. Each download item carries a
+   * data-download-format attribute with the MIME type to request.
    */
   initEventListeners() {
     this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
-    this.openUrlButton.addEventListener('click', this.onOpenUrl.bind(this));
+
+    document.querySelectorAll('#copy-url-alert [data-download-format]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.downloadAs(item.dataset.downloadFormat);
+      });
+    });
   }
 
   /**
-   * Generate the URL for the current query.
+   * Generate a shareable URL for the current query.
+   * Always emits a SPARQL Results JSON URL — that's the most
+   * machine-friendly format for Excel, Power BI and custom apps,
+   * and matches what the editor renders on screen.
    * @returns {string} - The generated URL.
    */
   generateUrl() {
     const query = this.queryEditor.getQuery();
     const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
-    const format = document.getElementById("format").value || "application/sparql-results+json";
-    const defaultGraphUri = document.getElementById("default-graph-uri").value;
-    const timeout = document.getElementById("timeout").value || 30000;
-    const strict = document.getElementById("strict").checked ? "true" : "false";
-    const debug = document.getElementById("debug").checked ? "true" : "false";
-    const report = document.getElementById("report").checked ? "true" : "false";
+    // Always emits a JSON URL — that's the most machine-friendly
+    // format for Excel, Power BI and custom apps. The `originalSparqlEndpoint`
+    // field is the public endpoint (not the dev-mode /proxy wrapper),
+    // so the copied URL is usable outside the app.
+    return buildSparqlUrl(this.originalSparqlEndpoint, minifiedQuery);
+  }
 
-    return `${this.originalSparqlEndpoint}?default-graph-uri=${encodeURIComponent(defaultGraphUri)}&query=${encodeURIComponent(minifiedQuery)}&format=${encodeURIComponent(format)}&timeout=${encodeURIComponent(timeout)}&strict=${encodeURIComponent(strict)}&debug=${encodeURIComponent(debug)}&report=${encodeURIComponent(report)}`;
+  /**
+   * Show or hide the slim results toolbar (the strip above the table
+   * that holds the hint, the Copy endpoint URL button and the
+   * Download as… menu). Centralised here so every lane that needs to
+   * toggle it (displayJsonResults, displayTextResults, the SELECT
+   * submit paths in QueryEditor) goes through one place.
+   * @param {boolean} visible
+   */
+  setToolbarVisible(visible) {
+    if (!this.copyUrlAlert) return;
+    this.copyUrlAlert.classList.toggle('d-none', !visible);
+    this.copyUrlAlert.classList.toggle('d-flex', visible);
   }
 
   /**
@@ -80,9 +94,30 @@ export class QueryResults {
   displayJsonResults(data) {
     this.resultsDiv.innerHTML = "";
 
+    // ASK queries return { boolean: true/false } rather than
+    // { results: { bindings: [...] } }. Render a single-cell table
+    // showing the boolean so the result is visible and downloadable,
+    // rather than falling through to "No results found".
+    if (typeof data.boolean === 'boolean') {
+      const table = document.createElement('table');
+      table.className = 'table table-striped sparql monospace';
+      const thead = table.createTHead();
+      const headerRow = thead.insertRow();
+      const th = document.createElement('th');
+      th.textContent = 'ASK';
+      headerRow.appendChild(th);
+      const tbody = table.createTBody();
+      const tr = tbody.insertRow();
+      const td = tr.insertCell();
+      td.textContent = String(data.boolean);
+      this.resultsDiv.appendChild(table);
+      this.setToolbarVisible(true);
+      return;
+    }
+
     if (data.results && data.results.bindings.length > 0) {
       const table = document.createElement("table");
-      table.className = "table sparql monospace";
+      table.className = "table table-striped sparql monospace";
 
       const thead = table.createTHead();
       const headerRow = thead.insertRow();
@@ -104,10 +139,10 @@ export class QueryResults {
       });
 
       this.resultsDiv.appendChild(table);
-      this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
+      this.setToolbarVisible(true);
     } else {
       this.resultsDiv.textContent = "No results found.";
-      this.copyUrlAlert.classList.add('d-none'); this.copyUrlAlert.classList.remove('d-flex');
+      this.setToolbarVisible(false);
     }
   }
 
@@ -135,56 +170,116 @@ export class QueryResults {
     }
 
     this.resultsDiv.appendChild(pre);
-    this.copyUrlAlert.classList.remove('d-none'); this.copyUrlAlert.classList.add('d-flex');
+    this.setToolbarVisible(true);
   }
 
   /**
    * Handle copy URL button click event.
-   * Generates a URL for the current query and copies it to the clipboard.
+   * Generates a URL for the current query and copies it to the
+   * clipboard. Uses the shared `copyToClipboard` helper so insecure
+   * contexts (non-HTTPS, older browsers) get the execCommand
+   * fallback instead of a synchronous throw, and a real failure
+   * surfaces via the shared toast instead of a silent
+   * console.error.
    */
-  onCopyUrl() {
+  async onCopyUrl() {
     const url = this.generateUrl();
-    
-    console.log(`Generated URL: ${url}`);
-    navigator.clipboard.writeText(url).then(() => {
-      const toast = new bootstrap.Toast(document.getElementById('copyUrlToast'));
-      toast.show();
-    }).catch(err => {
-      console.error('Failed to copy URL:', err);
-    });
+    const copied = await copyToClipboard(url);
+    if (copied) {
+      // SELECT-lane specific success copy: the URL is a JSON
+      // endpoint, consumable by Excel / Power BI / any HTTP client.
+      showToast(
+        'Query URL copied',
+        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.',
+      );
+    } else {
+      showToast(
+        'Copy failed',
+        'Could not copy the URL to the clipboard. Please copy it manually from the address bar after clicking Run Query.',
+        { variant: 'danger' },
+      );
+    }
   }
 
   /**
-   * Handle open URL button click event.
-   * Downloads the last query response as a file.
+   * Download the current query's result in the requested format.
+   *
+   * Re-fetches the endpoint with the chosen `format` parameter rather
+   * than reusing the cached editor response — the editor always runs
+   * JSON, but the user might want a CSV or an Excel file on disk.
+   *
+   * The returned payload is wrapped in a Blob with MIME type
+   * application/octet-stream so the browser always triggers a file
+   * download instead of opening HTML/XML/CSV content inline. The
+   * `download` attribute on the anchor element provides the actual
+   * filename and extension.
+   *
+   * @param {string} format - The SPARQL result MIME type to request
+   *   (e.g. "text/csv", "application/sparql-results+json").
+   * @async
    */
-  onOpenUrl() {
-    if (this.lastResponseData == null) return;
+  async downloadAs(format) {
+    const query = this.queryEditor.getQuery();
+    if (!query || !query.trim()) {
+      showToast('Download failed', 'Write a query first, then try again.', { variant: 'warning' });
+      return;
+    }
 
-    const extensions = {
+    // Build the same POST body the editor uses, but with the chosen
+    // format instead of the always-JSON one.
+    const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
+    const body = buildSparqlBody(minifiedQuery, format);
+
+    try {
+      const sparqlTimeout = Number(document.getElementById('timeout')?.value) || 60_000;
+      const downloadTimeout = Math.max(sparqlTimeout, 10_000);
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), downloadTimeout);
+      const response = await fetch(this.queryEditor.sparqlEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": format,
+        },
+        body,
+        signal: abort.signal,
+      });
+      clearTimeout(timer);
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        console.error('Download failed:', response.status, detail);
+        const err = new Error(`HTTP error. Status: ${response.status}\n${detail}`);
+        const { friendly } = classifyError(err, 'select');
+        showToast('Download failed', friendly, { variant: 'danger' });
+        return;
+      }
+      const text = await response.text();
+      triggerBlobDownload(text, `query-results${QueryResults._extensionFor(format)}`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      if (error?.name === 'AbortError') {
+        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+      } else {
+        const { friendly } = classifyError(error, 'select');
+        showToast('Download failed', friendly, { variant: 'danger' });
+      }
+    }
+  }
+
+  /**
+   * Map a SPARQL result MIME type to a file extension.
+   * @param {string} format
+   * @returns {string}
+   * @private
+   */
+  static _extensionFor(format) {
+    const map = {
       'application/sparql-results+json': '.json',
       'application/sparql-results+xml': '.xml',
-      'text/html': '.html',
       'application/vnd.ms-excel': '.xls',
       'text/csv': '.csv',
       'text/tab-separated-values': '.tsv',
-      'text/turtle': '.ttl',
-      'application/rdf+xml': '.rdf',
-      'text/plain': '.nt',
-      'application/javascript': '.js',
     };
-
-    const requestedFormat = document.getElementById("format").value;
-    const baseType = this.lastResponseType?.split(';')[0]?.trim();
-    const ext = extensions[requestedFormat] || extensions[baseType] || '.txt';
-    const blob = new Blob([this.lastResponseData], { type: this.lastResponseType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `query-results${ext}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    return map[format] || '.txt';
   }
 }

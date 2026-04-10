@@ -1,13 +1,21 @@
-# TED SPARQL Editor[^1]
+# TED Open Data Service[^1]
 
-A web-based SPARQL query editor for exploring TED Open Data. This application allows users to write and execute SPARQL queries against the RDF database of the Publications Office (Cellar), view and download query results in multiple formats, and reuse queries in their applications via query URLs.
+A web-based tool for exploring TED Open Data — the public procurement data published by the Publications Office of the EU as Linked Open Data. The app combines two complementary workflows over the same RDF backend:
+
+- **Look up an individual notice** by its publication number and inspect its full RDF graph as a navigable tree, raw Turtle, or backlinks view. Procedure timeline, breadcrumb navigation, drill-into-resource, and shareable URLs included.
+- **Write SPARQL queries** against the entire dataset using a CodeMirror 6 editor with ePO-aware autocomplete and syntax linting. SELECT and ASK results render as a table; CONSTRUCT and DESCRIBE results render as the same RDF graph view used by notice lookup.
+
+The two workflows share a single **Reuse** tab that auto-picks the right rendering based on the query type (tabular for SELECT/ASK, graph for CONSTRUCT/DESCRIBE).
 
 ## Features
 
-- Interactive SPARQL query editor
-- Multiple result formats (JSON, HTML, XML, CSV, etc.)
-- Direct downloads
-- Reusable query URLs
+- **Notice browser**: type a publication number → navigate the resulting RDF graph
+- **Procedure timeline**: see all sibling notices in the same procurement procedure with one click
+- **SPARQL editor** with ePO autocomplete, syntax linting, and a curated query library
+- **Auto-routing by query type**: SELECT/ASK → tabular results, CONSTRUCT/DESCRIBE → tree/turtle/backlinks
+- **Shareable URLs** for any notice or sub-resource view (`?facet=…`)
+- **Multiple result formats** for SELECT (JSON, HTML, XML, CSV, TSV, Spreadsheet) and graph downloads (Turtle, RDF/XML, N-Triples)
+- **Reusable query URLs** for embedding into Excel, Power BI, etc.
 
 ## Live Version
 
@@ -17,15 +25,15 @@ Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of th
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+- Node.js (v18 or higher)
+- npm (v8 or higher)
 
 ### Installation & Running
 
 1. Clone the repository:
     ```bash
     git clone https://github.com/OP-TED/ted-open-data.git
-    cd ted-sparql-editor
+    cd ted-open-data
     ```
 
 2. Install dependencies:
@@ -37,7 +45,7 @@ Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of th
     ```bash
     npm start
     # or directly:
-    node src/js/cors-proxy.js
+    node src/js/cors-proxy.cjs
     ```
 
 4. Open the application:
@@ -57,12 +65,32 @@ To run the application locally:
 
 ### Updating CodeMirror
 
-The SPARQL editor uses a self-hosted CodeMirror v6 bundle (`src/vendor/codemirror-bundle.js`) to avoid CDN version drift issues. This bundle only needs to be rebuilt when updating CodeMirror versions:
+The editors use a self-hosted CodeMirror v6 bundle (`src/vendor/codemirror-bundle.js`) to avoid CDN version drift issues. The bundle exports the SPARQL language (used by the Query Editor) and the Turtle language (used by the notice browser's Turtle view). This bundle only needs to be rebuilt when updating CodeMirror versions:
 
 1. Update the versions in `package.json` under `devDependencies`
 2. Run `npm install`
 3. Run `npm run build:codemirror`
 4. Commit the updated bundle
+
+### Simulating Server Errors
+
+The CORS proxy supports a `SIMULATE` environment variable that forces every `/proxy` and `/sparql` request to return a canned failure. This is useful for evaluating the friendly error states in the app without needing to craft a broken query or wait for an endpoint outage.
+
+```bash
+# Virtuoso-shaped 400 parser error
+SIMULATE=400 npm start
+
+# Virtuoso-shaped 500 internal error
+SIMULATE=500 npm start
+
+# 504 Gateway Timeout
+SIMULATE=504 npm start
+
+# Network failure (connection reset)
+SIMULATE=network npm start
+```
+
+Any other value is ignored and the proxy behaves normally. The active simulation mode is logged at startup.
 
 ### Corporate Proxy Configuration
 
@@ -115,10 +143,20 @@ This project uses the following third-party components:
   - License: MIT
   - Website: https://github.com/aatauil/codemirror-lang-sparql
 
+- **codemirror-lang-turtle** (v0.0.2)
+  - Purpose: Turtle syntax highlighting for CodeMirror (used by the notice browser's Turtle view)
+  - License: MIT
+  - Website: https://github.com/grantjenks/codemirror-lang-turtle
+
 - **sparqljs** (v3.7.4)
   - Purpose: SPARQL query parser and generator
   - License: MIT
   - Website: https://github.com/RubenVerborgh/SPARQL.js
+
+- **N3.js** (v1.23.1)
+  - Purpose: RDF / Turtle parser used by the notice browser to parse CONSTRUCT/DESCRIBE results into quads
+  - License: MIT
+  - Website: https://github.com/rdfjs/N3.js
 
 - **js-yaml** (v4.1.0)
   - Purpose: YAML parser and dumper
