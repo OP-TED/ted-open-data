@@ -106,10 +106,14 @@ export async function startReuseGraphTour() {
           'Use the <span style="color:#000000; font-size:13.6px;">&#9654;</span> arrows to expand or collapse nested nodes. ' +
           'The breadcrumb at the top tracks your path — click any step to go back.' +
           '<br><br><b>Color coding:</b><br>' +
-          '<span style="color:#0d6efd; text-decoration:underline; font-weight:400;">link/property name</span><span style="font-weight:500;"> → </span><br>' +
-          '<span style="color:#7f0055; text-decoration:underline;">linked node</span><br>' +
-          '<span style="color:#2a00ff;">"property value"</span><br>' +
-          '<span class="badge text-info-emphasis bg-info-subtle" style="font-size:1em; font-weight:400;">linked node ID</span>',
+          '<span style="color:#b56217; font-weight:500; text-decoration:underline;">link or property name</span><span style="font-weight:500;"> → </span><br>' +
+          '<span style="color:#2a00ff;">"property value"</span>' +
+          '<span style="color:#666666; font-size:0.75em;">^^datatype@language</span><br>' +
+          '<span style="color:#2c862d; font-weight:700; text-decoration:underline;">linked node type</span><br>' +
+          '<span style="display:inline-flex; border-radius:999px; border:1px solid #666666; overflow:hidden; font-size:1em; line-height:1;">' +
+            '<span style="background:#666666; color:#fff; padding:0.25em 0.6em;">linked node type</span>' +
+            '<span style="background:#fff; color:#2a00ff; padding:0.25em 0.6em;">identifier</span>' +
+          '</span>',
       },
     },
   ]);

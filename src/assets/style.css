@@ -12,16 +12,44 @@
  * the Licence
  */
 
-/* TED Branding */
+/* TED colour system
+   ────────────────────────────────────────────────────────
+   Names follow the OP Global Style / EU Web Guide where
+   possible. See style-guide/tokens/tokens.css for the
+   canonical reference and provenance of each value.       */
 :root {
-    --op-green-color: #2c862d;
-    --dark-background-color: #EEEEEE;
-    --light-background-color: #f8f9fa;
-    --border-color: #ddd;
+    /* Brand */
+    --ted-green: #2c862d;            /* EU Web Guide forest-110 */
+    --ted-green-dark: #236b24;       /* forest-120, hover on green */
 
-    --ted-primary: #2c862d; /* TED blue */
-    --ted-secondary: #0055cc; /* Lighter blue */
-    --ted-text-color: #fff; /* Text color */
+    /* EU blue ramp (OP Global Style eu-blue-*) */
+    --ted-blue: #0E47CB;             /* eu-blue-100, links & primary actions */
+    --ted-blue-hover: #0D40B7;       /* eu-blue-110 */
+    --ted-blue-10: #E7EDFA;          /* eu-blue-10, hover backgrounds */
+    --ted-blue-5: #F3F6FC;           /* eu-blue-5, subtle backgrounds */
+
+    /* Text */
+    --ted-text: #333333;             /* gray-100, headings & body */
+    --ted-text-muted: #666666;       /* muted text, badge type, type links */
+    --ted-text-on-dark: #fff;        /* white text on coloured backgrounds */
+
+    /* Semantic — tree view */
+    --ted-color-predicate: #b56217;  /* ecl-orange 700 */
+    --ted-color-predicate-hover: #8b4c11; /* ecl-orange 800 */
+    --ted-color-literal: #2a00ff;    /* Eclipse theme, values & identifiers */
+    --ted-color-type: #666666;       /* same as ted-text-muted */
+
+    /* Surfaces */
+    --ted-border: #ddd;
+    --ted-surface: #f8f9fa;
+
+    /* Legacy aliases (kept for backward compat) */
+    --op-green-color: var(--ted-green);
+    --ted-primary: var(--ted-green);
+    --ted-text-color: var(--ted-text-on-dark);
+    --dark-background-color: #EEEEEE;
+    --light-background-color: var(--ted-surface);
+    --border-color: var(--ted-border);
 }
 
 /* General Styles */
@@ -43,7 +71,7 @@ body > header {
 
 body > footer {
     height: 42px;
-    background-color: var(--light-background-color);
+    background-color: var(--ted-blue-5); /* eu-blue-5 */
     border-top: 1px solid var(--border-color);
     align-items: center;
     padding: 0 20px;
@@ -90,6 +118,9 @@ main {
    green .card-header treatment; they were styled grey in the original
    standalone explorer and the user prefers the grey. Two scoped
    overrides revert these specific cards to Bootstrap defaults. */
+#explorer-procedure-mini { margin-top: 8px; }
+#explorer-procedure-title > span:first-child,
+#procedure-card-title > span:first-child { color: var(--ted-primary, #2c862d); }
 #explorer-procedure-mini .card-header,
 #notice-results .card-header {
     background-color: rgba(0, 0, 0, 0.03);
@@ -107,8 +138,8 @@ main {
 .btn-primary:hover,
 .btn-primary:focus,
 .btn-primary:active {
-    background-color: #236b24; /* Darker shade of TED green */
-    border-color: #236b24;
+    background-color: var(--ted-green-dark); /* Darker shade of TED green */
+    border-color: var(--ted-green-dark);
 }
 
 /* Outline variant of the primary button — used by the carousel's
@@ -300,10 +331,141 @@ main {
 .nav-tabs .nav-link {
     padding-right: 1.5rem;
 }
+.nav-tabs .nav-link:not(.active) {
+    color: var(--ted-blue); /* eu-blue-100 */
+}
 
 #help .container {
     padding-left: 0; /* Remove left padding */
     margin-left: 0; /* Remove left margin */
+}
+#help {
+    overflow-x: hidden;
+}
+#help h2, #help h3, #help h4, #help h5 {
+    color: var(--ted-green);
+}
+/* Override: institutional footer headings stay dark grey, not green */
+.ted-institutional-footer h3 {
+    color: rgb(51, 51, 51) !important;
+}
+
+/* Institutional footer — exact copy from docs.ted.europa.eu */
+.ted-institutional-footer {
+    margin-top: 3rem;
+    margin-left: -40px;
+    margin-right: -40px;
+    margin-bottom: -20px;
+    width: calc(100% + 80px);
+    box-sizing: border-box;
+    background-color: rgb(243, 246, 252);
+    color: rgb(93, 93, 93);
+    font-size: 0.83333rem;
+    line-height: 1.6;
+    padding: 1.5rem;
+}
+.ted-institutional-footer a {
+    text-decoration: none;
+}
+.ted-institutional-footer a:hover {
+    text-decoration: underline;
+    color: rgb(8, 43, 122);
+}
+.ted-institutional-footer a:focus,
+.ted-institutional-footer a:focus-visible {
+    text-decoration: none;
+    outline: rgb(14, 71, 203) solid 2px;
+    outline-offset: 4px;
+    border-radius: 0.015rem;
+}
+.ted-institutional-footer .three-columns {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: rgb(243, 246, 252);
+    border-bottom: 1px solid rgb(207, 218, 245);
+    justify-content: center;
+}
+.ted-institutional-footer .three-columns > div {
+    flex: 1 1 0%;
+    min-width: 20%;
+    box-sizing: border-box;
+    padding: 1rem;
+}
+.ted-institutional-footer .three-columns > div:first-child {
+    flex: 0 0 30%;
+}
+.ted-institutional-footer .three-columns > div:not(:first-child) {
+    flex: 0 0 35%;
+}
+.ted-institutional-footer .ted-footer__title {
+    font-size: 20px;
+    font-weight: 400;
+    color: rgb(51, 51, 51);
+    border-bottom: 1px solid rgb(207, 218, 245);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    display: block;
+    line-height: 1.2;
+    margin-top: 1.5rem;
+}
+.ted-institutional-footer .ted-footer__title--main {
+    border: unset;
+    padding: 0;
+}
+.ted-institutional-footer .ted-footer__rich-text {
+    padding-right: 60px;
+    font-family: arial, sans-serif;
+    font-weight: 400;
+}
+.ted-institutional-footer .ted-footer__rich-text p {
+    font-size: 16px;
+    color: rgb(51, 51, 51);
+    margin: 0;
+}
+.ted-institutional-footer .ted-footer__rich-text a {
+    font-size: 16px;
+    color: rgb(14, 71, 203);
+}
+.ted-institutional-footer .ul-footer {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    text-underline-offset: 0.15em;
+}
+.ted-institutional-footer .li-footer,
+.ted-institutional-footer .ul-footer {
+    line-height: 2rem;
+    font-size: 0.917rem;
+    font-family: arial, sans-serif;
+}
+.ted-institutional-footer .li-footer {
+    color: rgb(14, 71, 203);
+    text-decoration: none;
+    text-underline-offset: 0.15rem;
+    font-weight: 300;
+}
+.ted-institutional-footer .li-footer a {
+    color: rgb(14, 71, 203);
+    text-decoration: none;
+}
+.ted-institutional-footer .li-footer a:hover {
+    text-decoration: underline;
+    color: rgb(8, 43, 122);
+}
+.ted-institutional-footer .byline-footer {
+    line-height: 1.35;
+    margin-bottom: 0;
+    font-size: 0.917rem;
+    font-weight: 300;
+    color: rgb(23, 26, 34);
+    font-family: arial, sans-serif;
+    margin-top: 1.5rem;
+}
+@media (max-width: 991px) {
+    .ted-institutional-footer .three-columns > div {
+        flex: 0 0 100% !important;
+    }
 }
 
 /* Query Editor Styles */
@@ -435,6 +597,7 @@ main {
 /* Query Library Styles */
 .list-group-item-action:hover {
     cursor: pointer;
+    background-color: var(--ted-blue-10) !important; /* eu-blue-10 */
 }
 
 .list-group-item-action {
@@ -453,13 +616,22 @@ main {
     gap: 0.5rem;
 }
 .query-library-item .query-library-item-icon {
-    color: #6c757d;
+    color: var(--ted-text-muted);
     font-size: 0.95rem;
     margin-top: 0.1rem;
     flex-shrink: 0;
 }
 .query-library-item.active .query-library-item-icon {
     color: #fff;
+}
+.list-group-item.active.query-library-item {
+    background-color: var(--ted-blue) !important; /* eu-blue-100 */
+    border-color: var(--ted-blue) !important;
+    color: #fff !important;
+}
+.list-group-item.active.query-library-item:hover {
+    background-color: var(--ted-blue-hover) !important; /* eu-blue-110 */
+    border-color: var(--ted-blue-hover) !important;
 }
 
 #query-card {
@@ -503,8 +675,11 @@ main {
 }
 
 .query-library-accordion-header {
-    background-color: #daf7a6;
     margin-bottom: 0;
+}
+.query-library-accordion-header .accordion-button:not(.collapsed) {
+    background-color: var(--ted-blue-5); /* eu-blue-5 — selected category only */
+    box-shadow: none;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -568,7 +743,7 @@ main {
    weight come from here; alignment is up to each tab's own layout. */
 .tab-prompt {
   font-size: 1.05rem;
-  color: #6c757d; /* matches Bootstrap's text-muted */
+  color: var(--ted-text-muted); /* matches Bootstrap's text-muted */
   font-weight: 400;
   margin-bottom: 0;
 }
@@ -578,7 +753,7 @@ main {
 .search-hero-btn {
   background: #fff;
   border: 1px solid #ced4da;
-  color: #6c757d;
+  color: var(--ted-text-muted);
 }
 .search-hero-btn:hover {
   background: #f8f9fa;
@@ -598,15 +773,15 @@ main {
 
 .lucky-hint {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--ted-text-muted);
   text-align: center;
 }
 .lucky-hint a {
-  color: #0d6efd;
+  color: var(--ted-blue); /* eu-blue-100 */
   text-decoration: underline;
 }
 .lucky-hint a:hover {
-  color: #0a58ca;
+  color: var(--ted-blue);
 }
 
 /* ── Procedure timeline ── */
@@ -752,7 +927,8 @@ main {
   z-index: 10;
   padding: 0 0 8px 0;
   margin: 0 !important;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: none;
+  position: relative;
 }
 .data-sticky-header::before {
   content: '';
@@ -764,9 +940,27 @@ main {
   background: #fff;
   pointer-events: none;
 }
+.data-sticky-header::after {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  bottom: 0;
+  height: 1px;
+  background: #e9ecef;
+  pointer-events: none;
+}
 
 #data-breadcrumb {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+}
+#data-breadcrumb a {
+  color: var(--ted-blue);
+  text-decoration: none;
+}
+#data-breadcrumb a:hover {
+  color: var(--ted-blue);
+  text-decoration: underline;
 }
 #data-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
   content: "›";
@@ -802,8 +996,8 @@ main {
   border-bottom: 1px solid #dee2e6;
   font-weight: 500;
 }
-.tree-card-header .predicate { text-decoration: none; }
-.tree-card-header .predicate:hover { text-decoration: underline; }
+.tree-card-header .predicate { text-decoration: none; color: var(--ted-color-predicate); font-weight: 500; }
+.tree-card-header .predicate:hover { text-decoration: underline; color: var(--ted-color-predicate-hover); }
 .tree-card-body { padding: 4px 8px 4px 16px; }
 
 .tree-toggle {
@@ -835,17 +1029,17 @@ main {
   overflow: hidden;
   text-decoration: none !important;
   line-height: 1;
-  border: 1px solid #6c757d;
+  border: 1px solid var(--ted-text-muted);
 }
 .split-badge-type {
   padding: 0.25em 0.6em;
-  background-color: #6c757d;
+  background-color: var(--ted-text-muted);
   color: #fff;
 }
 .split-badge-id {
   padding: 0.25em 0.6em;
   background-color: #fff;
-  color: #2a00ff;
+  color: var(--ted-color-literal);
 }
 .split-badge-clickable {
   cursor: pointer;
@@ -860,7 +1054,7 @@ main {
 
 /* Solid badge for non-ePO URIs */
 .tree-badge-solid {
-  background-color: #6c757d;
+  background-color: var(--ted-text-muted);
   color: #fff;
 }
 .tree-badge-solid:hover {
@@ -868,25 +1062,30 @@ main {
   color: #fff;
 }
 
-.tree-node .predicate { color: #0d6efd; }
-.tree-node .literal { color: #2a00ff; }
-.tree-node .datatype { font-size: 0.75em; opacity: 0.6; margin-left: 2px; }
-.tree-node .language { font-size: 0.75em; opacity: 0.6; margin-left: 2px; }
+.tree-node .predicate { color: var(--ted-color-predicate); /* ecl-orange 700 */ }
+.tree-node .literal { color: var(--ted-color-literal); font-weight: 300; }
+.tree-node .datatype { font-size: 0.75em; margin-left: 2px; color: var(--ted-text-muted); }
+.tree-node .language { font-size: 0.75em; margin-left: 2px; color: var(--ted-text-muted); }
 .tree-node .uri-link {
-  color: #7f0055;
+  color: var(--ted-text-muted);
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
 }
-.tree-node .uri-link:hover { text-decoration: underline; }
+.tree-node .uri-link:hover {
+  color: var(--ted-primary, #2c862d);
+  text-decoration: underline;
+}
 
 .tree-node .predicate .uri-link,
 .tree-node .predicate.uri-link {
-  color: #0d6efd;
+  color: var(--ted-color-predicate); /* ecl-orange 700 */
+  font-weight: 500;
   text-decoration: none;
 }
 .tree-node .predicate .uri-link:hover,
 .tree-node .predicate.uri-link:hover {
-  color: #0a58ca;
+  color: var(--ted-color-predicate-hover); /* ecl-orange 800 — darker on hover */
   text-decoration: underline;
 }
 
@@ -1015,7 +1214,7 @@ main {
 
 .home-carousel-icon {
   font-size: 4rem;
-  color: #6c757d;
+  color: var(--ted-text-muted);
   display: block;
 }
 
@@ -1061,7 +1260,7 @@ main {
 /* Dark indicator dots — Bootstrap's default white dots are
    invisible on a white background. */
 .home-carousel .carousel-indicators [data-bs-target] {
-  background-color: #6c757d;
+  background-color: var(--ted-text-muted);
 }
 .home-carousel .carousel-indicators .active {
   background-color: var(--ted-primary, #2c862d);
@@ -1180,8 +1379,8 @@ main {
   font-weight: 500;
 }
 .driver-popover-next-btn:hover {
-  background: #236b24 !important;
-  border-color: #236b24 !important;
+  background: var(--ted-green-dark) !important;
+  border-color: var(--ted-green-dark) !important;
 }
 .driver-popover-prev-btn {
   color: #6c757d !important;

@@ -129,12 +129,22 @@ export class TreeRenderer {
       toggle.setAttribute('aria-expanded', String(collapsed));
     };
 
-    toggle.addEventListener('click', toggleBody);
+    toggle.addEventListener('click', (e) => { e.stopPropagation(); toggleBody(); });
     // Keyboard activation for screen-reader and keyboard-only users.
     // Space and Enter are the canonical keys for role="button".
     toggle.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault();
+      toggleBody();
+    });
+
+    // Clicking anywhere on the header toggles expand/collapse, except
+    // when the click lands on an interactive child (link, badge).
+    const header = card.querySelector('.tree-card-header');
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', (e) => {
+      const target = e.target.closest('a, .split-badge, .tree-toggle');
+      if (target && target !== toggle) return; // let links/badges handle it
       toggleBody();
     });
 

@@ -117,11 +117,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Ensure CM6 editors re-measure when their Bootstrap tabs become visible
+  // Ensure CM6 editors re-measure when their Bootstrap tabs become visible,
+  // and hide the footer on the Help tab (no status info needed there).
+  const footer = document.querySelector('body > footer');
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('shown.bs.tab', () => {
+    tab.addEventListener('shown.bs.tab', (e) => {
       queryEditor.editor.requestMeasure();
       queryLibrary.querySparqlEditor.requestMeasure();
+      if (footer) footer.classList.toggle('d-none', e.target.id === 'help-tab');
     });
   });
 

@@ -76,11 +76,32 @@ function _isNavigableHref(value) {
 }
 
 function _renderNamedNode(term, clickable, onClick) {
+  // ePO resources get the same split pill as subject badges.
+  const parts = splitEpoResource(term.value);
+  if (parts) {
+    const el = document.createElement(clickable ? 'a' : 'span');
+    el.className = 'split-badge' + (clickable ? ' split-badge-clickable' : '');
+    el.title = term.value;
+
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 'split-badge-type';
+    typeSpan.textContent = parts.type;
+
+    const idSpan = document.createElement('span');
+    idSpan.className = 'split-badge-id';
+    idSpan.textContent = parts.id;
+
+    el.appendChild(typeSpan);
+    el.appendChild(idSpan);
+
+    if (clickable && _isNavigableHref(term.value)) {
+      el.href = term.value;
+    }
+    _attachNavigationHandler(el, term, clickable, onClick);
+    return el;
+  }
+
   const el = document.createElement('a');
-  // Only set href when the value is a navigable http(s) URL. Setting it
-  // unconditionally would briefly expose a `javascript:` URI to the DOM
-  // even though _attachNavigationHandler later strips it — enough to be
-  // copied or middle-clicked before the handler runs.
   if (_isNavigableHref(term.value)) {
     el.href = term.value;
   }
@@ -88,7 +109,6 @@ function _renderNamedNode(term, clickable, onClick) {
   el.textContent = shortLabel(term.value);
   el.title = term.value;
 
-  // Async-resolve to a human label if one exists in the endpoint.
   if (isLabelEligible(term.value)) {
     requestLabel(term.value, (label) => {
       if (label) el.textContent = label;
