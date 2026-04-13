@@ -23,6 +23,8 @@
 // the script tag was moved/removed — otherwise an opaque ReferenceError
 // deep inside the worker.onmessage handler would leak pending promises
 // with no diagnosable cause.
+import { prettifyTurtle } from '../utils/prettifyTurtle.js';
+
 function _assertN3Loaded() {
   if (typeof globalThis.N3 === 'undefined' || !globalThis.N3?.Parser) {
     throw new Error(
@@ -87,7 +89,8 @@ function getWorker() {
       try {
         const parser = new N3.Parser();
         const quads = parser.parse(turtleData);
-        pending.resolve({ rawTurtle: turtleData, quads, size: quads.length });
+        const rawTurtle = prettifyTurtle(quads, turtleData);
+        pending.resolve({ rawTurtle, quads, size: quads.length });
       } catch (parseError) {
         pending.reject(new Error(`Failed to parse SPARQL response: ${parseError.message}`));
       }
