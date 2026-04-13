@@ -364,6 +364,37 @@ test('getQuery throws on a named-node facet with an unsafe URI (click-time defen
   );
 });
 
+test('getQuery scopes data resource URIs to the notice graph when noticeNumber is given', () => {
+  const dataResource = {
+    type: 'named-node',
+    term: { value: EPO_NOTICE_URI },
+  };
+  const scoped = getQuery(dataResource, { noticeNumber: PUB_2026 });
+  assert.match(scoped, /CONSTRUCT/, 'data resource should use CONSTRUCT');
+  assert.match(scoped, /GRAPH/, 'data resource should have GRAPH clause');
+  assert.match(scoped, new RegExp(PUB_2026), 'should contain the notice number');
+});
+
+test('getQuery does NOT scope ontology/predicate URIs even with noticeNumber', () => {
+  const ontologyUri = {
+    type: 'named-node',
+    term: { value: 'http://data.europa.eu/a4g/ontology#announcesRole' },
+  };
+  const query = getQuery(ontologyUri, { noticeNumber: PUB_2026 });
+  assert.match(query, /DESCRIBE/, 'ontology URI should use DESCRIBE');
+  assert.ok(!query.includes('GRAPH'), 'ontology URI should NOT have GRAPH clause');
+});
+
+test('getQuery does NOT scope vocabulary URIs even with noticeNumber', () => {
+  const vocabUri = {
+    type: 'named-node',
+    term: { value: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' },
+  };
+  const query = getQuery(vocabUri, { noticeNumber: PUB_2026 });
+  assert.match(query, /DESCRIBE/, 'vocabulary URI should use DESCRIBE');
+  assert.ok(!query.includes('GRAPH'), 'vocabulary URI should NOT have GRAPH clause');
+});
+
 // ── facetEquals (tested via addUnique) ─────────────────────────────
 
 test('addUnique appends a new facet and returns its index', () => {

@@ -115,18 +115,17 @@ WHERE {
 // FORBIDDEN_URI_CHARS check here at the point of interpolation. Any URI
 // that would let `>` or quote characters break out of the IRI literal
 // gets thrown before the query is built.
+const EPO_RESOURCE_BASE = 'http://data.europa.eu/a4g/resource/';
+
 function _describeTermQuery(term, noticeNumber) {
   if (!_isSafeUri(term?.value)) {
     throw new Error(`Unsafe URI for DESCRIBE: ${JSON.stringify(term?.value)}`);
   }
-  // When a root notice context is available, scope the query to the
-  // graph containing that notice. Without this, the bare DESCRIBE
-  // returns triples from every named graph where the URI appears,
-  // merging data from multiple notices in the same procedure.
-  if (noticeNumber && /^\d{8}-\d{4}$/.test(noticeNumber)) {
-    // Graph-scoped CBD: fetch the direct triples of the resource plus
-    // one level of blank-node expansion (mirrors DESCRIBE CBD behaviour
-    // but restricted to the graph containing the given notice).
+  // Graph-scope only data resource URIs (subjects within a notice graph).
+  // Ontology terms, vocabulary URIs, and other non-resource URIs use the
+  // unscoped DESCRIBE so they return their full definition across all graphs.
+  const isDataResource = term.value.startsWith(EPO_RESOURCE_BASE);
+  if (isDataResource && noticeNumber && /^\d{8}-\d{4}$/.test(noticeNumber)) {
     return `PREFIX epo: <http://data.europa.eu/a4g/ontology#>
 
 CONSTRUCT {
