@@ -31,10 +31,14 @@ export class TreeRenderer {
   constructor(container) {
     this.container = container;
     this.subjectIndex = null; // Map<subject, Map<predicate, object[]>>
+    this._toggles = new Map();  // subjectValue → { toggle, expand, collapse, card }
+    this._searchIndex = [];     // flat array of { label, subjectValue, kind }
   }
 
   render(quads) {
     this.container.innerHTML = '';
+    this._toggles.clear();
+    this._searchIndex = [];
 
     if (!quads || quads.length === 0) {
       this.container.innerHTML = '<div class="text-muted fst-italic py-3 text-center">No triples to display</div>';
@@ -42,6 +46,7 @@ export class TreeRenderer {
     }
 
     this.subjectIndex = this._buildIndex(quads);
+    this._buildSearchIndex();
     const roots = this._findRootSubjects(quads);
 
     // `ancestors` is per-branch, not global: the same subject can appear
@@ -49,6 +54,116 @@ export class TreeRenderer {
     for (const subj of roots) {
       const node = this._renderSubjectTree(subj, new Set(), null);
       this.container.appendChild(node);
+    }
+  }
+
+  // Search the tree for a query string. Returns an array of
+  // { subjectValue, kind, label } entries matching the query.
+  search(query) {
+    if (!query || !query.trim()) return [];
+    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return [];
+    return this._searchIndex.filter(e => {
+      const text = e.label.toLowerCase();
+      return words.every(w => text.includes(w));
+    });
+  }
+
+  // Expand the path from root to a subject, forcing lazy card
+  // creation at each level. Then optionally find a specific row.
+  // Returns the matching DOM element (row or card).
+  // `path` is the ancestor chain captured during the DFS index walk.
+  reveal(subjectValue, predValue, objValue, path) {
+    // Use the path from the search index entry (cycle-safe by
+    // construction) or fall back to just the subject itself.
+    const chain = path || [subjectValue];
+
+    // Expand each level from root down, forcing lazy card creation
+    for (const subj of chain) {
+      const entry = this._toggles.get(subj);
+      if (entry) entry.expand();
+    }
+
+    const entry = this._toggles.get(subjectValue);
+    if (!entry) return null;
+
+    // If a specific predicate+object is given, find the matching element.
+    if (predValue && objValue) {
+      // First try leaf rows (predicate → literal/non-nestable object)
+      const rows = entry.card.querySelectorAll(':scope > .tree-card-body > .tree-node');
+      for (const row of rows) {
+        if (row.dataset.predicate === predValue && row.dataset.objectValue === objValue) {
+          return row;
+        }
+      }
+      // Then try nested card headers (predicate → nestable subject)
+      const nestedCards = entry.card.querySelectorAll(':scope > .tree-card-body > .tree-card');
+      for (const nested of nestedCards) {
+        if (nested.dataset.subject === objValue) {
+          return nested.querySelector('.tree-card-header') || nested;
+        }
+      }
+    }
+
+    // Fallback: highlight just the header, not the entire card
+    return entry.card.querySelector('.tree-card-header') || entry.card;
+  }
+
+  get searchIndex() {
+    return this._searchIndex;
+  }
+
+  _buildSearchIndex() {
+    const localName = (uri) => {
+      const hash = uri.lastIndexOf('#');
+      const slash = uri.lastIndexOf('/');
+      return uri.substring(Math.max(hash, slash) + 1);
+    };
+
+    // Walk the tree depth-first in display order. Each search entry
+    // carries the ancestor path so reveal() can expand from root
+    // without relying on a parent map (which breaks on cycles).
+    const roots = this._findRootSubjects([...this._flatQuads()]);
+    const visited = new Set();
+    const walk = (subj, ancestorPath) => {
+      if (visited.has(subj)) return;
+      visited.add(subj);
+      const predicates = this.subjectIndex.get(subj);
+      if (!predicates) return;
+
+      const path = [...ancestorPath, subj];
+
+      for (const [pred, objects] of predicates) {
+        const predLabel = localName(pred);
+        for (const obj of objects) {
+          const objLabel = obj.termType === 'Literal' ? obj.value : localName(obj.value);
+          this._searchIndex.push({
+            label: `${predLabel} → ${objLabel}`,
+            predLabel, objLabel,
+            subjectValue: subj,
+            predValue: pred,
+            objValue: obj.value,
+            path,
+            kind: 'row',
+          });
+          // Recurse into nestable objects (same logic as _partitionObjects)
+          const isSubject = this.subjectIndex.has(obj.value);
+          const isNode = obj.termType === 'NamedNode' || obj.termType === 'BlankNode';
+          if (isSubject && isNode) walk(obj.value, path);
+        }
+      }
+    };
+    for (const root of roots) walk(root, []);
+  }
+
+  // Yield all quads from the subject index (for _findRootSubjects).
+  *_flatQuads() {
+    for (const [subj, predicates] of this.subjectIndex) {
+      for (const [pred, objects] of predicates) {
+        for (const obj of objects) {
+          yield { subject: { value: subj }, predicate: { value: pred }, object: obj };
+        }
+      }
     }
   }
 
@@ -98,6 +213,7 @@ export class TreeRenderer {
 
     const card = document.createElement('div');
     card.className = 'tree-card';
+    card.dataset.subject = subjectValue;
     card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate));
 
     // Root cards render their body eagerly so the tree is
@@ -115,19 +231,28 @@ export class TreeRenderer {
     toggle.textContent = startExpanded ? '▼' : '▶';
     toggle.setAttribute('aria-expanded', String(startExpanded));
 
-    const toggleBody = () => {
+    const expand = () => {
       if (!body) {
         body = buildBody();
         card.appendChild(body);
-        toggle.textContent = '▼';
-        toggle.setAttribute('aria-expanded', 'true');
-        return;
       }
-      const collapsed = body.style.display === 'none';
-      body.style.display = collapsed ? '' : 'none';
-      toggle.textContent = collapsed ? '▼' : '▶';
-      toggle.setAttribute('aria-expanded', String(collapsed));
+      body.style.display = '';
+      toggle.textContent = '▼';
+      toggle.setAttribute('aria-expanded', 'true');
     };
+
+    const collapse = () => {
+      if (body) body.style.display = 'none';
+      toggle.textContent = '▶';
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const toggleBody = () => {
+      if (!body || body.style.display === 'none') expand();
+      else collapse();
+    };
+
+    this._toggles.set(subjectValue, { toggle, expand, collapse, card });
 
     toggle.addEventListener('click', (e) => { e.stopPropagation(); toggleBody(); });
     // Keyboard activation for screen-reader and keyboard-only users.
@@ -226,6 +351,8 @@ export class TreeRenderer {
   _renderPredicateObject(predValue, object) {
     const row = document.createElement('div');
     row.className = 'tree-node';
+    row.dataset.predicate = predValue;
+    row.dataset.objectValue = object.value;
 
     const pred = renderTerm({ termType: 'NamedNode', value: predValue });
     pred.classList.add('predicate');
