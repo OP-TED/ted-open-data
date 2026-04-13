@@ -445,7 +445,9 @@ export class DataView {
 
   _renderView(results) {
     if (this.viewMode === 'tree') {
-      this.treeRenderer.render(results.quads);
+      const facet = this.controller.currentFacet;
+      const subjectUri = facet?.type === 'named-node' ? facet.term?.value : null;
+      this.treeRenderer.render(results.quads, { subjectUri });
     } else if (this.viewMode === 'turtle') {
       this._renderTurtle(results.rawTurtle);
     }

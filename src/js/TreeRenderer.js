@@ -22,8 +22,9 @@
 // outer tree renders. This keeps the initial render fast even for notices
 // with tens of thousands of triples.
 
-import { ns } from './utils/namespaces.js';
+import { ns, resolvePrefix, shrink } from './utils/namespaces.js';
 import { renderSubjectBadge, renderTerm } from './TermRenderer.js';
+import { copyToClipboard } from './utils/clipboardCopy.js';
 
 const RDF_TYPE = ns.rdf + 'type';
 
@@ -31,13 +32,31 @@ export class TreeRenderer {
   constructor(container) {
     this.container = container;
     this.subjectIndex = null; // Map<subject, Map<predicate, object[]>>
+    this._activePopover = null;
   }
 
-  render(quads) {
+  render(quads, { subjectUri } = {}) {
+    this._dismissPopover();
     this.container.innerHTML = '';
 
     if (!quads || quads.length === 0) {
-      this.container.innerHTML = '<div class="text-muted fst-italic py-3 text-center">No triples to display</div>';
+      if (subjectUri) {
+        // Show an empty card with the header + info button
+        const card = document.createElement('div');
+        card.className = 'tree-card';
+        const predicates = new Map();
+        const header = this._buildCardHeader(subjectUri, predicates, null);
+        const toggle = header.querySelector('.tree-toggle');
+        if (toggle) toggle.remove();
+        card.appendChild(header);
+        const body = document.createElement('div');
+        body.className = 'tree-card-body';
+        body.innerHTML = '<div class="text-muted fst-italic py-3 text-center">No triples to display</div>';
+        card.appendChild(body);
+        this.container.appendChild(card);
+      } else {
+        this.container.innerHTML = '<div class="text-muted fst-italic py-3 text-center">No triples to display</div>';
+      }
       return;
     }
 
@@ -180,14 +199,137 @@ export class TreeRenderer {
       header.appendChild(document.createTextNode(' → '));
     }
 
-    const hasTypes = (predicates.get(RDF_TYPE) || []).length > 0;
-    if (hasTypes) {
-      header.appendChild(renderSubjectBadge(subjectValue));
-    } else {
-      header.appendChild(renderTerm({ termType: 'NamedNode', value: subjectValue }));
+    header.appendChild(renderSubjectBadge(subjectValue));
+
+    // Add info icon for root-level cards (no incoming predicate)
+    if (!incomingPredicate) {
+      header.appendChild(this._buildInfoButton(subjectValue, predicates));
     }
 
     return header;
+  }
+
+  _dismissPopover() {
+    if (this._activePopoverCleanup) {
+      this._activePopoverCleanup();
+      this._activePopoverCleanup = null;
+    }
+    if (this._activePopover) {
+      this._activePopover.hide();
+      this._activePopover.dispose();
+      this._activePopover = null;
+    }
+  }
+
+  _buildInfoButton(subjectValue, predicates) {
+    const btn = document.createElement('button');
+    btn.className = 'tree-info-btn';
+    btn.setAttribute('aria-label', 'SPARQL reference card');
+    btn.setAttribute('title', 'Click here for referencing this element in your SPARQL query');
+    btn.innerHTML = '<i class="bi bi-code-square"></i>';
+    const tooltip = new bootstrap.Tooltip(btn, { placement: 'top' });
+
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const resolved = resolvePrefix(subjectValue);
+    const types = (predicates.get(RDF_TYPE) || []).map(t => shrink(t.value));
+    const title = `<span>SPARQL reference card</span><button class="btn-close tree-info-close" aria-label="Close"></button>`;
+
+    const copyIcon = (value, label) =>
+      `<button class="tree-info-copy-inline" data-copy="${esc(value)}" title="${label}"><i class="bi bi-clipboard"></i></button>`;
+
+    const rows = [
+      `<p class="tree-info-intro">Use the following in your SPARQL query</p>`,
+    ];
+
+    if (resolved) {
+      // Ontology/vocabulary term — PREFIX, Name
+      const prefixDecl = `PREFIX ${resolved.prefix}: <${ns[resolved.prefix]}>`;
+      const prefixedName = `${resolved.prefix}:${resolved.localName}`;
+      rows.push(`<div class="tree-info-row"><span class="tree-info-label">Prefix</span>${copyIcon(prefixDecl, 'Copy prefix declaration')}<code class="tree-info-value">${esc(prefixDecl)}</code></div>`);
+      rows.push(`<div class="tree-info-row"><span class="tree-info-label">Name</span>${copyIcon(prefixedName, 'Copy name')}<code class="tree-info-value">${esc(prefixedName)}</code></div>`);
+    } else {
+      // Data resource — PREFIX (from type), Name (type), IRI
+      if (types.length) {
+        const typeResolved = resolvePrefix((predicates.get(RDF_TYPE) || [])[0]?.value);
+        if (typeResolved) {
+          const typePrefixDecl = `PREFIX ${typeResolved.prefix}: <${ns[typeResolved.prefix]}>`;
+          rows.push(`<div class="tree-info-row"><span class="tree-info-label">Prefix</span>${copyIcon(typePrefixDecl, 'Copy prefix declaration')}<code class="tree-info-value">${esc(typePrefixDecl)}</code></div>`);
+        }
+        rows.push(`<div class="tree-info-row"><span class="tree-info-label">Name</span>${copyIcon(types[0], 'Copy name')}<code class="tree-info-value">${esc(types.join(', '))}</code></div>`);
+      }
+      const iri = `<${subjectValue}>`;
+      rows.push(`<div class="tree-info-row"><span class="tree-info-label">IRI</span>${copyIcon(iri, 'Copy IRI')}<code class="tree-info-value">${esc(iri)}</code></div>`);
+    }
+
+    const lines = [`<div class="tree-info-popover">`, ...rows, `</div>`].join('\n');
+
+    const popover = new bootstrap.Popover(btn, {
+      title,
+      content: lines,
+      html: true,
+      sanitize: false,
+      placement: 'bottom',
+      trigger: 'manual',
+      container: 'body',
+      customClass: 'tree-info-popover-container',
+    });
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tooltip.hide();
+      tooltip.disable();
+      if (this._activePopover === popover) {
+        popover.hide();
+        this._activePopover = null;
+        tooltip.enable();
+      } else {
+        this._dismissPopover();
+        popover.show();
+        this._activePopover = popover;
+      }
+    });
+
+    btn.addEventListener('hidden.bs.popover', () => {
+      tooltip.enable();
+    });
+
+    btn.addEventListener('shown.bs.popover', () => {
+      const tip = popover.tip;
+      if (!tip) return;
+      const onOutsideClick = (e) => {
+        if (!tip.contains(e.target) && !btn.contains(e.target)) {
+          popover.hide();
+          this._activePopover = null;
+          document.removeEventListener('click', onOutsideClick, true);
+        }
+      };
+      document.addEventListener('click', onOutsideClick, true);
+      const cleanup = () => {
+        document.removeEventListener('click', onOutsideClick, true);
+      };
+      this._activePopoverCleanup = cleanup;
+      btn.addEventListener('hidden.bs.popover', () => {
+        cleanup();
+        if (this._activePopoverCleanup === cleanup) this._activePopoverCleanup = null;
+      }, { once: true });
+      const closeBtn = tip.querySelector('.tree-info-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          popover.hide();
+          this._activePopover = null;
+        });
+      }
+      tip.querySelectorAll('.tree-info-copy-inline').forEach(cb => {
+        cb.addEventListener('click', async () => {
+          const ok = await copyToClipboard(cb.dataset.copy);
+          cb.innerHTML = ok ? '<i class="bi bi-check"></i>' : '<i class="bi bi-x"></i>';
+          setTimeout(() => { cb.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+        });
+      });
+    });
+
+    return btn;
   }
 
   _buildCardBody(predicates, branchAncestors) {
