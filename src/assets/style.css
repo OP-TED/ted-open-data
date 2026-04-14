@@ -1212,6 +1212,7 @@ main {
 .tree-search-highlight-current {
   background-color: #fff3cd !important;
   border-left: 4px solid #ff9632 !important;
+  padding-left: 4px !important;
   scroll-margin-top: calc(var(--sticky-nav-height, 141px) + 80px);
 }
 
