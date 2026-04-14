@@ -636,6 +636,19 @@
                     <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
                 </div>
 
+                <div id="tree-search" class="tree-search" style="display: none;">
+                    <div class="tree-search__input-wrapper">
+                        <div class="tree-search__input-group">
+                            <i class="bi bi-search tree-search__icon"></i>
+                            <input type="text" id="tree-search-input" class="form-control form-control-sm"
+                                   placeholder="Search in tree (min. 3 characters, Enter to jump)" autocomplete="off">
+                            <button type="button" id="tree-search-clear" class="tree-search__clear" title="Clear search"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                        <span id="tree-search-count" class="tree-search__count"></span>
+                        <button type="button" id="tree-search-prev" class="btn btn-sm btn-outline-secondary" title="Previous match" disabled><i class="bi bi-chevron-up"></i></button>
+                        <button type="button" id="tree-search-next" class="btn btn-sm btn-outline-secondary" title="Next match" disabled><i class="bi bi-chevron-down"></i></button>
+                    </div>
+                </div>
                 <div id="tree-container" class="tree-view"></div>
                 <div id="turtle-container" style="display: none;"></div>
                 <div id="backlinks-container" style="display: none;">
