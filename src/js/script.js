@@ -32,6 +32,10 @@ import { setController } from './TermRenderer.js';
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
 
+// Reset scroll on page load (browsers may restore previous scroll position).
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 document.addEventListener('DOMContentLoaded', function () {
   // Fail loudly if the Bootstrap JS bundle did not load. Tabs,
   // dropdowns, tooltips, collapse panels, carousel and toasts all
@@ -121,11 +125,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const globan = document.querySelector('.eu-globan');
     const scrollableHeader = document.querySelector('.site-header--scrollable');
     const stickyNav = document.querySelector('.sticky-nav');
-    const total = (globan?.offsetHeight || 0) + (scrollableHeader?.offsetHeight || 0) + (stickyNav?.offsetHeight || 0);
+    const stickyNavHeight = stickyNav?.offsetHeight || 0;
+    const total = (globan?.offsetHeight || 0) + (scrollableHeader?.offsetHeight || 0) + stickyNavHeight;
     document.documentElement.style.setProperty('--header-total-height', total + 'px');
+    document.documentElement.style.setProperty('--sticky-nav-height', stickyNavHeight + 'px');
+    const dataHeader = document.querySelector('.data-sticky-header');
+    if (dataHeader) {
+      document.documentElement.style.setProperty('--data-header-height', dataHeader.offsetHeight + 'px');
+    }
   };
   measureHeader();
   window.addEventListener('resize', measureHeader);
+
+  // Re-measure when the data header changes size (breadcrumb wrap, view-mode toggle).
+  const dataHeader = document.querySelector('.data-sticky-header');
+  if (dataHeader && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => {
+      document.documentElement.style.setProperty('--data-header-height', dataHeader.offsetHeight + 'px');
+    }).observe(dataHeader);
+  }
 
   // EU globan "How do you know?" toggle
   const globanBtn = document.querySelector('.eu-globan__button');
@@ -145,10 +163,21 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Ensure CM6 editors re-measure when their Bootstrap tabs become visible.
+  // On tab switch, scroll so the non-sticky header (globan + EU logo) is
+  // just out of view, leaving the sticky title row + tabs visible at the top.
+  const scrollableHeaderHeight = () => {
+    const globan = document.querySelector('.eu-globan');
+    const upper = document.querySelector('.site-header--scrollable');
+    return (globan?.offsetHeight || 0) + (upper?.offsetHeight || 0);
+  };
   document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
     tab.addEventListener('shown.bs.tab', () => {
       queryEditor.editor.requestMeasure();
       queryLibrary.querySparqlEditor.requestMeasure();
+      const target = scrollableHeaderHeight();
+      if (window.scrollY > target) {
+        window.scrollTo(0, target);
+      }
     });
   });
 

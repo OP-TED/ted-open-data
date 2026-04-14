@@ -47,6 +47,7 @@ import { getLabel, getQuery } from './facets.js';
 import { getEndpoint } from './services/sparqlService.js';
 import { showToast } from './utils/toast.js';
 import { TreeRenderer } from './TreeRenderer.js';
+import { TreeSearch } from './TreeSearch.js';
 
 export class DataView {
   // `pickRandom` is an optional callback wired from script.js to
@@ -88,6 +89,7 @@ export class DataView {
     this.downloadMenu = document.getElementById('data-download-menu');
 
     this.treeRenderer = new TreeRenderer(this.treeContainer);
+    this.treeSearch = new TreeSearch(this.treeRenderer);
 
     this._bindEvents();
     this._listen();
@@ -437,6 +439,7 @@ export class DataView {
     this._renderTurtle('');
     const backlinksContent = document.getElementById('backlinks-content');
     if (backlinksContent) backlinksContent.innerHTML = '';
+    this.treeSearch.hide();
   }
 
   _onLoadingChanged() {
@@ -444,16 +447,29 @@ export class DataView {
   }
 
   _renderView(results) {
+    this.treeSearch.clear();
     if (this.viewMode === 'tree') {
-      this.treeRenderer.render(results.quads);
+      const facet = this.controller.currentFacet;
+      const subjectUri = facet?.type === 'named-node' ? facet.term?.value : null;
+      this.treeRenderer.render(results.quads, { subjectUri });
     } else if (this.viewMode === 'turtle') {
       this._renderTurtle(results.rawTurtle);
     }
     this._showCurrentView();
+
+    // Scroll up so the new content is visible after navigation.
+    const globan = document.querySelector('.eu-globan');
+    const upper = document.querySelector('.site-header--scrollable');
+    const target = (globan?.offsetHeight || 0) + (upper?.offsetHeight || 0);
+    if (window.scrollY > target) {
+      window.scrollTo(0, target);
+    }
   }
 
   _showCurrentView() {
-    this.treeContainer.style.display = this.viewMode === 'tree' ? '' : 'none';
+    const isTree = this.viewMode === 'tree';
+    this.treeContainer.style.display = isTree ? '' : 'none';
+    if (isTree) this.treeSearch.show(); else this.treeSearch.hide();
     this.turtleContainer.style.display = this.viewMode === 'turtle' ? '' : 'none';
     this.backlinksContainer.style.display = this.viewMode === 'backlinks' ? '' : 'none';
 
