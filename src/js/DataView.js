@@ -456,6 +456,14 @@ export class DataView {
       this._renderTurtle(results.rawTurtle);
     }
     this._showCurrentView();
+
+    // Scroll up so the new content is visible after navigation.
+    const globan = document.querySelector('.eu-globan');
+    const upper = document.querySelector('.site-header--scrollable');
+    const target = (globan?.offsetHeight || 0) + (upper?.offsetHeight || 0);
+    if (window.scrollY > target) {
+      window.scrollTo(0, target);
+    }
   }
 
   _showCurrentView() {
