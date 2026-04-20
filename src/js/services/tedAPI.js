@@ -20,23 +20,16 @@
 
 import { normalize } from '../facets.js';
 
-// Always use the acceptance TED API. The production API
-// (api.ted.europa.eu) does NOT include CORS headers for our deploy
-// origin (docs.ted.europa.eu), so calling it from a browser-based app
-// fails with a preflight error and the procedure timeline does not
-// load. The acceptance API (api.acceptance.ted.europa.eu) does allow
-// the cross-origin request and is what version 1.0.0 of this app used
-// in production unconditionally.
-//
-// This restores parity with 1.0.0. A request has been filed with the
-// TED API admins to enable CORS for docs.ted.europa.eu on the
-// production API; once that lands, this can be flipped back to a
-// per-host switch (see CORS_REQUEST.md at the repo root for the
-// outgoing request and the conditions for re-enabling the switch).
-const TED_API = 'https://api.acceptance.ted.europa.eu/v3';
+// Production TED API for real deployments, acceptance for anywhere else
+// (localhost, preview builds, staging). The acceptance instance holds the
+// same schema but non-production data — safer for dev and exploration.
+const TED_API_PRODUCTION = 'https://api.ted.europa.eu/v3';
+const TED_API_ACCEPTANCE = 'https://api.acceptance.ted.europa.eu/v3';
 
 function getTedApi() {
-  return TED_API;
+  const host = window.location.hostname;
+  const isProduction = host === 'docs.ted.europa.eu' || host === 'data.ted.europa.eu';
+  return isProduction ? TED_API_PRODUCTION : TED_API_ACCEPTANCE;
 }
 const PROCEDURE_NOTICE_LIMIT = 249;
 const NOTICE_LOOKUP_LIMIT = 10;
