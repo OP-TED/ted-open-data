@@ -1,6 +1,6 @@
 {
   "name": "ted-open-data",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "TED Open Data Service — SPARQL playground and notice browser for the European public procurement dataset",
   "type": "module",
   "scripts": {
