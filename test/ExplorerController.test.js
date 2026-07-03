@@ -604,6 +604,106 @@ test('explore() is a no-op when the target is the current named-node', async () 
   assert.equal(controller.breadcrumb.length, 2, 'duplicate explore must be a no-op');
 });
 
+// ── ePO 3 StandardForms fallback (issue #76) ──────────────────────
+//
+// Notice-number search runs the ePO 4 exact-match query first. Only when
+// it returns zero triples does the controller fall back to the slower
+// ePO 3 identifier-value REGEX query. These tests pin that two-step
+// behaviour and the `executedQuery` reflection that backs the editor.
+
+// A doSPARQL stub that routes by query shape: the ePO 4 primary query
+// carries epo:hasNoticePublicationNumber; the ePO 3 fallback carries
+// epo:hasIdentifierValue. `fallback` may be an Error to simulate a failing
+// fallback query. Records every query it is handed.
+function routedDoSPARQL({ primary, fallback }) {
+  const calls = [];
+  const doSPARQL = async (query) => {
+    calls.push(query);
+    if (query.includes('hasIdentifierValue')) {
+      if (fallback instanceof Error) throw fallback;
+      return fallback;
+    }
+    return primary;
+  };
+  return { doSPARQL, calls };
+}
+
+const EMPTY_RESULT = { quads: [], size: 0, rawTurtle: '' };
+
+test('ePO 3 fallback: an ePO 4 hit returns immediately without running the fallback', async () => {
+  const hit = { quads: [], size: 12, rawTurtle: 'epo4' };
+  const { doSPARQL, calls } = routedDoSPARQL({ primary: hit, fallback: EMPTY_RESULT });
+  const controller = new ExplorerController({ doSPARQL });
+
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  assert.equal(calls.length, 1, 'only the primary ePO 4 query should run');
+  assert.match(calls[0], /hasNoticePublicationNumber/);
+  assert.equal(controller.results, hit);
+  assert.match(controller.executedQuery, /hasNoticePublicationNumber/,
+    'executedQuery reflects the ePO 4 query');
+  assert.ok(!controller.executedQuery.includes('hasIdentifierValue'));
+});
+
+test('ePO 3 fallback: an empty ePO 4 result triggers the fallback and swaps in its triples', async () => {
+  const fallbackHit = { quads: [], size: 7, rawTurtle: 'epo3' };
+  const { doSPARQL, calls } = routedDoSPARQL({ primary: EMPTY_RESULT, fallback: fallbackHit });
+  const controller = new ExplorerController({ doSPARQL });
+
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  assert.equal(calls.length, 2, 'primary then fallback');
+  assert.match(calls[0], /hasNoticePublicationNumber/);
+  assert.match(calls[1], /hasIdentifierValue/);
+  assert.equal(controller.results, fallbackHit, 'the fallback triples win');
+  assert.match(controller.executedQuery, /hasIdentifierValue/,
+    'executedQuery reflects the ePO 3 fallback query');
+});
+
+test('ePO 3 fallback: both queries empty leaves the empty primary result and no error', async () => {
+  const { doSPARQL, calls } = routedDoSPARQL({ primary: EMPTY_RESULT, fallback: EMPTY_RESULT });
+  const controller = new ExplorerController({ doSPARQL });
+
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  assert.equal(calls.length, 2, 'both queries run');
+  assert.equal(controller.results, EMPTY_RESULT, 'still the empty primary result');
+  assert.equal(controller.results.size, 0);
+  assert.equal(controller.error, null, 'a genuinely missing notice is not an error');
+  assert.match(controller.executedQuery, /hasNoticePublicationNumber/,
+    'executedQuery stays on the primary query when nothing resolved');
+});
+
+test('ePO 3 fallback: a failing fallback query is swallowed to a warning, not surfaced', async () => {
+  const fallbackErr = new Error('endpoint 500 on REGEX scan');
+  const { doSPARQL, calls } = routedDoSPARQL({ primary: EMPTY_RESULT, fallback: fallbackErr });
+  const controller = new ExplorerController({ doSPARQL });
+
+  // Silence the expected console.warn while asserting it fired.
+  const originalWarn = console.warn;
+  let warned = false;
+  console.warn = () => { warned = true; };
+  try {
+    await controller.search(createPublicationNumberFacet(PUB_A));
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.equal(calls.length, 2, 'primary then a failing fallback');
+  assert.equal(controller.error, null, 'fallback failure must NOT raise a red error banner');
+  assert.equal(controller.results, EMPTY_RESULT, 'DataView still sees the empty primary result');
+  assert.ok(warned, 'the fallback failure is logged as a warning');
+});
+
+test('ePO 3 fallback: not attempted for a non-notice (query) facet even when empty', async () => {
+  const { doSPARQL, calls } = routedDoSPARQL({ primary: EMPTY_RESULT, fallback: EMPTY_RESULT });
+  const controller = new ExplorerController({ doSPARQL });
+
+  await controller.search({ type: 'query', query: 'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }' });
+
+  assert.equal(calls.length, 1, 'a custom query must never trigger the notice fallback');
+});
+
 // ── helper used only in this file ─────────────────────────────────
 
 function resetShimsExceptLocation() {

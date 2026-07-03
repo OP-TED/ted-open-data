@@ -271,6 +271,11 @@ function bootstrapExplorer(queryEditor) {
   // can see the query that produced what they are now looking at
   // on the Reuse graph lane.
   const loadEditorText = (text) => queryEditor?.setValue?.(text);
+  // Reads the editor's current text so SearchPanel can avoid overwriting
+  // the user's own edits when the ePO 3 fallback correction lands late.
+  // QueryEditor's reader is getQuery() (the writer is the asymmetric
+  // setValue()); the rest of the app reads via getQuery() too.
+  const getEditorText = () => queryEditor?.getQuery?.();
 
   // Mutual exclusion of the two Reuse-tab lanes. Both
   // share the user-facing label "Reuse"; only one is shown at a
@@ -300,6 +305,7 @@ function bootstrapExplorer(queryEditor) {
   const searchPanel = new SearchPanel(controller, {
     showExplorerTab,
     loadEditorText,
+    getEditorText,
     setActiveResultTab,
   });
   new NoticeView(controller, {
