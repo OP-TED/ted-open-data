@@ -36,7 +36,7 @@
 //   facets-list-changed  — the persistent history changed (add /
 //                          clear / enrich)
 
-import { addUnique, getQuery, validateFacet } from './facets.js';
+import { addUnique, getQuery, noticeByPublicationNumberQueryEpo3, validateFacet } from './facets.js';
 import {
   doSPARQL as defaultDoSPARQL,
   cancelAllSparqlRequests as defaultCancelAllSparqlRequests,
@@ -431,8 +431,27 @@ export class ExplorerController extends EventTarget {
     this._emit('loading-changed');
 
     try {
-      const results = await this._doSPARQL(query, this._sparqlOptions || {});
+      let results = await this._doSPARQL(query, this._sparqlOptions || {});
       if (token !== this._queryToken) return;
+      // ePO 3 fallback: the primary query uses epo:hasNoticePublicationNumber,
+      // which ePO 4 (eForms) notices carry but ePO 3 (legacy XML) notices do
+      // not. When a notice-number search comes back empty, retry with the
+      // slower identifier-value query before concluding the notice does not
+      // exist. ePO 4 notices never reach this branch, so their performance is
+      // unchanged. Failures in the fallback are swallowed to a warning: we
+      // fall back to the (empty) primary result and let DataView render its
+      // normal "not found" state rather than a red error banner.
+      if (facet.type === 'notice-number' && results.size === 0) {
+        try {
+          const fallbackQuery = noticeByPublicationNumberQueryEpo3(facet.value);
+          const fallbackResults = await this._doSPARQL(fallbackQuery, this._sparqlOptions || {});
+          if (token !== this._queryToken) return;
+          if (fallbackResults.size > 0) results = fallbackResults;
+        } catch (fallbackErr) {
+          if (token !== this._queryToken) return;
+          console.warn('[ExplorerController] ePO 3 fallback query failed:', fallbackErr);
+        }
+      }
       this.results = results;
       this._emit('results-changed');
     } catch (e) {

@@ -107,6 +107,47 @@ WHERE {
 }`;
 }
 
+// ePO 3 fallback query. ePO 3 notices (mapped from the legacy XML forms)
+// do NOT carry epo:hasNoticePublicationNumber — the primary query above
+// returns nothing for them. Instead they store the publication number as
+// an identifier value reached via epo:hasID, formatted as
+// "YYYY/S <ojs-issue>-<number>" (e.g. "2023/S 191-597014").
+//
+// Two segments of that string are not derivable from the app's
+// "NNNNNNNN-YYYY" publication number:
+//   - the OJS issue number (191) — wildcarded with [0-9]{1,4}
+//   - leading zeros on the number — the identifier value is not
+//     zero-padded, so we strip the pub number's padding and allow
+//     optional zeros with 0*
+// Both ends are anchored (^…$) so "597014" cannot also match "5970140".
+//
+// This is deliberately the SECOND query tried (see
+// ExplorerController._executeCurrentQuery): the REGEX-over-identifier-values
+// scan is ~3-4x slower than the ePO 4 exact match, so ePO 4 notices must
+// never pay its cost. Only notices the fast query could not find fall
+// through to here.
+function noticeByPublicationNumberQueryEpo3(publicationNumber) {
+  if (!/^\d{8}-\d{4}$/.test(publicationNumber)) {
+    throw new Error(`Invalid publication number at query boundary: ${publicationNumber}`);
+  }
+  const [number, year] = publicationNumber.split('-');
+  // Strip leading zeros; guard the all-zeros edge case so we never emit
+  // an empty alternation that would match every value.
+  const bareNumber = number.replace(/^0+/, '') || '0';
+  return `PREFIX epo: <http://data.europa.eu/a4g/ontology#>
+
+CONSTRUCT { ?s ?p ?o }
+WHERE {
+  graph ?g {
+    ?s ?p ?o .
+    ?notice a epo:Notice ;
+            epo:hasID ?id .
+    ?id epo:hasIdentifierValue ?idValue .
+    FILTER(REGEX(?idValue, "^${year}/S [0-9]{1,4}-0*${bareNumber}$"))
+  }
+}`;
+}
+
 // Belt-and-braces: facets built at click-time (TermRenderer's click handler,
 // BacklinksView's subject badge click handler) don't go through validateFacet
 // because they come from server-trusted SPARQL responses. That's fine in
@@ -233,6 +274,7 @@ export {
   facetEquals,
   getLabel,
   getQuery,
+  noticeByPublicationNumberQueryEpo3,
   normalize,
   validateFacet,
 };
