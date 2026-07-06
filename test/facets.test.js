@@ -25,6 +25,7 @@ import {
   getLabel,
   getQuery,
   isSafeUri,
+  noticeByPublicationNumberQueryEpo3,
   normalize,
   validateFacet,
 } from '../src/js/facets.js';
@@ -393,6 +394,54 @@ test('getQuery does NOT scope vocabulary URIs even with noticeNumber', () => {
   const query = getQuery(vocabUri, { noticeNumber: PUB_2026 });
   assert.match(query, /DESCRIBE/, 'vocabulary URI should use DESCRIBE');
   assert.ok(!query.includes('GRAPH'), 'vocabulary URI should NOT have GRAPH clause');
+});
+
+// ── noticeByPublicationNumberQueryEpo3 (ePO 3 fallback, issue #76) ──
+
+test('noticeByPublicationNumberQueryEpo3 strips the 8-digit padding back to the bare number', () => {
+  // The identifier value ("2023/S 191-597014") is not zero-padded, so the
+  // padded facet value must be reduced to its bare digits — with the
+  // padding re-allowed via 0* so short numbers still match.
+  const query = noticeByPublicationNumberQueryEpo3('00597014-2023');
+  assert.match(query, /\^2023\/S \[0-9\]\{1,4\}-0\*597014\$/,
+    'anchored REGEX with wildcarded OJS issue and optional leading zeros');
+  assert.ok(!query.includes('0*00597014'), 'the 8-digit padding must not leak into the pattern');
+});
+
+test('noticeByPublicationNumberQueryEpo3 interpolates the year and matches on the identifier value', () => {
+  const query = noticeByPublicationNumberQueryEpo3('00172531-2026');
+  assert.match(query, /CONSTRUCT/);
+  assert.match(query, /epo:hasID/);
+  assert.match(query, /epo:hasIdentifierValue/);
+  assert.match(query, /REGEX/);
+  assert.match(query, /\^2026\/S /, 'the year anchors the front of the pattern');
+  assert.match(query, /-0\*172531\$/, 'the bare number anchors the end');
+});
+
+test('noticeByPublicationNumberQueryEpo3 anchors both ends so a longer number cannot match', () => {
+  // "597014" must not also match "5970140": the trailing $ prevents it.
+  const query = noticeByPublicationNumberQueryEpo3('00597014-2023');
+  assert.match(query, /\^2023\//, 'leading anchor present');
+  assert.match(query, /-0\*597014\$/, 'trailing anchor present');
+});
+
+test('noticeByPublicationNumberQueryEpo3 handles the all-zeros number without an empty alternation', () => {
+  // Stripping leading zeros from "00000000" would yield "" and produce a
+  // pattern (…-0*$) that matches every value; the guard falls back to "0".
+  const query = noticeByPublicationNumberQueryEpo3('00000000-2023');
+  assert.match(query, /-0\*0\$/, 'bare number falls back to a single 0');
+});
+
+test('noticeByPublicationNumberQueryEpo3 throws at the interpolation boundary for a malformed number', () => {
+  // Defence-in-depth mirroring _noticeByPublicationNumberQuery: the value
+  // must already be the canonical 8-digit + 4-digit-year shape.
+  for (const bad of ['597014-2023', '00597014-23', 'abcdefgh-2023', '', '0059701442023']) {
+    assert.throws(
+      () => noticeByPublicationNumberQueryEpo3(bad),
+      /Invalid publication number at query boundary/,
+      `should throw for ${JSON.stringify(bad)}`,
+    );
+  }
 });
 
 // ── facetEquals (tested via addUnique) ─────────────────────────────

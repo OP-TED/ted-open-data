@@ -35,7 +35,7 @@ function _formatShortDate(dateStr) {
 }
 
 export class SearchPanel {
-  constructor(controller, { showExplorerTab, loadEditorText, setActiveResultTab } = {}) {
+  constructor(controller, { showExplorerTab, loadEditorText, getEditorText, setActiveResultTab } = {}) {
     this.controller = controller;
     this.showExplorerTab = showExplorerTab || (() => {});
     // When set, every notice search drops the canned
@@ -45,6 +45,11 @@ export class SearchPanel {
     // with a notice-number facet, preserving the title, the procedure
     // timeline, and the History dropdown labels. No-op if not wired.
     this.loadEditorText = loadEditorText || (() => {});
+    // Reads the SPARQL editor's current text. Used by _reflectExecutedQuery
+    // to avoid clobbering the user's own edits when the ePO 3 fallback
+    // resolves seconds after the primary query was dropped in. Returns
+    // undefined when not wired, in which case the guard is skipped.
+    this.getEditorText = getEditorText || (() => undefined);
     // Toggles the SELECT lane vs graph lane result tabs
     // mutually exclusively. Notice search always lands on the graph
     // lane (it runs a CONSTRUCT under the hood), so we call
@@ -96,6 +101,49 @@ export class SearchPanel {
     this.controller.addEventListener('facet-changed', () => this._updateUI());
     this.controller.addEventListener('facets-list-changed', () => this._updateUI());
     this.controller.addEventListener('loading-changed', () => this._updateLoadingState());
+    // Once results settle, correct the editor if the controller had to fall
+    // back to the ePO 3 identifier-value query (issue #76). See
+    // _reflectExecutedQuery.
+    this.controller.addEventListener('results-changed', () => this._reflectExecutedQuery());
+  }
+
+  // The search / history / URL-load paths all drop the ePO 4 CONSTRUCT into
+  // the editor synchronously, before the query runs. That query returns
+  // nothing for ePO 3 (StandardForms) notices, which resolve only via the
+  // controller's identifier-value fallback — leaving the editor showing a
+  // query that does not match the triples on screen.
+  //
+  // Once results settle, reflect the query the controller ACTUALLY executed
+  // (controller.executedQuery). We only touch the editor when that differs
+  // from the primary ePO 4 query already shown, so every existing flow —
+  // ePO 4 searches, breadcrumb URI clicks, custom queries — is left exactly
+  // as it was, and only the ePO 3 fallback case is corrected.
+  _reflectExecutedQuery() {
+    const facet = this.controller.currentFacet;
+    if (facet?.type !== 'notice-number') return;
+    const executed = this.controller.executedQuery;
+    if (!executed) return;
+    let primary;
+    try {
+      primary = getQuery(facet);
+    } catch (err) {
+      console.warn('[SearchPanel] could not build primary query for reflection:', err);
+      return;
+    }
+    if (executed === primary) return;
+    // The ePO 3 fallback resolves seconds after the primary query was
+    // dropped into the editor. If the user has edited the editor in that
+    // window, the current text no longer matches the primary query we put
+    // there — leave their work alone rather than overwriting it with the
+    // fallback query. When getEditorText is not wired (undefined), we can't
+    // tell, so we fall through and correct as before.
+    const current = this.getEditorText();
+    if (typeof current === 'string' && current !== primary) return;
+    try {
+      this.loadEditorText(executed);
+    } catch (err) {
+      console.warn('[SearchPanel] editor reflection failed on results-changed:', err);
+    }
   }
 
   _search() {
