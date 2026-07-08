@@ -405,6 +405,10 @@ export class QueryEditor {
       this.resultsErrorMessage.textContent = '';
       this.resultsDiv.innerHTML = '';
 
+      // Hide execution time from previous run
+      const execTimeContainer = document.getElementById('query-execution-time');
+      if (execTimeContainer) execTimeContainer.style.display = 'none';
+
       try {
         const query = this.getQuery();
         // The editor always requests SPARQL Results JSON — QueryResults
@@ -450,6 +454,24 @@ export class QueryEditor {
         progressBar.style.width = '0%';
         progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
         queryTimer.textContent = `${elapsed}s`;
+
+        // Display the execution time in the results toolbar
+        const execTimeContainer = document.getElementById('query-execution-time');
+        const execTimeValue = document.getElementById('query-execution-time-value');
+        if (execTimeContainer && execTimeValue) {
+          const elapsedNum = parseFloat(elapsed);
+          let formattedTime;
+          if (elapsedNum >= 60) {
+            const minutes = Math.floor(elapsedNum / 60);
+            const seconds = Math.round(elapsedNum % 60);
+            formattedTime = `${minutes}m ${seconds}s`;
+          } else {
+            formattedTime = `${elapsed}s`;
+          }
+          execTimeValue.textContent = formattedTime;
+          execTimeContainer.style.display = 'inline';
+        }
+
         submitButtons.forEach(b => b.disabled = false);
         const hasLibrarySelection = document.querySelector('#query-accordion .list-group-item.active') !== null;
         document.querySelectorAll('#try-query-button, .query-try-btn, #customise-query-button, .query-customise-btn').forEach(b => b.disabled = !hasLibrarySelection);
