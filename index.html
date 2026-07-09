@@ -544,9 +544,37 @@
             </div>
 
             <!-- Results Section -->
+            <div id="results-view-toggle" class="d-none mb-2 mt-2 d-flex align-items-center gap-2 flex-wrap">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Switch between table and chart view">
+                    <input type="radio" class="btn-check" name="results-view" id="results-view-table" value="table" checked>
+                    <label class="btn btn-outline-secondary" for="results-view-table">
+                        <i class="bi bi-table"></i> Table
+                    </label>
+                    <input type="radio" class="btn-check" name="results-view" id="results-view-chart" value="chart">
+                    <label class="btn btn-outline-secondary" for="results-view-chart">
+                        <i class="bi bi-bar-chart"></i> Chart
+                    </label>
+                </div>
+                <div id="chart-settings" class="d-none d-flex align-items-center gap-2 ms-2 flex-wrap">
+                    <label for="chart-type-select" class="small text-muted mb-0">Type:</label>
+                    <select id="chart-type-select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="bar">Bar</option>
+                        <option value="line">Line</option>
+                        <option value="pie">Pie</option>
+                        <option value="scatter">Scatter</option>
+                    </select>
+                    <label for="chart-x-select" class="small text-muted mb-0 ms-2">X:</label>
+                    <select id="chart-x-select" class="form-select form-select-sm" style="width: auto;"></select>
+                    <label for="chart-y-select" class="small text-muted mb-0 ms-2">Y:</label>
+                    <select id="chart-y-select" class="form-select form-select-sm" style="width: auto;"></select>
+                    <label for="chart-group-select" class="small text-muted mb-0 ms-2">Group:</label>
+                    <select id="chart-group-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+            </div>
             <div id="results">
                 <p class="text-muted">Query results will appear here...</p>
             </div>
+            <div id="chart-container" class="d-none" style="width: 100%; height: 500px;"></div>
         </div> <!-- Close query-results div -->
 
         <!-- ═══ EXPLORE TAB ═══ -->
@@ -1006,6 +1034,9 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Apache ECharts — rich interactive charting for query results visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
 
     <!-- N3 (Turtle parser) — used by the ported explorer modules
          (sparqlService.js parses CONSTRUCT/DESCRIBE results into quads).
