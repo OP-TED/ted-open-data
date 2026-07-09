@@ -291,6 +291,7 @@ export class SearchPanel {
     const a = document.createElement('a');
     a.className = 'dropdown-item';
     if (isActive) a.classList.add('active');
+    if (facet.notFound) a.classList.add('text-muted');
     a.href = '#';
 
     const label = document.createElement('div');
@@ -301,6 +302,12 @@ export class SearchPanel {
       v.className = isActive ? 'text-white-50 ms-1' : 'text-muted ms-1';
       v.textContent = `v${facet.noticeVersion}`;
       label.appendChild(v);
+    }
+    if (facet.notFound) {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-secondary ms-2';
+      badge.textContent = 'not found';
+      label.appendChild(badge);
     }
     a.appendChild(label);
 

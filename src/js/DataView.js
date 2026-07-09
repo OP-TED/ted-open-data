@@ -376,11 +376,11 @@ export class DataView {
     // CONSTRUCT on a well-formed publication number is a strong "not
     // found" signal. Show a dedicated state instead of an empty tree
     // labelled "0 triples", which users can't distinguish from a real
-    // empty notice. Also ask the controller to evict the phantom entry
-    // from the History dropdown so typos don't pollute recent searches.
+    // empty notice. Mark the facet as not-found in history so the user
+    // can see which searches didn't return data.
     if (currentFacet?.type === 'notice-number' && results.size === 0) {
       this._showNotFound(currentFacet.value);
-      this.controller.removeFacetByValue?.(currentFacet.value);
+      this.controller.markFacetNotFound?.(currentFacet.value);
       return;
     }
 

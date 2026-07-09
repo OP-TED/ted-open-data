@@ -235,6 +235,20 @@ export class ExplorerController extends EventTarget {
     this.removeFacet(idx);
   }
 
+  // Mark a notice-number facet as "not found" in the persistent history.
+  // Used by DataView when a search resolves to zero triples so the entry
+  // stays in history (allowing re-search) but is visually distinguishable
+  // from notices that were found.
+  markFacetNotFound(publicationNumber) {
+    const entry = this.facetsList.find(
+      f => f.type === 'notice-number' && f.value === publicationNumber
+    );
+    if (!entry) return;
+    entry.notFound = true;
+    this._saveToSession();
+    this._emit('facets-list-changed');
+  }
+
   // ── URL sharing ──
 
   // Build a shareable URL for the current facet. Only the identity-defining
@@ -372,6 +386,12 @@ export class ExplorerController extends EventTarget {
     if (facet.type !== 'notice-number') return facet;
     const { facets, index } = addUnique(this.facetsList, facet);
     this.facetsList = facets;
+    // Clear the notFound flag when re-searching a publication number.
+    // If the notice has since been published, the fresh query will
+    // produce triples and the flag should not linger from a prior miss.
+    if (facets[index].notFound) {
+      delete facets[index].notFound;
+    }
     return facets[index];
   }
 
