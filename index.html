@@ -493,16 +493,17 @@
                  #copy-url-alert (the id is kept for JS back-compat,
                  the class has changed from `alert` to a custom bar). -->
             <div id="copy-url-alert" class="results-toolbar d-none">
-                <span id="alert-message" class="results-toolbar-hint tab-prompt"
-                      title="Here are the results of your query.">
-                    Here are the results of your query.
+                <div id="alert-message" class="results-toolbar-hint"
+                     title="Query results">
+                    <h5 class="mb-0 d-inline">Query results</h5>
                     <button type="button" class="tour-trigger" id="reuse-select-tour-trigger"
                             data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Take a quick tour of this tab"
                             aria-label="Take a quick tour of this tab">
                         <i class="bi bi-play-circle"></i>
                     </button>
-                </span>
+                    <p class="small text-muted mb-0" id="query-execution-time" style="display: none;">Execution time: <span id="query-execution-time-value"></span></p>
+                </div>
                 <div class="results-toolbar-actions">
                     <button type="button" id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
                     <div class="dropdown d-inline-block">
