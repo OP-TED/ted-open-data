@@ -12,6 +12,8 @@
  * the Licence.
  */
 
+import { classifyColumns, aggregateByX } from './utils/chartUtils.js';
+
 /**
  * ChartView — renders SPARQL SELECT results as interactive charts using Apache ECharts.
  *
@@ -75,15 +77,7 @@ export class ChartView {
     this.currentData = bindings;
 
     // Detect which columns are numeric (candidate Y axes)
-    const numericColumns = this.headers.filter(h =>
-      bindings.every(row => {
-        const val = row[h]?.value;
-        return val !== undefined && val !== '' && !isNaN(Number(val));
-      })
-    );
-
-    // Detect which columns are non-numeric (candidate X axes and group-by)
-    const labelColumns = this.headers.filter(h => !numericColumns.includes(h));
+    const { numericColumns, labelColumns } = classifyColumns(bindings);
 
     // Need at least one numeric and one label column to be chartable
     if (numericColumns.length === 0 || labelColumns.length === 0) {
@@ -181,15 +175,7 @@ export class ChartView {
 
   _buildSimpleOption(xColumn, yColumn, chartType) {
     // Aggregate Y values per unique X label
-    const aggregated = new Map();
-    this.currentData.forEach(row => {
-      const label = row[xColumn]?.value || '';
-      const value = Number(row[yColumn]?.value) || 0;
-      aggregated.set(label, (aggregated.get(label) || 0) + value);
-    });
-
-    const labels = [...aggregated.keys()];
-    const values = [...aggregated.values()];
+    const { labels, values } = aggregateByX(this.currentData, xColumn, yColumn);
 
     if (chartType === 'pie') {
       return {
