@@ -109,6 +109,8 @@ export class ChartView {
     this.chartContainer.classList.add('d-none');
     this.chartSettings.classList.add('d-none');
     this.viewToggle.classList.add('d-none');
+    // Ensure the results table is visible again when the chart is destroyed
+    this.resultsDiv.classList.remove('d-none');
     this.currentData = null;
   }
 
