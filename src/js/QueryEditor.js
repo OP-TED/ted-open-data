@@ -28,6 +28,7 @@ import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 import {copyToClipboard} from './utils/clipboardCopy.js';
+import {formatElapsedTime} from './utils/formatTime.js';
 
 /**
  * Class representing the Query Editor.
@@ -459,16 +460,7 @@ export class QueryEditor {
         const execTimeContainer = document.getElementById('query-execution-time');
         const execTimeValue = document.getElementById('query-execution-time-value');
         if (execTimeContainer && execTimeValue) {
-          const elapsedNum = parseFloat(elapsed);
-          let formattedTime;
-          if (elapsedNum >= 60) {
-            const minutes = Math.floor(elapsedNum / 60);
-            const seconds = Math.round(elapsedNum % 60);
-            formattedTime = `${minutes}m ${seconds}s`;
-          } else {
-            formattedTime = `${elapsed}s`;
-          }
-          execTimeValue.textContent = formattedTime;
+          execTimeValue.textContent = formatElapsedTime(elapsed);
           execTimeContainer.style.display = 'inline';
         }
 
