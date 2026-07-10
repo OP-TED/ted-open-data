@@ -23,8 +23,13 @@
 export function formatElapsedTime(seconds) {
   const num = parseFloat(seconds);
   if (num >= 60) {
-    const minutes = Math.floor(num / 60);
-    const secs = Math.round(num % 60);
+    // Round to whole seconds FIRST, then split into minutes/seconds.
+    // Flooring the minutes while independently rounding the remainder can
+    // round it up to 60 and render an impossible "1m 60s" (e.g. 119.7 →
+    // floor→1m, round(59.7)→60s). Rounding the total avoids the rollover.
+    const total = Math.round(num);
+    const minutes = Math.floor(total / 60);
+    const secs = total % 60;
     return `${minutes}m ${secs}s`;
   }
   return `${seconds}s`;

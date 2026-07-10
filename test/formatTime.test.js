@@ -42,3 +42,15 @@ test('handles numeric input as well as string input', () => {
   assert.equal(formatElapsedTime(45.3), '45.3s');
   assert.equal(formatElapsedTime(90), '1m 30s');
 });
+
+test('rolls a rounded-up remainder into the next minute instead of "Xm 60s"', () => {
+  // A remainder that rounds up to 60 must carry into the minutes.
+  assert.equal(formatElapsedTime('119.5'), '2m 0s');
+  assert.equal(formatElapsedTime('119.7'), '2m 0s');
+  assert.equal(formatElapsedTime('3599.6'), '60m 0s');
+});
+
+test('rounds sub-second overflow just above a minute to the whole second', () => {
+  assert.equal(formatElapsedTime('60.4'), '1m 0s');
+  assert.equal(formatElapsedTime('60.6'), '1m 1s');
+});
