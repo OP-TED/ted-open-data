@@ -461,7 +461,7 @@ export class QueryEditor {
         const execTimeValue = document.getElementById('query-execution-time-value');
         if (execTimeContainer && execTimeValue) {
           execTimeValue.textContent = formatElapsedTime(elapsed);
-          execTimeContainer.style.display = 'inline';
+          execTimeContainer.style.display = 'block';
         }
 
         submitButtons.forEach(b => b.disabled = false);
