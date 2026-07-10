@@ -406,6 +406,39 @@ test('removeFacetByValue persists the removal to sessionStorage', () => {
   );
 });
 
+// ── markFacetNotFound (not-found history tracking) ───────────────
+
+test('markFacetNotFound sets notFound flag on the matching facet', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  assert.equal(controller.facetsList[0].notFound, undefined);
+
+  controller.markFacetNotFound('00172531-2026');
+  assert.equal(controller.facetsList[0].notFound, true);
+  assert.equal(controller.facetsList.length, 1, 'facet should remain in history, not be removed');
+});
+
+test('markFacetNotFound persists the flag to sessionStorage', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  controller.markFacetNotFound('00172531-2026');
+
+  const stored = JSON.parse(globalThis.sessionStorage.getItem('explorer-facets-v3'));
+  assert.equal(stored[0].notFound, true, 'notFound flag should be persisted');
+});
+
+test('re-searching a not-found notice clears the notFound flag', async () => {
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  controller.markFacetNotFound('00172531-2026');
+  assert.equal(controller.facetsList[0].notFound, true);
+
+  // Re-search the same notice — _addToHistory should clear the flag
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  assert.equal(controller.facetsList[0].notFound, undefined,
+    'notFound flag should be cleared on re-search');
+});
+
 // ── Identity preservation (M1 + M6) ──────────────────────────────
 
 test('identity: breadcrumb[0] is the same reference as facetsList[0] after search', async () => {
