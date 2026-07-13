@@ -362,9 +362,9 @@ export class QueryEditor {
           // need a try/catch here. If that contract ever changes
           // the unhandled rejection will surface the regression
           // immediately rather than being silently logged.
-          // Read the Options panel so CONSTRUCT/DESCRIBE queries
-          // honour timeout / strict / debug / report /
-          // default-graph-uri the same way SELECT queries do.
+          // Read the fixed endpoint options so CONSTRUCT/DESCRIBE queries
+          // send timeout / strict / debug / report / default-graph-uri
+          // the same way SELECT queries do.
           const sparqlOptions = readSparqlOptions();
           await this.explorerController.search(
             { type: 'query', query: queryText },

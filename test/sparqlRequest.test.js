@@ -11,52 +11,46 @@
  * or implied. See the Licence for the specific language governing permissions and limitations under
  * the Licence.
  */
-// buildSparqlBody / buildSparqlUrl read the SPARQL options panel from
-// the DOM and produce the POST body / GET URL that every lane of the
-// app uses to talk to the endpoint. They absorb the three sites that
-// previously hand-built the same option block with drift between
-// them (the Copy URL path used to always include an empty
-// default-graph-uri and substitute `30000` for a blank timeout; the
-// editor submit path omits both when blank). These tests pin the
-// expected contract so a future refactor cannot silently regress the
-// "Copy URL exactly reproduces what Run Query just ran" guarantee.
+// buildSparqlBody / buildSparqlUrl produce the POST body / GET URL that
+// every lane of the app uses to talk to the endpoint. Since the Options UI
+// was removed (issue #32), readSparqlOptions returns a FIXED option block
+// instead of reading the DOM: strict on, debug/report off, timeout and
+// default-graph-uri blank (and therefore omitted). These tests pin that
+// contract and the "Copy URL exactly reproduces what Run Query ran"
+// guarantee.
 
-import { test, beforeEach } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resetShims } from './_helpers.js';
-import { buildSparqlBody, buildSparqlUrl, hydrateSparqlOptions } from '../src/js/sparqlRequest.js';
+import { readSparqlOptions, buildSparqlBody, buildSparqlUrl } from '../src/js/sparqlRequest.js';
 
-// Stage a minimal option block in the shared DOM shim. Individual
-// tests override only the fields they need to assert on.
-function setOptions({
-  defaultGraphUri = '',
-  timeout = '',
-  strict = false,
-  debug = false,
-  report = false,
-} = {}) {
-  document.getElementById('default-graph-uri').value = defaultGraphUri;
-  document.getElementById('timeout').value = timeout;
-  document.getElementById('strict').checked = strict;
-  document.getElementById('debug').checked = debug;
-  document.getElementById('report').checked = report;
-}
+const QUERY = 'SELECT * WHERE { ?s ?p ?o }';
 
-beforeEach(() => {
-  resetShims();
-  // Re-stage fresh option elements in the cleared shim.
-  setOptions();
+// ── readSparqlOptions returns the fixed option block ──────────────
+
+test('readSparqlOptions returns the fixed endpoint options (no DOM dependency)', () => {
+  assert.deepEqual(readSparqlOptions(), {
+    defaultGraphUri: '',
+    timeout: '',
+    strict: 'true',
+    debug: 'false',
+    report: 'false',
+  });
+});
+
+test('readSparqlOptions returns a fresh object each call (no shared mutable constant)', () => {
+  const first = readSparqlOptions();
+  first.strict = 'mutated';
+  assert.equal(readSparqlOptions().strict, 'true');
 });
 
 // ── buildSparqlBody — format handling ─────────────────────────────
 
 test('buildSparqlBody defaults to sparql-results+json when no format given', () => {
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.match(body, /format=application%2Fsparql-results%2Bjson/);
+  assert.match(buildSparqlBody(QUERY), /format=application%2Fsparql-results%2Bjson/);
 });
 
 test('buildSparqlBody honours an explicit format argument', () => {
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }', 'text/csv');
+  const body = buildSparqlBody(QUERY, 'text/csv');
   assert.match(body, /format=text%2Fcsv/);
   assert.doesNotMatch(body, /format=application%2Fsparql-results/);
 });
@@ -64,161 +58,37 @@ test('buildSparqlBody honours an explicit format argument', () => {
 // ── buildSparqlBody — query encoding ──────────────────────────────
 
 test('buildSparqlBody percent-encodes the query string', () => {
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  // Spaces, braces and `?` all need encoding; `*` is safe under
-  // RFC3986 and encodeURIComponent leaves it alone, which is fine —
-  // Virtuoso accepts it either way.
-  assert.match(body, /query=SELECT%20\*%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D/);
+  // Spaces, braces and `?` all need encoding; `*` is safe under RFC3986 and
+  // encodeURIComponent leaves it alone, which Virtuoso accepts.
+  assert.match(buildSparqlBody(QUERY),
+    /query=SELECT%20\*%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D/);
 });
 
-// ── Conditional omission of default-graph-uri ─────────────────────
+// ── Fixed option block ────────────────────────────────────────────
 
-test('buildSparqlBody omits default-graph-uri when the input is blank', () => {
-  setOptions({ defaultGraphUri: '' });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
+test('buildSparqlBody always emits strict=true, debug=false, report=false', () => {
+  const body = buildSparqlBody(QUERY);
+  assert.match(body, /strict=true/);
+  assert.match(body, /debug=false/);
+  assert.match(body, /report=false/);
+});
+
+test('buildSparqlBody omits timeout and default-graph-uri (endpoint uses its own defaults)', () => {
+  const body = buildSparqlBody(QUERY);
+  assert.doesNotMatch(body, /timeout=/);
   assert.doesNotMatch(body, /default-graph-uri=/);
 });
 
-test('buildSparqlBody includes default-graph-uri when the input is set', () => {
-  setOptions({ defaultGraphUri: 'http://example.org/g' });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.match(body, /default-graph-uri=http%3A%2F%2Fexample\.org%2Fg/);
-});
-
-// ── Conditional omission of timeout ───────────────────────────────
-
-test('buildSparqlBody omits timeout when the input is blank', () => {
-  setOptions({ timeout: '' });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.doesNotMatch(body, /timeout=/);
-});
-
-test('buildSparqlBody includes timeout when the input is set', () => {
-  setOptions({ timeout: '5000' });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.match(body, /timeout=5000/);
-});
-
-test('buildSparqlBody does NOT substitute a default value for blank timeout', () => {
-  // Regression for S23: generateUrl used to emit `timeout=30000` when
-  // the input was blank, diverging from what onSubmit actually ran.
-  setOptions({ timeout: '' });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.doesNotMatch(body, /timeout=30000/);
-});
-
-// ── strict / debug / report always present as booleans ────────────
-
-test('buildSparqlBody always emits strict/debug/report as true/false', () => {
-  setOptions({ strict: true, debug: false, report: true });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.match(body, /strict=true/);
-  assert.match(body, /debug=false/);
-  assert.match(body, /report=true/);
-});
-
-test('buildSparqlBody emits strict=false when the checkbox is unchecked', () => {
-  setOptions({ strict: false });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  assert.match(body, /strict=false/);
-});
-
-// ── buildSparqlUrl prefixes the endpoint ──────────────────────────
+// ── buildSparqlUrl ────────────────────────────────────────────────
 
 test('buildSparqlUrl prefixes the endpoint with a ? separator', () => {
-  const url = buildSparqlUrl('https://example.com/sparql', 'SELECT * WHERE { ?s ?p ?o }');
+  const url = buildSparqlUrl('https://example.com/sparql', QUERY);
   assert.ok(url.startsWith('https://example.com/sparql?'));
 });
 
-test('buildSparqlUrl applies the same omission rules as buildSparqlBody', () => {
-  // Blank defaultGraphUri / timeout must NOT appear in the URL either
-  // — this is the regression test for "Copy URL diverges from what
-  // Run Query just ran".
-  setOptions({ defaultGraphUri: '', timeout: '' });
-  const url = buildSparqlUrl('https://example.com/sparql', 'SELECT * WHERE { ?s ?p ?o }');
-  assert.doesNotMatch(url, /default-graph-uri=/);
-  assert.doesNotMatch(url, /timeout=/);
-});
-
-test('buildSparqlUrl and buildSparqlBody produce the same parameter block for the same inputs', () => {
-  // Same inputs must produce the same body — the only difference is
-  // the URL wrapper prefix.
-  setOptions({ defaultGraphUri: 'http://example.org/g', timeout: '5000', strict: true });
-  const body = buildSparqlBody('SELECT * WHERE { ?s ?p ?o }');
-  const url = buildSparqlUrl('https://example.com/sparql', 'SELECT * WHERE { ?s ?p ?o }');
+test('buildSparqlUrl produces the same parameter block as buildSparqlBody', () => {
+  // "Copy endpoint URL" must exactly reproduce what Run Query just ran.
+  const body = buildSparqlBody(QUERY);
+  const url = buildSparqlUrl('https://example.com/sparql', QUERY);
   assert.equal(url, `https://example.com/sparql?${body}`);
-});
-
-// ── hydrateSparqlOptions ──────────────────────────────────────────
-
-test('hydrateSparqlOptions writes all five fields into the DOM', () => {
-  // Pre-populate the form with non-default values to simulate a
-  // recipient who has already been using the Customize tab.
-  setOptions({
-    defaultGraphUri: 'http://stale.example.org/g',
-    timeout: '99999',
-    strict: true,
-    debug: true,
-    report: true,
-  });
-
-  // Hydrate with the sender's options — including blank text fields
-  // and false booleans.
-  hydrateSparqlOptions({
-    defaultGraphUri: 'http://example.org/g',
-    timeout: '5000',
-    strict: 'true',
-    debug: 'false',
-    report: 'false',
-  });
-
-  assert.equal(document.getElementById('default-graph-uri').value, 'http://example.org/g');
-  assert.equal(document.getElementById('timeout').value, '5000');
-  assert.equal(document.getElementById('strict').checked, true);
-  assert.equal(document.getElementById('debug').checked, false);
-  assert.equal(document.getElementById('report').checked, false);
-});
-
-test('hydrateSparqlOptions clears stale form values when opts keys are absent', () => {
-  // Recipient has a pre-existing timeout and default-graph-uri.
-  setOptions({
-    defaultGraphUri: 'http://stale.example.org/g',
-    timeout: '99999',
-    strict: true,
-    debug: true,
-    report: true,
-  });
-
-  // The sender left those fields blank, so the URL serialiser
-  // stripped them. The opts object arriving from JSON.parse has
-  // no `defaultGraphUri` and no `timeout` key at all.
-  hydrateSparqlOptions({
-    strict: 'false',
-    debug: 'false',
-    report: 'false',
-  });
-
-  // Both text fields must be cleared to match the sender's intent.
-  assert.equal(document.getElementById('default-graph-uri').value, '',
-    'stale default-graph-uri must be cleared when opts omits it');
-  assert.equal(document.getElementById('timeout').value, '',
-    'stale timeout must be cleared when opts omits it');
-  // Booleans must reflect the explicit false.
-  assert.equal(document.getElementById('strict').checked, false);
-  assert.equal(document.getElementById('debug').checked, false);
-  assert.equal(document.getElementById('report').checked, false);
-});
-
-test('hydrateSparqlOptions tolerates an empty opts object gracefully', () => {
-  setOptions({ timeout: '10000', strict: true });
-
-  // An empty opts means "the sender used all defaults". Every form
-  // field must reset to its default (blank / unchecked).
-  hydrateSparqlOptions({});
-
-  assert.equal(document.getElementById('default-graph-uri').value, '');
-  assert.equal(document.getElementById('timeout').value, '');
-  assert.equal(document.getElementById('strict').checked, false);
-  assert.equal(document.getElementById('debug').checked, false);
-  assert.equal(document.getElementById('report').checked, false);
 });

@@ -200,13 +200,11 @@ export class DataView {
           showToast('Download failed', 'Could not build a download query for the current view.', { variant: 'danger' });
           return;
         }
-        // Build the POST body from the controller's stored options
-        // rather than from the live DOM form inputs. When a shared
-        // URL loads with `?opts=...`, those options go into the
-        // controller's `_sparqlOptions` but the Options panel form
-        // is NOT repopulated. Reading from the DOM would produce a
-        // download that diverges from what produced the current
-        // graph.
+        // Build the POST body from the controller's stored options.
+        // When a shared URL loads with `?opts=...`, those options go
+        // into the controller's `_sparqlOptions`; there is no options
+        // form to read (the Options UI was removed, issue #32), so this
+        // matches exactly what produced the current graph.
         const opts = this.controller._sparqlOptions || {};
         const params = new URLSearchParams({ query, format });
         if (opts.defaultGraphUri) params.set('default-graph-uri', opts.defaultGraphUri);
@@ -244,7 +242,7 @@ export class DataView {
     } catch (error) {
       console.error('Download failed:', error);
       if (error?.name === 'AbortError') {
-        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+        showToast('Download timed out', 'The download took too long. Try narrowing your query with a LIMIT or more specific filters.', { variant: 'danger' });
       } else {
         const { friendly } = classifyError(error, 'graph');
         showToast('Download failed', friendly, { variant: 'danger' });

@@ -231,8 +231,9 @@ export class QueryResults {
     const body = buildSparqlBody(minifiedQuery, format);
 
     try {
-      const sparqlTimeout = Number(document.getElementById('timeout')?.value) || 60_000;
-      const downloadTimeout = Math.max(sparqlTimeout, 10_000);
+      // Client-side abort ceiling for the download fetch. The user-facing
+      // server timeout option was removed (issue #32), so use a fixed 60s.
+      const downloadTimeout = 60_000;
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), downloadTimeout);
       const response = await fetch(this.queryEditor.sparqlEndpoint, {
@@ -258,7 +259,7 @@ export class QueryResults {
     } catch (error) {
       console.error('Download failed:', error);
       if (error?.name === 'AbortError') {
-        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+        showToast('Download timed out', 'The download took too long. Try narrowing your query with a LIMIT or more specific filters.', { variant: 'danger' });
       } else {
         const { friendly } = classifyError(error, 'select');
         showToast('Download failed', friendly, { variant: 'danger' });
