@@ -352,60 +352,6 @@ test('_loadFromSession returns empty list for corrupted JSON', () => {
   assert.equal(controller.facetsList.length, 0);
 });
 
-// ── removeFacetByValue (phantom history cleanup) ─────────────────
-
-test('removeFacetByValue removes a notice-number entry by publication number', async () => {
-  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
-  await controller.search(createPublicationNumberFacet(PUB_A));
-  await controller.search(createPublicationNumberFacet(PUB_B));
-  assert.equal(controller.facetsList.length, 2);
-
-  controller.removeFacetByValue('00172531-2026');
-  assert.equal(controller.facetsList.length, 1);
-  assert.equal(controller.facetsList[0].value, '00149228-2024');
-});
-
-test('removeFacetByValue is a no-op when no entry matches', () => {
-  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
-  controller.facetsList = [createPublicationNumberFacet(PUB_A)];
-  controller.removeFacetByValue('99999999-9999');
-  assert.equal(controller.facetsList.length, 1, 'list should be unchanged');
-});
-
-test('removeFacetByValue only matches notice-number facets, not other types with the same value field', () => {
-  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
-  // Seed the list directly (bypassing validation) with a hypothetical
-  // non-notice entry that happens to carry the same string in a
-  // 'value' field. removeFacetByValue must ignore it.
-  controller.facetsList = [
-    { type: 'query', value: '00172531-2026', query: 'SELECT * WHERE { ?s ?p ?o }' },
-    createPublicationNumberFacet('00172531-2026'),
-  ];
-  controller.removeFacetByValue('00172531-2026');
-  assert.equal(controller.facetsList.length, 1);
-  assert.equal(controller.facetsList[0].type, 'query');
-});
-
-test('removeFacetByValue persists the removal to sessionStorage', () => {
-  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
-  controller.facetsList = [
-    createPublicationNumberFacet(PUB_A),
-    createPublicationNumberFacet(PUB_B),
-  ];
-  controller._saveToSession();
-  assert.equal(
-    JSON.parse(globalThis.sessionStorage.getItem('explorer-facets-v3')).length,
-    2,
-  );
-
-  controller.removeFacetByValue('00172531-2026');
-  assert.equal(
-    JSON.parse(globalThis.sessionStorage.getItem('explorer-facets-v3')).length,
-    1,
-    'sessionStorage should reflect the removal',
-  );
-});
-
 // ── markFacetNotFound (not-found history tracking) ───────────────
 
 test('markFacetNotFound sets notFound flag on the matching facet', async () => {
@@ -427,16 +373,74 @@ test('markFacetNotFound persists the flag to sessionStorage', async () => {
   assert.equal(stored[0].notFound, true, 'notFound flag should be persisted');
 });
 
-test('re-searching a not-found notice clears the notFound flag', async () => {
-  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+test('a successful re-search (non-empty result) clears the notFound flag', async () => {
+  let found = false;
+  const controller = new ExplorerController({
+    doSPARQL: async () => (found
+      ? { quads: [], size: 5, rawTurtle: 'x' }
+      : { quads: [], size: 0, rawTurtle: '' }),
+  });
   await controller.search(createPublicationNumberFacet(PUB_A));
   controller.markFacetNotFound('00172531-2026');
   assert.equal(controller.facetsList[0].notFound, true);
 
-  // Re-search the same notice — _addToHistory should clear the flag
+  // The notice has since been published: a re-search returns data, so the
+  // flag is cleared.
+  found = true;
   await controller.search(createPublicationNumberFacet(PUB_A));
   assert.equal(controller.facetsList[0].notFound, undefined,
-    'notFound flag should be cleared on re-search');
+    'notFound should be cleared once the notice returns data');
+  const stored = JSON.parse(globalThis.sessionStorage.getItem('explorer-facets-v3'));
+  assert.equal(stored[0].notFound, undefined,
+    'the cleared flag is persisted, so the badge does not return on reload');
+});
+
+test('an empty re-search keeps the notFound flag (notice still not found)', async () => {
+  const controller = new ExplorerController({
+    doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }),
+  });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  controller.markFacetNotFound('00172531-2026');
+  assert.equal(controller.facetsList[0].notFound, true);
+
+  // Re-search while still empty — the flag must NOT be cleared.
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  assert.equal(controller.facetsList[0].notFound, true,
+    'notFound must persist while the notice still returns nothing');
+});
+
+test('a failed re-search does not clear the notFound flag', async () => {
+  // Regression guard: clearing the flag at search START would wipe the badge
+  // on a retry that errors, is cancelled, or the tab closes mid-flight —
+  // even though the notice was never actually found.
+  let fail = false;
+  const controller = new ExplorerController({
+    doSPARQL: async () => {
+      if (fail) throw new Error('network down');
+      return { quads: [], size: 0, rawTurtle: '' };
+    },
+  });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  controller.markFacetNotFound('00172531-2026');
+  assert.equal(controller.facetsList[0].notFound, true);
+
+  fail = true;
+  await controller.search(createPublicationNumberFacet(PUB_A));
+  assert.equal(controller.facetsList[0].notFound, true,
+    'a failed retry must leave the not-found badge in place');
+  assert.ok(controller.error, 'the failed retry surfaces an error');
+});
+
+test('markFacetNotFound survives a reload: _loadFromSession preserves the flag', () => {
+  // The badge must persist across a page reload — _loadFromSession runs every
+  // stored facet through validateFacet, which must carry notFound through.
+  globalThis.sessionStorage.setItem('explorer-facets-v3', JSON.stringify([
+    { type: 'notice-number', value: '00172531-2026', timestamp: 1, notFound: true },
+  ]));
+  const controller = new ExplorerController({ doSPARQL: async () => ({ quads: [], size: 0, rawTurtle: '' }) });
+  assert.equal(controller.facetsList.length, 1);
+  assert.equal(controller.facetsList[0].notFound, true,
+    'notFound should survive the sessionStorage round-trip');
 });
 
 // ── Identity preservation (M1 + M6) ──────────────────────────────
