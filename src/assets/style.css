@@ -653,14 +653,6 @@ main {
     margin-bottom: 0;
 }
 
-#options-collapse {
-    margin-top: 10px;
-}
-
-#options-collapse .form-check {
-    flex: 1 1 auto;
-}
-
 #query-form .mb-3.flex-grow-1 {
     flex: 1;
     min-height: 0;
