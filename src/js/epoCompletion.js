@@ -17,6 +17,8 @@
  * Loads terms from a local JSON file and provides context-aware completions.
  */
 
+import { buildCurrencySnippet } from './utils/currencySnippet.js';
+
 let epoData = null;
 let loadingPromise = null;
 let exchangeRatesData = null;
@@ -158,33 +160,12 @@ export function epoCompletionSource(context) {
     });
   }
 
-  // Snippet: insert currency conversion VALUES block and BIND
+  // Snippet: insert currency conversion OPTIONAL VALUES block and BIND
   if ('currencyconversion'.startsWith(lowerText) && lowerText.length > 0 && exchangeRatesData) {
-    const ratesEntries = Object.entries(exchangeRatesData.rates)
-      .map(([currency, rate]) => `    ("${currency}" ${rate})`)
-      .join('\n');
-    const currencySnippet =
-`# Sample exchange rate lookup table (rates to EUR) as of June 2026.
-# This option is provided to showcase how currencies can be converted to EUR within SPARQL.
-# Use it only for approximate value calculations.
-# Check if any of the currencies are missing in the lookup table and add it to ensure default to EUR.
-# Below query can be used to check all the available currencies:
-# PREFIX epo: <http://data.europa.eu/a4g/ontology#>
-# SELECT DISTINCT ?currency WHERE {
-#   GRAPH ?g {
-#     ?notice a epo:ResultNotice ;
-#       epo:announcesNoticeAwardInformation / epo:hasTotalAwardedValue / epo:hasCurrency ?currencyURI .
-#   }
-#   ?currencyURI dc:identifier ?currency .
-# } ORDER BY ?currency
-  VALUES (?currency ?rate) {
-${ratesEntries}
-  }
-  BIND(?OriginalAmountValue * COALESCE(?rate, 1.0) AS ?AmountValueInEUR)`;
     options.push({
       label: 'currencyconversion (insert exchange rates to EUR)',
       type: 'text',
-      apply: currencySnippet,
+      apply: buildCurrencySnippet(exchangeRatesData),
       boost: 3
     });
   }

@@ -1,5 +1,5 @@
 {
-  "description": "Approximate exchange rates to EUR as of June 2026. Used by the currencyconversion autocomplete snippet in the SPARQL editor.",
+  "description": "Approximate exchange rates to EUR as of June 2026. Used by the currencyconversion autocomplete snippet in the SPARQL editor. To refresh: take a reference source such as the ECB euro reference rates (https://www.ecb.europa.eu/stats/eurofxref/) and store the inverse (currency->EUR, i.e. 1/rate); pegged/exotic currencies not covered by the ECB may need another source. Keep the keys in sync with the currencies returned by the sample query in the snippet.",
   "rates": {
     "EUR": 1.0,
     "AED": 0.251,
