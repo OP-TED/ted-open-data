@@ -17,6 +17,7 @@ import { triggerBlobDownload } from './utils/download.js';
 import { classifyError } from './utils/errorMessages.js';
 import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
 import { showToast } from './utils/toast.js';
+import { ChartView } from './ChartView.js';
 
 /**
  * Class representing the Query Results.
@@ -35,6 +36,7 @@ export class QueryResults {
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
+    this.chartView = new ChartView();
 
     this.initEventListeners();
   }
@@ -112,6 +114,7 @@ export class QueryResults {
       td.textContent = String(data.boolean);
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.destroy();
       return;
     }
 
@@ -140,9 +143,11 @@ export class QueryResults {
 
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.setData(data);
     } else {
       this.resultsDiv.textContent = "No results found.";
       this.setToolbarVisible(false);
+      this.chartView.destroy();
     }
   }
 
@@ -171,6 +176,7 @@ export class QueryResults {
 
     this.resultsDiv.appendChild(pre);
     this.setToolbarVisible(true);
+    this.chartView.destroy();
   }
 
   /**
@@ -231,8 +237,9 @@ export class QueryResults {
     const body = buildSparqlBody(minifiedQuery, format);
 
     try {
-      const sparqlTimeout = Number(document.getElementById('timeout')?.value) || 60_000;
-      const downloadTimeout = Math.max(sparqlTimeout, 10_000);
+      // Client-side abort ceiling for the download fetch. The user-facing
+      // server timeout option was removed (issue #32), so use a fixed 60s.
+      const downloadTimeout = 60_000;
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), downloadTimeout);
       const response = await fetch(this.queryEditor.sparqlEndpoint, {
@@ -258,7 +265,7 @@ export class QueryResults {
     } catch (error) {
       console.error('Download failed:', error);
       if (error?.name === 'AbortError') {
-        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+        showToast('Download timed out', 'The download took too long. Try narrowing your query with a LIMIT or more specific filters.', { variant: 'danger' });
       } else {
         const { friendly } = classifyError(error, 'select');
         showToast('Download failed', friendly, { variant: 'danger' });

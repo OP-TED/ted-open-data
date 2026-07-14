@@ -3,7 +3,7 @@
 A web-based tool for exploring TED Open Data — the public procurement data published by the Publications Office of the EU as Linked Open Data. The app combines two complementary workflows over the same RDF backend:
 
 - **Look up an individual notice** by its publication number and inspect its full RDF graph as a navigable tree, raw Turtle, or backlinks view. Procedure timeline, breadcrumb navigation, drill-into-resource, and shareable URLs included.
-- **Write SPARQL queries** against the entire dataset using a CodeMirror 6 editor with ePO-aware autocomplete and syntax linting. SELECT and ASK results render as a table; CONSTRUCT and DESCRIBE results render as the same RDF graph view used by notice lookup.
+- **Write SPARQL queries** against the entire dataset using a CodeMirror 6 editor with ePO-aware autocomplete and syntax linting. SELECT and ASK results render as a table or an interactive chart (bar, line, pie, scatter); CONSTRUCT and DESCRIBE results render as the same RDF graph view used by notice lookup.
 
 The two workflows share a single **Reuse** tab that auto-picks the right rendering based on the query type (tabular for SELECT/ASK, graph for CONSTRUCT/DESCRIBE).
 
@@ -13,6 +13,7 @@ The two workflows share a single **Reuse** tab that auto-picks the right renderi
 - **Procedure timeline**: see all sibling notices in the same procurement procedure with one click
 - **SPARQL editor** with ePO autocomplete, syntax linting, and a curated query library
 - **Auto-routing by query type**: SELECT/ASK → tabular results, CONSTRUCT/DESCRIBE → tree/turtle/backlinks
+- **Chart SELECT results** as bar, line, pie, or scatter charts with selectable X/Y axes and grouping
 - **Shareable URLs** for any notice or sub-resource view (`?facet=…`)
 - **Multiple result formats** for SELECT (JSON, HTML, XML, CSV, TSV, Spreadsheet) and graph downloads (Turtle, RDF/XML, N-Triples)
 - **Reusable query URLs** for embedding into Excel, Power BI, etc.
@@ -132,6 +133,11 @@ This project uses the following third-party components:
   - Purpose: Icon library
   - License: MIT
   - Website: https://icons.getbootstrap.com/
+
+- **Apache ECharts** (v5.6.0)
+  - Purpose: Interactive charts for SELECT query results (Reuse tab → Chart view)
+  - License: Apache-2.0
+  - Website: https://echarts.apache.org/
 
 - **CodeMirror** (v6)
   - Purpose: Code editor

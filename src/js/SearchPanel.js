@@ -22,7 +22,6 @@
 
 import { createPublicationNumberFacet, getLabel, getQuery } from './facets.js';
 import { getRandomPublicationNumber } from './services/randomNotice.js';
-import { hydrateSparqlOptions } from './sparqlRequest.js';
 
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -294,20 +293,26 @@ export class SearchPanel {
     a.href = '#';
 
     const label = document.createElement('div');
-    label.className = 'fw-semibold';
+    label.className = 'fw-semibold d-flex align-items-center';
     label.textContent = getLabel(facet);
     if (facet.noticeVersion > 1) {
       const v = document.createElement('small');
-      v.className = isActive ? 'text-white-50 ms-1' : 'text-muted ms-1';
+      v.className = 'text-muted ms-1';
       v.textContent = `v${facet.noticeVersion}`;
       label.appendChild(v);
+    }
+    if (facet.notFound) {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-not-found ms-2';
+      badge.textContent = 'not found';
+      label.appendChild(badge);
     }
     a.appendChild(label);
 
     const metaText = this._buildHistoryItemMetaText(facet);
     if (metaText) {
       const meta = document.createElement('small');
-      meta.className = isActive ? 'text-white-50' : 'text-muted';
+      meta.className = 'text-muted';
       meta.textContent = metaText;
       a.appendChild(meta);
     }
@@ -424,17 +429,6 @@ export class SearchPanel {
         // reflection, but log so a regression is visible.
         console.warn('[SearchPanel] editor reflection failed on URL load:', err);
       }
-      // If the shared URL carried SPARQL options (?opts=), hydrate
-      // the Customize tab's Options panel form so a subsequent
-      // "Run Query" from the editor reads the sender's settings
-      // instead of the recipient's local defaults. Without this,
-      // the first execution (from initFromUrlParams) is correct
-      // because the controller applies _sparqlOptions directly,
-      // but a manual re-run reads the DOM form via buildSparqlBody.
-      if (this.controller._sparqlOptions) {
-        hydrateSparqlOptions(this.controller._sparqlOptions);
-      }
-
       // URL loading is always a graph lane gesture.
       this.setActiveResultTab('graph');
       // Fresh navigation from a shared link carries explicit intent:
