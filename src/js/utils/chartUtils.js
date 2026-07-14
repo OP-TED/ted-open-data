@@ -12,6 +12,36 @@
  * the Licence.
  */
 
+import { shortLabel } from './namespaces.js';
+
+/**
+ * Short, human-readable label for a chart axis / legend value.
+ *
+ * URIs collapse to their local name so a URI-valued column doesn't render
+ * every axis tick as an identical shared prefix (e.g. every legal-basis URI
+ * as "http://publ…"). The full value stays available in tooltips.
+ *
+ *  - ePO-resource / known-namespace URIs use the app's shortLabel
+ *    ("Lot LOT-0001", "epo:Notice").
+ *  - Any other http(s) URI → the segment after the last "/" or "#".
+ *  - Non-URI values (codes, dates, plain strings) are returned unchanged.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export function chartLabel(value) {
+  if (value == null) return '';
+  const s = String(value);
+  const short = shortLabel(s);
+  if (short !== s) return short;
+  if (/^https?:\/\//i.test(s)) {
+    const trimmed = s.replace(/[/#]+$/, '');
+    const idx = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('#'));
+    if (idx >= 0 && idx < trimmed.length - 1) return trimmed.slice(idx + 1);
+  }
+  return s;
+}
+
 /**
  * Classify SPARQL result columns as numeric or non-numeric (label).
  * A column is numeric if every row has a non-empty value that parses as a number.
@@ -35,14 +65,17 @@ export function classifyColumns(bindings) {
 
 /**
  * Determine if SPARQL result bindings are chartable.
- * Requires at least one numeric column and one non-numeric column.
+ * Requires at least one numeric column (a Y axis) and at least two columns
+ * total (so a distinct X axis exists). An all-numeric result is chartable —
+ * e.g. `?year ?count` plots count-by-year with a numeric column as the X axis.
  *
  * @param {Array} bindings - The SPARQL results bindings array.
  * @returns {boolean}
  */
 export function isChartable(bindings) {
-  const { numericColumns, labelColumns } = classifyColumns(bindings);
-  return numericColumns.length > 0 && labelColumns.length > 0;
+  if (!bindings || bindings.length === 0) return false;
+  const { numericColumns } = classifyColumns(bindings);
+  return numericColumns.length > 0 && Object.keys(bindings[0]).length >= 2;
 }
 
 /**

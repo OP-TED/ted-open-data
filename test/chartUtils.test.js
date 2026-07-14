@@ -16,7 +16,47 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyColumns, isChartable, aggregateByX } from '../src/js/utils/chartUtils.js';
+import { classifyColumns, isChartable, aggregateByX, chartLabel } from '../src/js/utils/chartUtils.js';
+
+// ── chartLabel ─────────────────────────────────────────────────────
+
+test('chartLabel collapses an authority URI to its local name', () => {
+  // The bug this fixes: legal-basis URIs all share a long prefix, so an
+  // axis truncated to a fixed width shows an identical "http://publ…".
+  assert.equal(
+    chartLabel('http://publications.europa.eu/resource/authority/legal-basis/32014L0024'),
+    '32014L0024',
+  );
+});
+
+test('chartLabel distinguishes URIs that share a prefix', () => {
+  const base = 'http://publications.europa.eu/resource/authority/legal-basis/';
+  assert.notEqual(chartLabel(base + '32014L0024'), chartLabel(base + '32014L0025'));
+});
+
+test('chartLabel uses the fragment after a # for hash URIs', () => {
+  assert.equal(chartLabel('http://data.europa.eu/a4g/ontology#Notice'), 'epo:Notice');
+});
+
+test('chartLabel shortens ePO resource URIs to "Type id" via shortLabel', () => {
+  assert.equal(
+    chartLabel('http://data.europa.eu/a4g/resource/id_abc_Lot_LOT-0001'),
+    'Lot LOT-0001',
+  );
+});
+
+test('chartLabel leaves non-URI values untouched', () => {
+  assert.equal(chartLabel('45000000'), '45000000');       // CPV code
+  assert.equal(chartLabel('2024-11-06'), '2024-11-06');   // date
+  assert.equal(chartLabel('Belgium'), 'Belgium');         // plain string
+});
+
+test('chartLabel handles a trailing slash and empty / nullish input', () => {
+  assert.equal(chartLabel('http://example.org/foo/bar/'), 'bar');
+  assert.equal(chartLabel(''), '');
+  assert.equal(chartLabel(null), '');
+  assert.equal(chartLabel(undefined), '');
+});
 
 // ── classifyColumns ────────────────────────────────────────────────
 
@@ -64,11 +104,18 @@ test('isChartable returns false when all columns are strings', () => {
   assert.equal(isChartable(bindings), false);
 });
 
-test('isChartable returns false when all columns are numeric', () => {
+test('isChartable returns true when all columns are numeric', () => {
+  // A numeric column can serve as the X axis — e.g. `?year ?count` plots
+  // count-by-year, so an all-numeric two-column result is chartable.
   const bindings = [
-    { x: { value: '1' }, y: { value: '2' } },
-    { x: { value: '3' }, y: { value: '4' } },
+    { year: { value: '2020' }, count: { value: '145' } },
+    { year: { value: '2021' }, count: { value: '210' } },
   ];
+  assert.equal(isChartable(bindings), true);
+});
+
+test('isChartable returns false for a single numeric column (no X axis)', () => {
+  const bindings = [{ count: { value: '1' } }, { count: { value: '2' } }];
   assert.equal(isChartable(bindings), false);
 });
 
