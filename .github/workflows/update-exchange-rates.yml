@@ -14,8 +14,6 @@ on:
   schedule:
     - cron: '0 6 3 * *'   # 06:00 UTC on the 3rd of each month (after InforEuro publishes)
   workflow_dispatch:
-  push:
-    branches: [ci/exchange-rates-update]   # TEMPORARY: pre-merge test only — REMOVE before merge
 
 permissions:
   contents: write
