@@ -28,6 +28,10 @@
     --ted-blue-10: #E7EDFA;          /* eu-blue-10, hover backgrounds */
     --ted-blue-5: #F3F6FC;           /* eu-blue-5, subtle backgrounds */
 
+    /* Neutrals (OP Global Style) */
+    --ted-gray-10: #EEEEEE;          /* gray-10, navigation selected-state background */
+    --ted-main-75: #697188;          /* main-75, secondary links / neutral chips */
+
     /* Text */
     --ted-text: #333333;             /* gray-100, headings & body */
     --ted-text-muted: #666666;       /* muted text, badge type, type links */
@@ -799,6 +803,31 @@ main {
 .list-group-item.active.query-library-item:hover {
     background-color: var(--ted-blue-hover) !important; /* eu-blue-110 */
     border-color: var(--ted-blue-hover) !important;
+}
+
+/* History dropdown selected/hover states, per the TED style guide:
+   gray-10 is the "navigation selected state" background, paired with an
+   eu-blue-100 left border as the required companion cue (gray-10 alone
+   isn't a sufficient indicator); eu-blue-10 for hover. A transparent left
+   border on every item reserves the space so text doesn't shift on select. */
+#history-menu .dropdown-item {
+    border-left: 3px solid transparent;
+}
+#history-menu .dropdown-item:hover,
+#history-menu .dropdown-item:focus {
+    background-color: var(--ted-blue-10);
+}
+#history-menu .dropdown-item.active,
+#history-menu .dropdown-item.active:hover,
+#history-menu .dropdown-item.active:focus {
+    background-color: var(--ted-gray-10);
+    color: var(--ted-text);
+    border-left-color: var(--ted-blue);
+}
+/* "Not found" chip — main-75 (secondary/neutral) with white text. */
+.badge.badge-not-found {
+    background-color: var(--ted-main-75);
+    color: #fff;
 }
 
 #query-card {

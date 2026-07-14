@@ -223,16 +223,18 @@ export class ExplorerController extends EventTarget {
     this._emit('facets-list-changed');
   }
 
-  // Remove a notice-number facet from the persistent history by its
-  // publication-number value. Used by DataView when a search resolves
-  // to zero triples (i.e. the notice does not exist) so the phantom
-  // entry doesn't pollute the History dropdown. No-op if no match.
-  removeFacetByValue(publicationNumber) {
-    const idx = this.facetsList.findIndex(
+  // Mark a notice-number facet as "not found" in the persistent history.
+  // Used by DataView when a search resolves to zero triples so the entry
+  // stays in history (allowing re-search) but is visually distinguishable
+  // from notices that were found.
+  markFacetNotFound(publicationNumber) {
+    const entry = this.facetsList.find(
       f => f.type === 'notice-number' && f.value === publicationNumber
     );
-    if (idx < 0) return;
-    this.removeFacet(idx);
+    if (!entry) return;
+    entry.notFound = true;
+    this._saveToSession();
+    this._emit('facets-list-changed');
   }
 
   // ── URL sharing ──
@@ -471,6 +473,17 @@ export class ExplorerController extends EventTarget {
       }
       this.results = results;
       this.executedQuery = effectiveQuery;
+      // Clear a stale "not found" flag ONLY now that a notice-number search
+      // has actually returned data. Clearing it at search start (before the
+      // query resolves) would wipe the badge on a failed, cancelled, or
+      // still-empty retry, even though the notice was not found. The token
+      // guard above means only the winning query reaches here; the catch and
+      // cancellation branches never do.
+      if (facet.type === 'notice-number' && results.size > 0 && facet.notFound) {
+        delete facet.notFound;
+        this._saveToSession();
+        this._emit('facets-list-changed');
+      }
       this._emit('results-changed');
     } catch (e) {
       if (token !== this._queryToken) return;

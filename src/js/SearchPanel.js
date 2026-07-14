@@ -294,20 +294,26 @@ export class SearchPanel {
     a.href = '#';
 
     const label = document.createElement('div');
-    label.className = 'fw-semibold';
+    label.className = 'fw-semibold d-flex align-items-center';
     label.textContent = getLabel(facet);
     if (facet.noticeVersion > 1) {
       const v = document.createElement('small');
-      v.className = isActive ? 'text-white-50 ms-1' : 'text-muted ms-1';
+      v.className = 'text-muted ms-1';
       v.textContent = `v${facet.noticeVersion}`;
       label.appendChild(v);
+    }
+    if (facet.notFound) {
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-not-found ms-2';
+      badge.textContent = 'not found';
+      label.appendChild(badge);
     }
     a.appendChild(label);
 
     const metaText = this._buildHistoryItemMetaText(facet);
     if (metaText) {
       const meta = document.createElement('small');
-      meta.className = isActive ? 'text-white-50' : 'text-muted';
+      meta.className = 'text-muted';
       meta.textContent = metaText;
       a.appendChild(meta);
     }
