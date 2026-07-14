@@ -38,7 +38,7 @@ export function buildCurrencySnippet(exchangeRates) {
     .map(([currency, rate]) => `      ("${currency}" ${rate})`)
     .join('\n');
 
-  return `# Sample exchange rate lookup table (rates to EUR) as of June 2026.
+  return `# Sample exchange rate lookup table (rates to EUR).
 # This option is provided to showcase how currencies can be converted to EUR within SPARQL.
 # Use it only for approximate value calculations.
 # The rate lookup is OPTIONAL: a currency missing from the table keeps its result row but leaves
