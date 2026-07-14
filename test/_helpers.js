@@ -93,6 +93,8 @@ if (typeof globalThis.window === 'undefined') {
 class StubElement {
   constructor(id) {
     this.id = id;
+    this.nodeType = 1; // Node.ELEMENT_NODE — text nodes use 3 (see createTextNode)
+    this.tagName = undefined;
     this.style = {};
     this.dataset = {};
     this.classList = new StubClassList();
@@ -149,8 +151,10 @@ if (typeof globalThis.document === 'undefined') {
       if (!_stubElements.has(id)) _stubElements.set(id, new StubElement(id));
       return _stubElements.get(id);
     },
-    createElement(_tag) {
-      return new StubElement(null);
+    createElement(tag) {
+      const el = new StubElement(null);
+      el.tagName = tag ? String(tag).toUpperCase() : undefined;
+      return el;
     },
     createTextNode(text) {
       // A text node is a leaf with a textContent and a nodeType. The

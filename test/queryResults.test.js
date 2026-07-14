@@ -86,8 +86,9 @@ test('_renderCell renders a web URL as an anchor element', () => {
   const qr = makeQueryResults();
   const binding = { type: 'uri', value: 'https://ted.europa.eu/en/notice/-/detail/123-2024' };
   const node = qr._renderCell(binding);
-  // Should be an element (not a text node with nodeType 3)
-  assert.notEqual(node.nodeType, 3, 'should be an element, not a text node');
+  // Should be an anchor element (nodeType 1), not a text node (nodeType 3)
+  assert.equal(node.nodeType, 1, 'should be an element node');
+  assert.equal(node.tagName, 'A', 'should be an anchor element');
   assert.equal(node.href, binding.value);
   assert.equal(node.target, '_blank');
   assert.equal(node.rel, 'noopener noreferrer');
