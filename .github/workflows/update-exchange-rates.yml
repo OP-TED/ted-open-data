@@ -1,0 +1,62 @@
+name: Update exchange rates
+
+# Refreshes the currency->EUR table on the `data/exchange-rates` branch from the
+# European Commission's monthly InforEuro rates. The app loads that file at runtime,
+# so updates ship without an application release (see issue #96).
+#
+# SECURITY: this workflow holds `contents: write` and pushes to the protected
+# `data/exchange-rates` branch, so it must only ever run trusted, reviewed code.
+# It is therefore `schedule`-only: scheduled runs always use the workflow and the
+# script as they exist on the default branch. `workflow_dispatch` is intentionally
+# omitted because a manual run can target an arbitrary ref, and GitHub would then
+# execute that ref's (unreviewed) workflow/script with the write token. To re-enable
+# manual runs safely, gate the push behind a protected Environment whose deployment
+# branch policy is limited to the default branch, and move the write credential into
+# that environment (leaving the default token read-only).
+
+on:
+  schedule:
+    - cron: '0 6 3 * *'   # 06:00 UTC on the 3rd of each month (after InforEuro publishes)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-exchange-rates
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the update script (default branch only)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: app
+
+      - name: Check out the data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data/exchange-rates
+          path: data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh rates from InforEuro
+        run: node app/scripts/update-exchange-rates.js data/exchange-rates.json
+
+      - name: Commit and push if changed
+        working-directory: data
+        run: |
+          if git diff --quiet -- exchange-rates.json; then
+            echo "No change — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add exchange-rates.json
+          git commit -m "chore: refresh exchange rates from InforEuro"
+          git push origin HEAD:data/exchange-rates

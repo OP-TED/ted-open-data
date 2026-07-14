@@ -769,9 +769,20 @@
                             <li>Type <code>epo:</code> followed by a class or property name to see ePO ontology suggestions</li>
                             <li>Type <code>a </code> after a subject to see available ePO classes</li>
                             <li>SPARQL keywords are suggested as you type</li>
+                            <li>Type <code>prefixes</code> to insert all standard PREFIX declarations at once</li>
+                            <li>Type <code>currency</code> to insert a currency-conversion snippet — an exchange-rate lookup table plus a <code>BIND</code> that converts monetary amounts to EUR</li>
                             <li>Press <b>Ctrl+Space</b> to manually trigger suggestions at any time</li>
                         </ul>
                         <p class="small text-muted">Autocomplete is based on the eProcurement Ontology (ePO) v4.2.0.</p>
+                        <p class="small text-muted">
+                            The exchange rates in the <code>currency</code> snippet are approximate and provided only to
+                            illustrate how conversion can be expressed in SPARQL. They are sourced from the European
+                            Commission's monthly
+                            <a href="https://ec.europa.eu/budg/inforeuro/" target="_blank" rel="noopener noreferrer">InforEuro</a>
+                            accounting rates and refreshed periodically. Amounts are converted at the latest available
+                            rate — not the rate at the time each notice was published — so do not rely on the result for
+                            precise or legally meaningful figures.
+                        </p>
 
                         <h4>Query Library</h4>
                         <p>
