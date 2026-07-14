@@ -1,0 +1,60 @@
+name: Update exchange rates
+
+# Refreshes the currency->EUR table on the `data/exchange-rates` branch from the
+# European Commission's monthly InforEuro rates. The app loads that file at runtime,
+# so updates ship without an application release (see issue #96).
+#
+# Scheduled/dispatch triggers only fire when this file is on the default branch (develop).
+# To test on a feature branch before merge, temporarily add:
+#   push:
+#     branches: [ci/exchange-rates-update]
+# and remove it before merging.
+
+on:
+  schedule:
+    - cron: '0 6 3 * *'   # 06:00 UTC on the 3rd of each month (after InforEuro publishes)
+  workflow_dispatch:
+  push:
+    branches: [ci/exchange-rates-update]   # TEMPORARY: pre-merge test only — REMOVE before merge
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-exchange-rates
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the update script (triggering ref)
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      - name: Check out the data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data/exchange-rates
+          path: data
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh rates from InforEuro
+        run: node app/scripts/update-exchange-rates.js data/exchange-rates.json
+
+      - name: Commit and push if changed
+        working-directory: data
+        run: |
+          if git diff --quiet -- exchange-rates.json; then
+            echo "No change — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add exchange-rates.json
+          git commit -m "chore: refresh exchange rates from InforEuro"
+          git push origin HEAD:data/exchange-rates

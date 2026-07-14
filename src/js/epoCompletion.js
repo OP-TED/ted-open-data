@@ -40,14 +40,30 @@ async function ensureLoaded() {
   return loadingPromise;
 }
 
+// Exchange rates are served from the protected `data/exchange-rates` branch so they can be
+// refreshed by CI without an app release (see issue #96). The `refs/heads/` form is required
+// because the branch name contains a slash. If the remote is unreachable we fall back to the
+// copy bundled with the app, which is approximate but keeps the snippet working.
+const REMOTE_EXCHANGE_RATES_URL =
+  'https://raw.githubusercontent.com/OP-TED/ted-open-data/refs/heads/data/exchange-rates/exchange-rates.json';
+const LOCAL_EXCHANGE_RATES_URL = 'src/assets/exchange-rates.json';
+
 /**
- * Load exchange rates from the JSON file. Called once, cached thereafter.
+ * Load exchange rates, preferring the CI-maintained data branch and falling back to the
+ * bundled copy. Called once, cached thereafter.
  */
 async function ensureExchangeRatesLoaded() {
   if (exchangeRatesData) return;
   if (exchangeRatesPromise) return exchangeRatesPromise;
-  exchangeRatesPromise = fetch('src/assets/exchange-rates.json')
-    .then(r => r.json())
+  exchangeRatesPromise = fetch(REMOTE_EXCHANGE_RATES_URL)
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .catch(err => {
+      console.warn('Remote exchange rates unavailable, using bundled copy:', err);
+      return fetch(LOCAL_EXCHANGE_RATES_URL).then(r => r.json());
+    })
     .then(data => { exchangeRatesData = data; })
     .catch(err => {
       console.error('Failed to load exchange rates:', err);
