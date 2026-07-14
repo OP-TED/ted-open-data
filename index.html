@@ -420,57 +420,11 @@
                     <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="clear-editor" title="Clear the editor">
                         <i class="bi bi-trash"></i> Clear
                     </button>
-                    <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="options-button"
-                            data-bs-toggle="collapse" data-bs-target="#options-collapse"
-                            aria-expanded="false" aria-controls="options-collapse">
-                        <i class="bi bi-gear"></i> Options
-                    </button>
                     <button type="submit" class="btn btn-sm btn-primary ms-1" id="run-query-button-top" disabled>
                         <i class="bi bi-play-fill"></i> Run
                     </button>
                 </div>
                 <p class="small text-muted mb-2" id="query-label">Compose or refine your query in SPARQL</p>
-
-                <div class="collapse mb-2" id="options-collapse">
-                    <div class="card card-body">
-                        <div class="row">
-                            <!-- First Column: Checkboxes -->
-                            <div class="col-md-6">
-                                <div class="d-flex flex-column">
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="strict" name="strict" checked>
-                                        <label class="form-check-label" for="strict">Strict checking of void variables</label>
-                                    </div>
-
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="debug" name="debug">
-                                        <label class="form-check-label" for="debug">Log debug info at the end of output</label>
-                                    </div>
-
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="report" name="report">
-                                        <label class="form-check-label" for="report">Generate SPARQL compilation report</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Second Column: Inputs -->
-                            <div class="col-md-6">
-                                <div class="form-floating mb-3">
-                                    <input type="number" id="timeout" name="timeout" class="form-control"
-                                        placeholder="Enter timeout in milliseconds (optional)">
-                                    <label for="timeout">Timeout (ms)</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Keep the hidden default-graph-uri input -->
-                        <div class="d-none">
-                            <input type="text" id="default-graph-uri" name="default-graph-uri" class="form-control"
-                                placeholder="Enter Graph IRI (optional)">
-                        </div>
-                    </div>
-                </div>
 
                 <div class="flex-grow-1 d-flex flex-column">
                     <div class="form-group flex-grow-1 d-flex flex-column">

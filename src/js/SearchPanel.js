@@ -22,7 +22,6 @@
 
 import { createPublicationNumberFacet, getLabel, getQuery } from './facets.js';
 import { getRandomPublicationNumber } from './services/randomNotice.js';
-import { hydrateSparqlOptions } from './sparqlRequest.js';
 
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -430,17 +429,6 @@ export class SearchPanel {
         // reflection, but log so a regression is visible.
         console.warn('[SearchPanel] editor reflection failed on URL load:', err);
       }
-      // If the shared URL carried SPARQL options (?opts=), hydrate
-      // the Customize tab's Options panel form so a subsequent
-      // "Run Query" from the editor reads the sender's settings
-      // instead of the recipient's local defaults. Without this,
-      // the first execution (from initFromUrlParams) is correct
-      // because the controller applies _sparqlOptions directly,
-      // but a manual re-run reads the DOM form via buildSparqlBody.
-      if (this.controller._sparqlOptions) {
-        hydrateSparqlOptions(this.controller._sparqlOptions);
-      }
-
       // URL loading is always a graph lane gesture.
       this.setActiveResultTab('graph');
       // Fresh navigation from a shared link carries explicit intent:

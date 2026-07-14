@@ -112,10 +112,9 @@ export class ExplorerController extends EventTarget {
     this.breadcrumb = [canonical];
     this.breadcrumbIndex = 0;
     // sparqlOptions are forwarded to doSPARQL so CONSTRUCT/DESCRIBE
-    // queries honour the Customize tab's Options panel (timeout,
-    // strict, debug, report, default-graph-uri). Notice-number
-    // searches pass no options because they use a canned query whose
-    // options are baked in.
+    // queries honour the fixed endpoint options from readSparqlOptions
+    // (or a shared URL's ?opts=). Notice-number searches pass no options
+    // because they use a canned query whose options are baked in.
     this._sparqlOptions = sparqlOptions;
     await this._navigated();
   }
