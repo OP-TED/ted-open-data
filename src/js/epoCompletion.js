@@ -17,8 +17,12 @@
  * Loads terms from a local JSON file and provides context-aware completions.
  */
 
+import { buildCurrencySnippet } from './utils/currencySnippet.js';
+
 let epoData = null;
 let loadingPromise = null;
+let exchangeRatesData = null;
+let exchangeRatesPromise = null;
 
 /**
  * Load ePO terms from the JSON file. Called once, cached thereafter.
@@ -37,6 +41,22 @@ async function ensureLoaded() {
 }
 
 /**
+ * Load exchange rates from the JSON file. Called once, cached thereafter.
+ */
+async function ensureExchangeRatesLoaded() {
+  if (exchangeRatesData) return;
+  if (exchangeRatesPromise) return exchangeRatesPromise;
+  exchangeRatesPromise = fetch('src/assets/exchange-rates.json')
+    .then(r => r.json())
+    .then(data => { exchangeRatesData = data; })
+    .catch(err => {
+      console.error('Failed to load exchange rates:', err);
+      exchangeRatesPromise = null;
+    });
+  return exchangeRatesPromise;
+}
+
+/**
  * CodeMirror completion source for SPARQL + ePO.
  * Provides completions for:
  * - SPARQL keywords (SELECT, WHERE, FILTER, etc.)
@@ -49,6 +69,8 @@ export function epoCompletionSource(context) {
     ensureLoaded();
     return null;
   }
+  // Also ensure exchange rates are loading (non-blocking)
+  if (!exchangeRatesData) ensureExchangeRatesLoaded();
 
   // Get the word being typed
   const word = context.matchBefore(/[\w:]+/);
@@ -138,6 +160,16 @@ export function epoCompletionSource(context) {
     });
   }
 
+  // Snippet: insert currency conversion OPTIONAL VALUES block and BIND
+  if ('currencyconversion'.startsWith(lowerText) && lowerText.length > 0 && exchangeRatesData) {
+    options.push({
+      label: 'currencyconversion (insert exchange rates to EUR)',
+      type: 'text',
+      apply: buildCurrencySnippet(exchangeRatesData),
+      boost: 3
+    });
+  }
+
   if (options.length === 0) return null;
   return { from, options };
 }
@@ -151,3 +183,4 @@ export function getEpoData() {
 
 // Start loading immediately when the module is imported
 ensureLoaded();
+ensureExchangeRatesLoaded();
