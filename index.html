@@ -519,6 +519,18 @@
                             <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+xml">XML</a></li>
                         </ul>
                     </div>
+                    <div id="results-view-toggle" class="d-none d-flex align-items-center ms-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Switch between table and chart view">
+                            <input type="radio" class="btn-check" name="results-view" id="results-view-table" value="table" checked>
+                            <label class="btn btn-outline-secondary px-4" for="results-view-table">
+                                <i class="bi bi-table"></i> Table
+                            </label>
+                            <input type="radio" class="btn-check" name="results-view" id="results-view-chart" value="chart">
+                            <label class="btn btn-outline-secondary px-4" for="results-view-chart">
+                                <i class="bi bi-bar-chart"></i> Chart
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -548,6 +560,30 @@
             <div id="results">
                 <p class="text-muted">Query results will appear here...</p>
             </div>
+            <div id="chart-settings" class="d-none d-flex align-items-center justify-content-end gap-3 flex-wrap my-3 px-2">
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-type-select" class="small text-muted mb-0">Type:</label>
+                    <select id="chart-type-select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="bar">Bar</option>
+                        <option value="line">Line</option>
+                        <option value="pie">Pie</option>
+                        <option value="scatter">Scatter</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-x-select" class="small text-muted mb-0">X:</label>
+                    <select id="chart-x-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-y-select" class="small text-muted mb-0">Y:</label>
+                    <select id="chart-y-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-group-select" class="small text-muted mb-0">Group:</label>
+                    <select id="chart-group-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+            </div>
+            <div id="chart-container" class="d-none" style="width: 100%; height: 500px;"></div>
         </div> <!-- Close query-results div -->
 
         <!-- ═══ EXPLORE TAB ═══ -->
@@ -765,7 +801,7 @@
                             <li>Use the <b>Query Library</b> tab to explore suggested SPARQL queries. These will help you get started.</li>
                             <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
                             <li>To test your query use the <b>Run Query</b> button.</li>
-                            <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table.</li>
+                            <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table — or as an interactive chart (bar, line, pie, scatter) via the <b>Table / Chart</b> toggle when the results are chartable.</li>
                             <li>CONSTRUCT and DESCRIBE results are displayed in the <b>Query Results</b> tab as an RDF graph (the same tree/turtle/backlinks view used by notice lookup).</li>
                             <li>For SELECT queries you can get a URL that runs the query directly by clicking on the <b>Copy URL</b> button.<br/>
                                 You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
@@ -1007,6 +1043,11 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Apache ECharts (query-results charting) is ~1 MB, so it is lazy-loaded
+         on the first switch to Chart view by ChartView._loadECharts() rather
+         than shipped to every page load. -->
+
 
     <!-- N3 (Turtle parser) — used by the ported explorer modules
          (sparqlService.js parses CONSTRUCT/DESCRIBE results into quads).

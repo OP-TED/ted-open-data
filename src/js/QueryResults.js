@@ -17,6 +17,7 @@ import { triggerBlobDownload } from './utils/download.js';
 import { classifyError } from './utils/errorMessages.js';
 import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
 import { showToast } from './utils/toast.js';
+import { ChartView } from './ChartView.js';
 
 /**
  * Class representing the Query Results.
@@ -35,6 +36,7 @@ export class QueryResults {
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
+    this.chartView = new ChartView();
 
     this.initEventListeners();
   }
@@ -112,6 +114,7 @@ export class QueryResults {
       td.textContent = String(data.boolean);
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.destroy();
       return;
     }
 
@@ -140,9 +143,11 @@ export class QueryResults {
 
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.setData(data);
     } else {
       this.resultsDiv.textContent = "No results found.";
       this.setToolbarVisible(false);
+      this.chartView.destroy();
     }
   }
 
@@ -171,6 +176,7 @@ export class QueryResults {
 
     this.resultsDiv.appendChild(pre);
     this.setToolbarVisible(true);
+    this.chartView.destroy();
   }
 
   /**
