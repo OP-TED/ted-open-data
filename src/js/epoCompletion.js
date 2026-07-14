@@ -57,7 +57,13 @@ const REMOTE_EXCHANGE_RATES_TIMEOUT_MS = 4000;
 async function ensureExchangeRatesLoaded() {
   if (exchangeRatesData) return;
   if (exchangeRatesPromise) return exchangeRatesPromise;
-  exchangeRatesPromise = fetch(REMOTE_EXCHANGE_RATES_URL, { signal: AbortSignal.timeout(REMOTE_EXCHANGE_RATES_TIMEOUT_MS) })
+  // AbortController + setTimeout (as in NoticeView) rather than AbortSignal.timeout(): the latter
+  // would be evaluated synchronously in the fetch arguments, so on a runtime that lacks it the
+  // TypeError would throw before the .catch is attached — skipping the fallback and leaving an
+  // unhandled rejection. AbortController exists wherever fetch does.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REMOTE_EXCHANGE_RATES_TIMEOUT_MS);
+  exchangeRatesPromise = fetch(REMOTE_EXCHANGE_RATES_URL, { signal: controller.signal })
     .then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
@@ -70,7 +76,8 @@ async function ensureExchangeRatesLoaded() {
     .catch(err => {
       console.error('Failed to load exchange rates:', err);
       exchangeRatesPromise = null;
-    });
+    })
+    .finally(() => clearTimeout(timer));
   return exchangeRatesPromise;
 }
 
