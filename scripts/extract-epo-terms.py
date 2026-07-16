@@ -12,17 +12,18 @@
 # the Lic
 
 """
-Extract ePO ontology terms from an OWL TTL file and save as JSON
+Extract ePO ontology terms from one or more OWL TTL files and save as JSON
 for use by the SPARQL editor autocomplete.
 
 Usage:
-    python3 scripts/extract-epo-terms.py <path-to-epo-core.ttl> <version> <output-file>
+    python3 scripts/extract-epo-terms.py <version> <output-file> <ttl-file-1> [ttl-file-2] ...
 
 Example:
     python3 scripts/extract-epo-terms.py \
-        ../ePO/implementation/ePO_core/owl_ontology/ePO_core.ttl \
         4.2.0 \
-        src/assets/epo-terms-v4.json
+        src/assets/epo-terms-v4.json \
+        ../ePO/implementation/ePO_core/owl_ontology/ePO_core.ttl \
+        ../ePO/implementation/eNotice/owl_ontology/eNotice.ttl
 """
 
 import re
@@ -82,14 +83,20 @@ def extract_terms(ttl_content, version):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) < 4:
         print(__doc__)
         sys.exit(1)
 
-    ttl_path, version, output_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    version = sys.argv[1]
+    output_path = sys.argv[2]
+    ttl_paths = sys.argv[3:]
 
-    with open(ttl_path, "r") as f:
-        content = f.read()
+    # Concatenate all TTL files into a single string for extraction
+    content = ""
+    for ttl_path in ttl_paths:
+        with open(ttl_path, "r", encoding="utf-8") as f:
+            content += f.read() + "\n"
+        print(f"  Read: {ttl_path}")
 
     data = extract_terms(content, version)
 

@@ -88,7 +88,7 @@ export class QueryEditor {
       // ePO term validation — check epo:Term references against known terms
       const epo = getEpoData();
       if (epo) {
-        const allTerms = new Set([...epo.classes, ...epo.objectProperties, ...epo.datatypeProperties]);
+        const allTerms = new Set([...Object.keys(epo.classes), ...Object.keys(epo.objectProperties), ...Object.keys(epo.datatypeProperties)]);
         const allTermsLower = new Map();
         for (const term of allTerms) {
           allTermsLower.set(term.toLowerCase(), term);
