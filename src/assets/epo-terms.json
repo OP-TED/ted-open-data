@@ -1,0 +1,3235 @@
+{
+  "description": "Merged ePO terms from v3 (Standard Forms) and v4 (eForms). Each term maps to an array of versions where it is defined.",
+  "namespace": "http://data.europa.eu/a4g/ontology#",
+  "prefix": "epo",
+  "classes": {
+    "AccessTerm": [
+      "v3",
+      "v4"
+    ],
+    "AcquiringCentralPurchasingBody": [
+      "v3",
+      "v4"
+    ],
+    "AcquiringParty": [
+      "v3",
+      "v4"
+    ],
+    "AdHocChannel": [
+      "v4"
+    ],
+    "Agent": [
+      "v3"
+    ],
+    "AgentInRole": [
+      "v3",
+      "v4"
+    ],
+    "AuxiliaryParty": [
+      "v3",
+      "v4"
+    ],
+    "AwardCriteriaSummary": [
+      "v4"
+    ],
+    "AwardCriterion": [
+      "v3",
+      "v4"
+    ],
+    "AwardDecision": [
+      "v3",
+      "v4"
+    ],
+    "Awarder": [
+      "v3",
+      "v4"
+    ],
+    "AwardEvaluationTerm": [
+      "v3",
+      "v4"
+    ],
+    "AwardingCentralPurchasingBody": [
+      "v3",
+      "v4"
+    ],
+    "AwardOutcome": [
+      "v4"
+    ],
+    "BudgetProvider": [
+      "v3",
+      "v4"
+    ],
+    "Business": [
+      "v3",
+      "v4"
+    ],
+    "Buyer": [
+      "v3",
+      "v4"
+    ],
+    "Candidate": [
+      "v4"
+    ],
+    "CANSocialNotice": [
+      "v4"
+    ],
+    "CANStandardNotice": [
+      "v4"
+    ],
+    "CatalogueProvider": [
+      "v3",
+      "v4"
+    ],
+    "CatalogueReceiver": [
+      "v3",
+      "v4"
+    ],
+    "CentralPurchasingBody": [
+      "v3",
+      "v4"
+    ],
+    "Certificate": [
+      "v4"
+    ],
+    "CertificationLabel": [
+      "v4"
+    ],
+    "Certifier": [
+      "v4"
+    ],
+    "ChangeInformation": [
+      "v4"
+    ],
+    "CNSocialNotice": [
+      "v4"
+    ],
+    "CNStandardNotice": [
+      "v4"
+    ],
+    "CompetitionNotice": [
+      "v4"
+    ],
+    "CompletionNotice": [
+      "v4"
+    ],
+    "ConcessionContract": [
+      "v3",
+      "v4"
+    ],
+    "ConcessionEstimate": [
+      "v3",
+      "v4"
+    ],
+    "ContextDescription": [
+      "v4"
+    ],
+    "ContextSpecificDescription": [
+      "v3"
+    ],
+    "ContextualProjection": [
+      "v3",
+      "v4"
+    ],
+    "Contract": [
+      "v3",
+      "v4"
+    ],
+    "ContractLotCompletionInformation": [
+      "v3",
+      "v4"
+    ],
+    "ContractModification": [
+      "v3"
+    ],
+    "ContractModificationNotice": [
+      "v4"
+    ],
+    "Contractor": [
+      "v3",
+      "v4"
+    ],
+    "ContractSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "ContractTerm": [
+      "v3",
+      "v4"
+    ],
+    "DesignContestNotice": [
+      "v4"
+    ],
+    "DesignContestRegimeTerm": [
+      "v3",
+      "v4"
+    ],
+    "DesignContestResultNotice": [
+      "v4"
+    ],
+    "DirectAwardPrenotificationNotice": [
+      "v4"
+    ],
+    "DirectAwardTerm": [
+      "v3",
+      "v4"
+    ],
+    "DirectContract": [
+      "v4"
+    ],
+    "Document": [
+      "v3",
+      "v4"
+    ],
+    "Duration": [
+      "v3",
+      "v4"
+    ],
+    "DynamicPurchaseSystemTechnique": [
+      "v4"
+    ],
+    "DynamicPurchaseSystemTechniqueUsage": [
+      "v3"
+    ],
+    "EAuctionTechnique": [
+      "v4"
+    ],
+    "EAuctionTechniqueUsage": [
+      "v3"
+    ],
+    "EconomicStandingSummary": [
+      "v4"
+    ],
+    "eFormsNotice": [
+      "v4"
+    ],
+    "ElectronicSignature": [
+      "v4"
+    ],
+    "ElementChangeDescription": [
+      "v3"
+    ],
+    "ElementConfidentialityDescription": [
+      "v3"
+    ],
+    "ElementDescription": [
+      "v3"
+    ],
+    "ElementModificationDescription": [
+      "v3"
+    ],
+    "EmploymentInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "EnvironmentalProtectionInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "Estimate": [
+      "v3",
+      "v4"
+    ],
+    "EvaluationTerm": [
+      "v3",
+      "v4"
+    ],
+    "ExclusionGround": [
+      "v3",
+      "v4"
+    ],
+    "ExclusionGroundsSummary": [
+      "v4"
+    ],
+    "ExpressionOfInterest": [
+      "v3",
+      "v4"
+    ],
+    "FrameworkAgreement": [
+      "v3",
+      "v4"
+    ],
+    "FrameworkAgreementTechnique": [
+      "v4"
+    ],
+    "FrameworkAgreementTechniqueUsage": [
+      "v3"
+    ],
+    "FrameworkAgreementTerm": [
+      "v3",
+      "v4"
+    ],
+    "Fund": [
+      "v3",
+      "v4"
+    ],
+    "GreenProcurement": [
+      "v3",
+      "v4"
+    ],
+    "Identifier": [
+      "v3"
+    ],
+    "IndefiniteDuration": [
+      "v3",
+      "v4"
+    ],
+    "InnovativeProcurement": [
+      "v3",
+      "v4"
+    ],
+    "JuryMember": [
+      "v4"
+    ],
+    "LeadBuyer": [
+      "v3",
+      "v4"
+    ],
+    "Location": [
+      "v3"
+    ],
+    "Lot": [
+      "v3",
+      "v4"
+    ],
+    "LotAwardOutcome": [
+      "v3",
+      "v4"
+    ],
+    "LotGroup": [
+      "v3",
+      "v4"
+    ],
+    "LotGroupAwardInformation": [
+      "v3",
+      "v4"
+    ],
+    "LotSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "Mediator": [
+      "v3",
+      "v4"
+    ],
+    "MiniCompetitionAwardOutcome": [
+      "v4"
+    ],
+    "MonetaryValue": [
+      "v3",
+      "v4"
+    ],
+    "MultipleStageProcedureTerm": [
+      "v3",
+      "v4"
+    ],
+    "NonDisclosureAgreementTerm": [
+      "v4"
+    ],
+    "NonPublishedInformation": [
+      "v4"
+    ],
+    "Notice": [
+      "v3",
+      "v4"
+    ],
+    "Notice1": [
+      "v4"
+    ],
+    "Notice10": [
+      "v4"
+    ],
+    "Notice11": [
+      "v4"
+    ],
+    "Notice12": [
+      "v4"
+    ],
+    "Notice13": [
+      "v4"
+    ],
+    "Notice14": [
+      "v4"
+    ],
+    "Notice15": [
+      "v4"
+    ],
+    "Notice16": [
+      "v4"
+    ],
+    "Notice17": [
+      "v4"
+    ],
+    "Notice18": [
+      "v4"
+    ],
+    "Notice19": [
+      "v4"
+    ],
+    "Notice2": [
+      "v4"
+    ],
+    "Notice20": [
+      "v4"
+    ],
+    "Notice21": [
+      "v4"
+    ],
+    "Notice22": [
+      "v4"
+    ],
+    "Notice23": [
+      "v4"
+    ],
+    "Notice24": [
+      "v4"
+    ],
+    "Notice25": [
+      "v4"
+    ],
+    "Notice26": [
+      "v4"
+    ],
+    "Notice27": [
+      "v4"
+    ],
+    "Notice28": [
+      "v4"
+    ],
+    "Notice29": [
+      "v4"
+    ],
+    "Notice3": [
+      "v4"
+    ],
+    "Notice30": [
+      "v4"
+    ],
+    "Notice31": [
+      "v4"
+    ],
+    "Notice32": [
+      "v4"
+    ],
+    "Notice33": [
+      "v4"
+    ],
+    "Notice34": [
+      "v4"
+    ],
+    "Notice35": [
+      "v4"
+    ],
+    "Notice36": [
+      "v4"
+    ],
+    "Notice37": [
+      "v4"
+    ],
+    "Notice38": [
+      "v4"
+    ],
+    "Notice39": [
+      "v4"
+    ],
+    "Notice4": [
+      "v4"
+    ],
+    "Notice40": [
+      "v4"
+    ],
+    "Notice5": [
+      "v4"
+    ],
+    "Notice6": [
+      "v4"
+    ],
+    "Notice7": [
+      "v4"
+    ],
+    "Notice8": [
+      "v4"
+    ],
+    "Notice9": [
+      "v4"
+    ],
+    "NoticeAwardInformation": [
+      "v3",
+      "v4"
+    ],
+    "NoticeCEI": [
+      "v4"
+    ],
+    "NoticeChange": [
+      "v3"
+    ],
+    "NoticeDescription": [
+      "v3"
+    ],
+    "NoticeE1": [
+      "v4"
+    ],
+    "NoticeE2": [
+      "v4"
+    ],
+    "NoticeE3": [
+      "v4"
+    ],
+    "NoticeE4": [
+      "v4"
+    ],
+    "NoticeE5": [
+      "v4"
+    ],
+    "NoticeT01": [
+      "v4"
+    ],
+    "NoticeT02": [
+      "v4"
+    ],
+    "Offer": [
+      "v4"
+    ],
+    "OfferingParty": [
+      "v3",
+      "v4"
+    ],
+    "OfferIssuer": [
+      "v4"
+    ],
+    "OfflineAccessProvider": [
+      "v3",
+      "v4"
+    ],
+    "OpeningTerm": [
+      "v3",
+      "v4"
+    ],
+    "OrganisationGroup": [
+      "v3",
+      "v4"
+    ],
+    "Organization": [
+      "v3"
+    ],
+    "OriginatorRequest": [
+      "v4"
+    ],
+    "OtherEntity": [
+      "v3",
+      "v4"
+    ],
+    "ParticipationCondition": [
+      "v4"
+    ],
+    "ParticipationConditionsSummary": [
+      "v4"
+    ],
+    "ParticipationRequestProcessor": [
+      "v3",
+      "v4"
+    ],
+    "ParticipationRequestReceiver": [
+      "v3",
+      "v4"
+    ],
+    "ParticipationRequestTerm": [
+      "v3",
+      "v4"
+    ],
+    "PaymentExecutor": [
+      "v3",
+      "v4"
+    ],
+    "Period": [
+      "v3",
+      "v4"
+    ],
+    "Person": [
+      "v3"
+    ],
+    "PINOnlyNotice": [
+      "v4"
+    ],
+    "PINProfileNotice": [
+      "v4"
+    ],
+    "PINTimeLimitNotice": [
+      "v4"
+    ],
+    "PlannedProcurementPart": [
+      "v3",
+      "v4"
+    ],
+    "PlanningNotice": [
+      "v4"
+    ],
+    "PreMarketConsultationNotice": [
+      "v4"
+    ],
+    "Prize": [
+      "v3",
+      "v4"
+    ],
+    "Procedure": [
+      "v3",
+      "v4"
+    ],
+    "ProcedureSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "ProcedureTerm": [
+      "v3",
+      "v4"
+    ],
+    "ProcessPlanningTerm": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementCriteriaSummary": [
+      "v4"
+    ],
+    "ProcurementCriterion": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementDocument": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementElement": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementObject": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementProcedureInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementProcessInformation": [
+      "v3",
+      "v4"
+    ],
+    "ProcurementServiceProvider": [
+      "v3",
+      "v4"
+    ],
+    "ProfessionalSuitabilitySummary": [
+      "v4"
+    ],
+    "Project": [
+      "v4"
+    ],
+    "PublicationProvision": [
+      "v3"
+    ],
+    "PurchaseContract": [
+      "v3",
+      "v4"
+    ],
+    "Purpose": [
+      "v3",
+      "v4"
+    ],
+    "QSNotice": [
+      "v4"
+    ],
+    "QualificationCriteriaSummary": [
+      "v4"
+    ],
+    "QualificationCriterion": [
+      "v4"
+    ],
+    "Quantity": [
+      "v3",
+      "v4"
+    ],
+    "RequestForClarification": [
+      "v3",
+      "v4"
+    ],
+    "RequestForParticipation": [
+      "v3",
+      "v4"
+    ],
+    "ResultNotice": [
+      "v4"
+    ],
+    "ReviewDecision": [
+      "v3",
+      "v4"
+    ],
+    "Reviewer": [
+      "v3",
+      "v4"
+    ],
+    "ReviewIrregularitySummary": [
+      "v3",
+      "v4"
+    ],
+    "ReviewObject": [
+      "v3",
+      "v4"
+    ],
+    "ReviewProcedureInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "ReviewRequest": [
+      "v3",
+      "v4"
+    ],
+    "ReviewRequester": [
+      "v3",
+      "v4"
+    ],
+    "ReviewRequestSummary": [
+      "v3",
+      "v4"
+    ],
+    "ReviewTerm": [
+      "v3",
+      "v4"
+    ],
+    "SecurityClearanceTerm": [
+      "v3",
+      "v4"
+    ],
+    "SelectedCandidateList": [
+      "v4"
+    ],
+    "SelectionCriteriaSummary": [
+      "v4"
+    ],
+    "SelectionCriterion": [
+      "v3",
+      "v4"
+    ],
+    "SelectionEvaluationTerm": [
+      "v3",
+      "v4"
+    ],
+    "SocialProcurement": [
+      "v3",
+      "v4"
+    ],
+    "SpecificDuration": [
+      "v3",
+      "v4"
+    ],
+    "StandardFormsNotice": [
+      "v4"
+    ],
+    "StatisticalInformation": [
+      "v3",
+      "v4"
+    ],
+    "StrategicProcurement": [
+      "v3",
+      "v4"
+    ],
+    "SubcontractingEstimate": [
+      "v3",
+      "v4"
+    ],
+    "SubcontractNotice": [
+      "v4"
+    ],
+    "Subcontractor": [
+      "v3",
+      "v4"
+    ],
+    "SubcontractTerm": [
+      "v3",
+      "v4"
+    ],
+    "SubmissionStatisticalInformation": [
+      "v3",
+      "v4"
+    ],
+    "SubmissionTerm": [
+      "v3",
+      "v4"
+    ],
+    "System": [
+      "v3",
+      "v4"
+    ],
+    "TaxInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "TechnicalAbilitySummary": [
+      "v4"
+    ],
+    "TechnicalSpecification": [
+      "v4"
+    ],
+    "Technique": [
+      "v4"
+    ],
+    "TechniqueUsage": [
+      "v3"
+    ],
+    "Tender": [
+      "v3",
+      "v4"
+    ],
+    "TenderAwardOutcome": [
+      "v3",
+      "v4"
+    ],
+    "Tenderer": [
+      "v3",
+      "v4"
+    ],
+    "TenderGroup": [
+      "v3",
+      "v4"
+    ],
+    "TenderProcessor": [
+      "v3",
+      "v4"
+    ],
+    "TenderReceiver": [
+      "v3",
+      "v4"
+    ],
+    "Term": [
+      "v3",
+      "v4"
+    ],
+    "Thing": [
+      "v3"
+    ],
+    "VehicleInformation": [
+      "v4"
+    ],
+    "Winner": [
+      "v3",
+      "v4"
+    ]
+  },
+  "objectProperties": {
+    "actsOnBehalfOf": [
+      "v3",
+      "v4"
+    ],
+    "address": [
+      "v3"
+    ],
+    "addressID": [
+      "v3"
+    ],
+    "agreedByBuyer": [
+      "v4"
+    ],
+    "amendsContract": [
+      "v4"
+    ],
+    "announcesAwardDecision": [
+      "v4"
+    ],
+    "announcesCompletionOfContract": [
+      "v4"
+    ],
+    "announcesContract": [
+      "v3",
+      "v4"
+    ],
+    "announcesContractAmendment": [
+      "v4"
+    ],
+    "announcesLot": [
+      "v3",
+      "v4"
+    ],
+    "announcesLotAwardOutcome": [
+      "v3"
+    ],
+    "announcesLotGroup": [
+      "v3",
+      "v4"
+    ],
+    "announcesLotGroupAwardInformation": [
+      "v3",
+      "v4"
+    ],
+    "announcesNonPublishedElement": [
+      "v3"
+    ],
+    "announcesNoticeAwardInformation": [
+      "v3",
+      "v4"
+    ],
+    "announcesPlannedProcurementPart": [
+      "v3",
+      "v4"
+    ],
+    "announcesProcedure": [
+      "v3",
+      "v4"
+    ],
+    "announcesReviewObject": [
+      "v4"
+    ],
+    "announcesRole": [
+      "v3",
+      "v4"
+    ],
+    "announcesTender": [
+      "v3"
+    ],
+    "answersQuestion": [
+      "v4"
+    ],
+    "associatedWith": [
+      "v3",
+      "v4"
+    ],
+    "attestedByLabel": [
+      "v4"
+    ],
+    "bindsBuyer": [
+      "v3",
+      "v4"
+    ],
+    "bindsContractor": [
+      "v3",
+      "v4"
+    ],
+    "canProvideNonDiscriminatoryEvidence": [
+      "v4"
+    ],
+    "canProvideTaxAndSocialSecuritiesEvidence": [
+      "v4"
+    ],
+    "comprisesAwardOutcome": [
+      "v4"
+    ],
+    "comprisesLotAwardOutcome": [
+      "v3"
+    ],
+    "comprisesTender": [
+      "v3",
+      "v4"
+    ],
+    "comprisesTenderAwardOutcome": [
+      "v3",
+      "v4"
+    ],
+    "concernsContract": [
+      "v3",
+      "v4"
+    ],
+    "concernsGreenProcurement": [
+      "v4"
+    ],
+    "concernsLot": [
+      "v3",
+      "v4"
+    ],
+    "concernsNotice": [
+      "v4"
+    ],
+    "concernsOrganisation": [
+      "v4"
+    ],
+    "concernsOriginatorRequest": [
+      "v4"
+    ],
+    "concernsPlaceOfDelivery": [
+      "v3"
+    ],
+    "concernsPlaceOfStorage": [
+      "v3"
+    ],
+    "concernsProcedure": [
+      "v3",
+      "v4"
+    ],
+    "concernsReviewSummaryForLot": [
+      "v3",
+      "v4"
+    ],
+    "concernsTender": [
+      "v4"
+    ],
+    "confidentialityLevelType": [
+      "v3"
+    ],
+    "conformsToLegalBasis": [
+      "v4"
+    ],
+    "constrains": [
+      "v3"
+    ],
+    "containsCandidate": [
+      "v4"
+    ],
+    "containsModificationsOf": [
+      "v3"
+    ],
+    "contextualisedBy": [
+      "v3",
+      "v4"
+    ],
+    "definesBudgetProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesCatalogueProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesCatalogueReceiver": [
+      "v3",
+      "v4"
+    ],
+    "definesContractDuration": [
+      "v3",
+      "v4"
+    ],
+    "definesContractPeriod": [
+      "v3",
+      "v4"
+    ],
+    "definesInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesLotGroup": [
+      "v3",
+      "v4"
+    ],
+    "definesMediator": [
+      "v3",
+      "v4"
+    ],
+    "definesOfflineAccessProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesOpeningPlace": [
+      "v3",
+      "v4"
+    ],
+    "definesParticipationRequestProcessor": [
+      "v3",
+      "v4"
+    ],
+    "definesParticipationRequestReceiver": [
+      "v3",
+      "v4"
+    ],
+    "definesPaymentExecutor": [
+      "v3",
+      "v4"
+    ],
+    "definesPrize": [
+      "v3",
+      "v4"
+    ],
+    "definesProcurementProcedureInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesReviewer": [
+      "v3",
+      "v4"
+    ],
+    "definesReviewProcedureInformationProvider": [
+      "v3",
+      "v4"
+    ],
+    "definesSpecificPlaceOfPerformance": [
+      "v3",
+      "v4"
+    ],
+    "definesSubcontractingTerm": [
+      "v3",
+      "v4"
+    ],
+    "definesTenderProcessor": [
+      "v3",
+      "v4"
+    ],
+    "definesTenderReceiver": [
+      "v3",
+      "v4"
+    ],
+    "delegatesAncillaryActivitiesTo": [
+      "v3",
+      "v4"
+    ],
+    "dependsOnBuyer": [
+      "v3"
+    ],
+    "dependsOnReviewer": [
+      "v3"
+    ],
+    "dependsOnServiceProvider": [
+      "v3"
+    ],
+    "dependsOnTenderer": [
+      "v3"
+    ],
+    "describesDirectAwardPrenotificationNotice": [
+      "v4"
+    ],
+    "describesLot": [
+      "v3"
+    ],
+    "describesLotCompletion": [
+      "v3",
+      "v4"
+    ],
+    "describesLotGroup": [
+      "v3",
+      "v4"
+    ],
+    "describesNotice": [
+      "v3"
+    ],
+    "describesResultNotice": [
+      "v3",
+      "v4"
+    ],
+    "describesTender": [
+      "v3"
+    ],
+    "distributesOffer": [
+      "v4"
+    ],
+    "exposesChannel": [
+      "v4"
+    ],
+    "exposesInvoiceeChannel": [
+      "v4"
+    ],
+    "followsRulesSetBy": [
+      "v3",
+      "v4"
+    ],
+    "foreseesConcession": [
+      "v3",
+      "v4"
+    ],
+    "foreseesContractSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "foreseesProcurementObject": [
+      "v4"
+    ],
+    "foreseesSubcontracting": [
+      "v3",
+      "v4"
+    ],
+    "foreseesSubcontractor": [
+      "v4"
+    ],
+    "foreseesTechnique": [
+      "v3",
+      "v4"
+    ],
+    "fulfillsRequirement": [
+      "v3",
+      "v4"
+    ],
+    "fulfillsStrategicProcurement": [
+      "v3",
+      "v4"
+    ],
+    "geographicIdentifier": [
+      "v3"
+    ],
+    "geometry": [
+      "v3"
+    ],
+    "hasAdditionalClassification": [
+      "v3",
+      "v4"
+    ],
+    "hasAdditionalContractNature": [
+      "v3",
+      "v4"
+    ],
+    "hasAllegedIrregularityType": [
+      "v3",
+      "v4"
+    ],
+    "hasAmount": [
+      "v4"
+    ],
+    "hasAmountDueForPayment": [
+      "v4"
+    ],
+    "hasApproximateFrameworkAgreementValue": [
+      "v4"
+    ],
+    "hasApproximateGroupFrameworkAgreementValue": [
+      "v4"
+    ],
+    "hasAssociatedDocument": [
+      "v4"
+    ],
+    "hasAwardCriterionType": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardedEstimatedValue": [
+      "v3"
+    ],
+    "hasAwardedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardStatus": [
+      "v3",
+      "v4"
+    ],
+    "hasBankingIdentifier": [
+      "v4"
+    ],
+    "hasBargainPrice": [
+      "v3",
+      "v4"
+    ],
+    "hasBaseQuantity": [
+      "v3",
+      "v4"
+    ],
+    "hasBatchID": [
+      "v4"
+    ],
+    "hasBeneficialOwner": [
+      "v3",
+      "v4"
+    ],
+    "hasBroadPlaceOfPerformance": [
+      "v3",
+      "v4"
+    ],
+    "hasBusinessSize": [
+      "v3",
+      "v4"
+    ],
+    "hasBuyerItemID": [
+      "v3",
+      "v4"
+    ],
+    "hasBuyerLegalType": [
+      "v3",
+      "v4"
+    ],
+    "hasCarrierConsignmentID": [
+      "v4"
+    ],
+    "hasCatalogueItemID": [
+      "v3"
+    ],
+    "hasCatalogueLineValidity": [
+      "v3",
+      "v4"
+    ],
+    "hasCertification": [
+      "v4"
+    ],
+    "hasChangeJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasChargeableWeight": [
+      "v4"
+    ],
+    "hasConcessionEstimatedValue": [
+      "v4"
+    ],
+    "hasConfirmedIrregularityType": [
+      "v3",
+      "v4"
+    ],
+    "hasConsigneeConsignmentID": [
+      "v4"
+    ],
+    "hasConsignmentDeclaredStatisticsValue": [
+      "v4"
+    ],
+    "hasConsignmentFreeOnBoardValue": [
+      "v4"
+    ],
+    "hasConsignmentInvoiceValue": [
+      "v4"
+    ],
+    "hasConstraint": [
+      "v3",
+      "v4"
+    ],
+    "hasContactPointInRole": [
+      "v3",
+      "v4"
+    ],
+    "hasContractNatureType": [
+      "v3",
+      "v4"
+    ],
+    "hasContractValue": [
+      "v4"
+    ],
+    "hasCountryCode": [
+      "v3",
+      "v4"
+    ],
+    "hasCountryOfBirth": [
+      "v3",
+      "v4"
+    ],
+    "hasCountryOfOrigin": [
+      "v3",
+      "v4"
+    ],
+    "hasCurrency": [
+      "v3",
+      "v4"
+    ],
+    "hasDebitedAccountIdentifier": [
+      "v4"
+    ],
+    "hasDeclaredStatisticalValue": [
+      "v4"
+    ],
+    "hasDeliveryGateway": [
+      "v3"
+    ],
+    "hasDeliveryLocation": [
+      "v3",
+      "v4"
+    ],
+    "hasDeliveryPeriod": [
+      "v3",
+      "v4"
+    ],
+    "hasDespatchedQuantity": [
+      "v4"
+    ],
+    "hasDespatcherConsignmentID": [
+      "v4"
+    ],
+    "hasDespatchPeriod": [
+      "v4"
+    ],
+    "hasDirectAwardJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasDocumentRestrictionJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasDPSScope": [
+      "v3",
+      "v4"
+    ],
+    "hasECataloguePermission": [
+      "v3",
+      "v4"
+    ],
+    "hasEInvoicingPermission": [
+      "v4"
+    ],
+    "hasElectronicDigest": [
+      "v4"
+    ],
+    "hasElectronicSignature": [
+      "v4"
+    ],
+    "hasElementChange": [
+      "v3"
+    ],
+    "hasElementConfidentiality": [
+      "v3"
+    ],
+    "hasElementDescription": [
+      "v3"
+    ],
+    "hasElementModification": [
+      "v3"
+    ],
+    "hasEndpointIdentifier": [
+      "v4"
+    ],
+    "hasEstimatedBuyerConcessionRevenue": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedDeliveryPeriod": [
+      "v4"
+    ],
+    "hasEstimatedDuration": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedUserConcessionRevenue": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasESubmissionPermission": [
+      "v3",
+      "v4"
+    ],
+    "hasExpectedDeliveryTime": [
+      "v3",
+      "v4"
+    ],
+    "hasExternalSpecification": [
+      "v4"
+    ],
+    "hasFinancialOfferValue": [
+      "v3",
+      "v4"
+    ],
+    "hasFixedAmount": [
+      "v3"
+    ],
+    "hasFixedValueType": [
+      "v3",
+      "v4"
+    ],
+    "hasFormType": [
+      "v3",
+      "v4"
+    ],
+    "hasFrameworkAgreementEstimatedValue": [
+      "v3"
+    ],
+    "hasFrameworkAgreementMaximumValue": [
+      "v3",
+      "v4"
+    ],
+    "hasFrameworkAgreementType": [
+      "v3",
+      "v4"
+    ],
+    "hasFreightForwarderConsignmentID": [
+      "v4"
+    ],
+    "hasFundProgramme": [
+      "v4"
+    ],
+    "hasGrossMonetaryValue": [
+      "v4"
+    ],
+    "hasGrossVolume": [
+      "v4"
+    ],
+    "hasGrossWeight": [
+      "v4"
+    ],
+    "hasGroupFrameworkAgreementAwardedValue": [
+      "v3"
+    ],
+    "hasGroupFrameworkAgreementMaximumValue": [
+      "v4"
+    ],
+    "hasHeight": [
+      "v4"
+    ],
+    "hasHighestReceivedTenderValue": [
+      "v3",
+      "v4"
+    ],
+    "hasID": [
+      "v3"
+    ],
+    "hasImplementingRegulation": [
+      "v4"
+    ],
+    "hasInternalIdentifier": [
+      "v4"
+    ],
+    "hasInvoicedObjectIdentifier": [
+      "v4"
+    ],
+    "hasInvoiceLineObjectIdentifier": [
+      "v4"
+    ],
+    "hasInvoiceLinePeriod": [
+      "v4"
+    ],
+    "hasInvoicingPeriod": [
+      "v4"
+    ],
+    "hasIrregularityType": [
+      "v3",
+      "v4"
+    ],
+    "hasItemClassificationIdentifier": [
+      "v4"
+    ],
+    "hasItemCountryOfOrigin": [
+      "v3",
+      "v4"
+    ],
+    "hasItemStandardID": [
+      "v3",
+      "v4"
+    ],
+    "hasLabelType": [
+      "v4"
+    ],
+    "hasLanguage": [
+      "v3",
+      "v4"
+    ],
+    "hasLateSubmissionPermission": [
+      "v3",
+      "v4"
+    ],
+    "hasLaunchFrameworkAgreementMaximumValue": [
+      "v4"
+    ],
+    "hasLegalBasis": [
+      "v3",
+      "v4"
+    ],
+    "hasLegalIdentifier": [
+      "v4"
+    ],
+    "hasLegalRegime": [
+      "v3"
+    ],
+    "hasLength": [
+      "v4"
+    ],
+    "hasLoadingLength": [
+      "v4"
+    ],
+    "hasLoadingMeter": [
+      "v4"
+    ],
+    "hasLotReference": [
+      "v4"
+    ],
+    "hasLowestReceivedTenderValue": [
+      "v3",
+      "v4"
+    ],
+    "hasMainActivity": [
+      "v3",
+      "v4"
+    ],
+    "hasMainClassification": [
+      "v3",
+      "v4"
+    ],
+    "hasMandateIdentifier": [
+      "v4"
+    ],
+    "hasManufacturerID": [
+      "v3",
+      "v4"
+    ],
+    "hasManufacturerItemID": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumFrameworkAgreementAwardedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumOrderQuantity": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumTemperature": [
+      "v4"
+    ],
+    "hasMember": [
+      "v3",
+      "v4"
+    ],
+    "hasMinimumQuantityGuaranteedForDelivery": [
+      "v3",
+      "v4"
+    ],
+    "hasMinimumTemperature": [
+      "v4"
+    ],
+    "hasModficationJustification": [
+      "v3"
+    ],
+    "hasModificationJustification": [
+      "v4"
+    ],
+    "hasNationality": [
+      "v3",
+      "v4"
+    ],
+    "hasNetAmount": [
+      "v4"
+    ],
+    "hasNetMonetaryValue": [
+      "v3",
+      "v4"
+    ],
+    "hasNetQuantity": [
+      "v3",
+      "v4"
+    ],
+    "hasNetVolume": [
+      "v4"
+    ],
+    "hasNetWeight": [
+      "v4"
+    ],
+    "hasNonAwardJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasNonElectronicSubmissionJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasNonPublicationJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasNoticeType": [
+      "v3",
+      "v4"
+    ],
+    "hasNotificationContentType": [
+      "v3"
+    ],
+    "hasNutsCode": [
+      "v3",
+      "v4"
+    ],
+    "hasOfficialLanguage": [
+      "v3",
+      "v4"
+    ],
+    "hasOrderabableUnitFactorRate": [
+      "v3",
+      "v4"
+    ],
+    "hasOrderQuantity": [
+      "v3"
+    ],
+    "hasOutstandingQuantity": [
+      "v4"
+    ],
+    "hasOverallMaximumValue": [
+      "v3"
+    ],
+    "hasOversupplyQuantity": [
+      "v4"
+    ],
+    "hasPaymentAccountIdentifier": [
+      "v4"
+    ],
+    "hasPaymentServiceProviderIdentifier": [
+      "v4"
+    ],
+    "hasPaymentValue": [
+      "v3"
+    ],
+    "hasPenaltyValue": [
+      "v3"
+    ],
+    "hasPerformingStaffQualificationInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasPlannedDuration": [
+      "v3",
+      "v4"
+    ],
+    "hasPlannedPeriod": [
+      "v3",
+      "v4"
+    ],
+    "hasPreferredLanguageForProcurementDocument": [
+      "v4"
+    ],
+    "hasPrepaidAmount": [
+      "v4"
+    ],
+    "hasPriceValidity": [
+      "v3",
+      "v4"
+    ],
+    "hasPrimaryContactPoint": [
+      "v3",
+      "v4"
+    ],
+    "hasPrizeValue": [
+      "v3",
+      "v4"
+    ],
+    "hasProcedureType": [
+      "v3",
+      "v4"
+    ],
+    "hasProcurementHighestReceivedTenderValue": [
+      "v3",
+      "v4"
+    ],
+    "hasProcurementLowestReceivedTenderValue": [
+      "v3",
+      "v4"
+    ],
+    "hasProcurementScopeDividedIntoLot": [
+      "v3",
+      "v4"
+    ],
+    "hasPurpose": [
+      "v3",
+      "v4"
+    ],
+    "hasQualificationSystemDuration": [
+      "v3",
+      "v4"
+    ],
+    "hasQualificationSystemPeriod": [
+      "v3"
+    ],
+    "hasQualifiedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasQuantity": [
+      "v4"
+    ],
+    "hasQuantityThreshold": [
+      "v3",
+      "v4"
+    ],
+    "hasReceivedQuantity": [
+      "v4"
+    ],
+    "hasReceivedSubmissionType": [
+      "v3",
+      "v4"
+    ],
+    "hasRegistrationCountry": [
+      "v4"
+    ],
+    "hasRejectedQuantity": [
+      "v4"
+    ],
+    "hasRemedyValue": [
+      "v3",
+      "v4"
+    ],
+    "hasRequirement": [
+      "v3"
+    ],
+    "hasReservedExecution": [
+      "v3",
+      "v4"
+    ],
+    "hasReservedProcurement": [
+      "v3",
+      "v4"
+    ],
+    "hasRestatedAwardedValue": [
+      "v3"
+    ],
+    "hasRestatedEstimatedValue": [
+      "v3"
+    ],
+    "hasReviewBodyType": [
+      "v4"
+    ],
+    "hasReviewDecisionType": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewIrregularitySummary": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewRequestFee": [
+      "v4"
+    ],
+    "hasRoundingAmount": [
+      "v4"
+    ],
+    "hasSelectionCriteriaUsage": [
+      "v3",
+      "v4"
+    ],
+    "hasSelectionCriterionType": [
+      "v3",
+      "v4"
+    ],
+    "hasSellerItemID": [
+      "v4"
+    ],
+    "hasSellerOrderID": [
+      "v4"
+    ],
+    "hasSerialID": [
+      "v4"
+    ],
+    "hasShortQuantity": [
+      "v4"
+    ],
+    "hasStartDate": [
+      "v4"
+    ],
+    "hasSubcontracting": [
+      "v4"
+    ],
+    "hasSubcontractingEstimatedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasSubcontractingObligation": [
+      "v3",
+      "v4"
+    ],
+    "hasSubcontractor": [
+      "v4"
+    ],
+    "hasTaxIdentifier": [
+      "v4"
+    ],
+    "hasTaxInformation": [
+      "v4"
+    ],
+    "hasTenderSubcontractingInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasTenderValidityDuration": [
+      "v4"
+    ],
+    "hasTenderValidityPeriod": [
+      "v4"
+    ],
+    "hasThresholdType": [
+      "v3",
+      "v4"
+    ],
+    "hasTimePeriod": [
+      "v3",
+      "v4"
+    ],
+    "hasTotalAccountingCurrencyTaxAmount": [
+      "v4"
+    ],
+    "hasTotalAllowanceAmount": [
+      "v4"
+    ],
+    "hasTotalAwardedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasTotalChargeAmount": [
+      "v4"
+    ],
+    "hasTotalGoodsItemQuantity": [
+      "v4"
+    ],
+    "hasTotalLineAmount": [
+      "v4"
+    ],
+    "hasTotalQuantity": [
+      "v3",
+      "v4"
+    ],
+    "hasTotalTaxAmount": [
+      "v4"
+    ],
+    "hasTotalTaxExclusiveAmount": [
+      "v4"
+    ],
+    "hasTotalTaxInclusiveAmount": [
+      "v4"
+    ],
+    "hasTotalValue": [
+      "v3",
+      "v4"
+    ],
+    "hasTraceID": [
+      "v4"
+    ],
+    "hasTrackingID": [
+      "v4"
+    ],
+    "hasTransportHandlingUnitQuantity": [
+      "v4"
+    ],
+    "hasUnitCode": [
+      "v3",
+      "v4"
+    ],
+    "hasUnofficialLanguage": [
+      "v3",
+      "v4"
+    ],
+    "hasUsage": [
+      "v3",
+      "v4"
+    ],
+    "hasUUID": [
+      "v3",
+      "v4"
+    ],
+    "hasValidityPeriod": [
+      "v3",
+      "v4"
+    ],
+    "hasVariantPermission": [
+      "v3",
+      "v4"
+    ],
+    "hasVehicleID": [
+      "v4"
+    ],
+    "hasVehicleSegmentID": [
+      "v4"
+    ],
+    "hasWeightValueType": [
+      "v3",
+      "v4"
+    ],
+    "hasWidth": [
+      "v4"
+    ],
+    "implementsContract": [
+      "v4"
+    ],
+    "includesAccessibilityCriterion": [
+      "v3",
+      "v4"
+    ],
+    "includesLot": [
+      "v3"
+    ],
+    "includesNationalCriterion": [
+      "v4"
+    ],
+    "includesTender": [
+      "v3",
+      "v4"
+    ],
+    "indicatesAwardOfLotToWinner": [
+      "v3"
+    ],
+    "indicatesAwardToWinner": [
+      "v4"
+    ],
+    "indicatesInvoiceeContactPoint": [
+      "v4"
+    ],
+    "involvesBuyer": [
+      "v3",
+      "v4"
+    ],
+    "involvesProcurementDocument": [
+      "v3",
+      "v4"
+    ],
+    "isAdoptedByBuyer": [
+      "v3"
+    ],
+    "isBasedOnImplementingRegulation": [
+      "v3",
+      "v4"
+    ],
+    "isBeneficialOwnerOf": [
+      "v3",
+      "v4"
+    ],
+    "isCalculatedOn": [
+      "v4"
+    ],
+    "isExecutedByProcurementServiceProvider": [
+      "v3",
+      "v4"
+    ],
+    "isFundedBy": [
+      "v3",
+      "v4"
+    ],
+    "isIntendedForBuyer": [
+      "v3"
+    ],
+    "isOwnedByAgent": [
+      "v3",
+      "v4"
+    ],
+    "isProvidedByCatalogueProvider": [
+      "v3"
+    ],
+    "isReceivedByCatalogueReceiver": [
+      "v3"
+    ],
+    "isReinforcedBy": [
+      "v4"
+    ],
+    "isResponsibilityOfBuyer": [
+      "v3",
+      "v4"
+    ],
+    "isSubjectToContractSpecificTerm": [
+      "v4"
+    ],
+    "isSubjectToGrouping": [
+      "v3",
+      "v4"
+    ],
+    "isSubjectToLotSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "isSubjectToProcedureSpecificTerm": [
+      "v3",
+      "v4"
+    ],
+    "isSubjectToTerm": [
+      "v3",
+      "v4"
+    ],
+    "isSubmitedBy": [
+      "v3",
+      "v4"
+    ],
+    "isSubmittedByBuyer": [
+      "v3"
+    ],
+    "isSubmittedForLot": [
+      "v3",
+      "v4"
+    ],
+    "isSubmittedForLotGroup": [
+      "v3",
+      "v4"
+    ],
+    "isSubordinatedToContract": [
+      "v3",
+      "v4"
+    ],
+    "issuedByCertifier": [
+      "v4"
+    ],
+    "isSupportedBy": [
+      "v4"
+    ],
+    "leadBy": [
+      "v3",
+      "v4"
+    ],
+    "needsToBeATenderer": [
+      "v4"
+    ],
+    "needsToBeAWinner": [
+      "v4"
+    ],
+    "ownsSystem": [
+      "v3",
+      "v4"
+    ],
+    "paidReviewRequestFee": [
+      "v3"
+    ],
+    "placeOfBirth": [
+      "v3"
+    ],
+    "placeOfDeath": [
+      "v3"
+    ],
+    "playedBy": [
+      "v3",
+      "v4"
+    ],
+    "playedByBusiness": [
+      "v3"
+    ],
+    "providesContractTotalPaymentValue": [
+      "v4"
+    ],
+    "providesContractTotalPenaltyValue": [
+      "v4"
+    ],
+    "providesInformationOn": [
+      "v4"
+    ],
+    "providesOrganisationEmployeeQuantity": [
+      "v4"
+    ],
+    "providesOrganisationFinancialCapability": [
+      "v4"
+    ],
+    "providesOrganisationPreQualificationListingIdentifier": [
+      "v4"
+    ],
+    "providesRulingOnRemedy": [
+      "v3",
+      "v4"
+    ],
+    "refersToApplicablePeriod": [
+      "v4"
+    ],
+    "refersToAwardDecision": [
+      "v4"
+    ],
+    "refersToContract": [
+      "v3",
+      "v4"
+    ],
+    "refersToContractToBeModified": [
+      "v3",
+      "v4"
+    ],
+    "refersToLot": [
+      "v3",
+      "v4"
+    ],
+    "refersToLotGroup": [
+      "v3",
+      "v4"
+    ],
+    "refersToLotGroupAwardInformation": [
+      "v4"
+    ],
+    "refersToNotice": [
+      "v3",
+      "v4"
+    ],
+    "refersToNoticeAwardInformation": [
+      "v4"
+    ],
+    "refersToOriginalNotice": [
+      "v3"
+    ],
+    "refersToPlannedPart": [
+      "v3",
+      "v4"
+    ],
+    "refersToPrevious": [
+      "v3",
+      "v4"
+    ],
+    "refersToPreviousNotice": [
+      "v3",
+      "v4"
+    ],
+    "refersToPreviousProcedure": [
+      "v3",
+      "v4"
+    ],
+    "refersToPreviousProcedureLot": [
+      "v3",
+      "v4"
+    ],
+    "refersToPreviousReview": [
+      "v3",
+      "v4"
+    ],
+    "refersToProcedure": [
+      "v3",
+      "v4"
+    ],
+    "refersToProcedureTerm": [
+      "v3"
+    ],
+    "refersToProject": [
+      "v4"
+    ],
+    "refersToReviewTerm": [
+      "v3"
+    ],
+    "refersToRole": [
+      "v3",
+      "v4"
+    ],
+    "registeredAddress": [
+      "v3"
+    ],
+    "relatesToEFormSectionIdentifier": [
+      "v4"
+    ],
+    "requestsRemedyType": [
+      "v3",
+      "v4"
+    ],
+    "resolvesReviewRequest": [
+      "v3",
+      "v4"
+    ],
+    "resultsFromLotAwardOutcome": [
+      "v3",
+      "v4"
+    ],
+    "resultsFromMiniCompetitionAwardOutcome": [
+      "v4"
+    ],
+    "resultsFromUsingCandidateList": [
+      "v4"
+    ],
+    "setsGroupingContextForLot": [
+      "v3",
+      "v4"
+    ],
+    "signedByBuyer": [
+      "v3",
+      "v4"
+    ],
+    "signedByContractor": [
+      "v3",
+      "v4"
+    ],
+    "signsAwardDecision": [
+      "v4"
+    ],
+    "specifiesAwardCriterion": [
+      "v3"
+    ],
+    "specifiesBuyer": [
+      "v4"
+    ],
+    "specifiesCatalogueProvider": [
+      "v4"
+    ],
+    "specifiesCatalogueReceiver": [
+      "v4"
+    ],
+    "specifiesCleanVehicleDirectiveContractType": [
+      "v4"
+    ],
+    "specifiesCleanVehicleDirectiveVehicleCategory": [
+      "v4"
+    ],
+    "specifiesDeliverable": [
+      "v4"
+    ],
+    "specifiesDeliveryAgreementLocation": [
+      "v4"
+    ],
+    "specifiesEconomicOperator": [
+      "v4"
+    ],
+    "specifiesExclusionGround": [
+      "v3"
+    ],
+    "specifiesPlaceOfDelivery": [
+      "v4"
+    ],
+    "specifiesPlaceOfDespatch": [
+      "v4"
+    ],
+    "specifiesProcurementCriteriaSummary": [
+      "v4"
+    ],
+    "specifiesProcurementCriterion": [
+      "v4"
+    ],
+    "specifiesSelectionCriteria": [
+      "v3"
+    ],
+    "specifiesSelectionCriterion": [
+      "v3"
+    ],
+    "specifiesSubcontractors": [
+      "v3",
+      "v4"
+    ],
+    "substantiatesExclusionGround": [
+      "v3",
+      "v4"
+    ],
+    "summarisesInformationAboutCertificate": [
+      "v4"
+    ],
+    "summarisesInformationForAwardOutcome": [
+      "v4"
+    ],
+    "summarisesInformationForLotAwardOutcome": [
+      "v3"
+    ],
+    "supportsConcept": [
+      "v3"
+    ],
+    "supportsRequirement": [
+      "v3"
+    ],
+    "type": [
+      "v3"
+    ],
+    "unitType": [
+      "v3"
+    ],
+    "updatesContractValue": [
+      "v4"
+    ],
+    "usesChannel": [
+      "v3",
+      "v4"
+    ],
+    "usesTechnique": [
+      "v3",
+      "v4"
+    ]
+  },
+  "datatypeProperties": {
+    "alternative": [
+      "v3"
+    ],
+    "describesMinimumLevelOfStandards": [
+      "v4"
+    ],
+    "describesObjectiveParticipationRules": [
+      "v4"
+    ],
+    "describesProfession": [
+      "v4"
+    ],
+    "describesProfessionRelevantLaw": [
+      "v4"
+    ],
+    "describesVerificationMethod": [
+      "v4"
+    ],
+    "familyName": [
+      "v3"
+    ],
+    "givenName": [
+      "v3"
+    ],
+    "hasAbnormallyLowTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasAcceleratedProcedureJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasAccessibilityDate": [
+      "v3",
+      "v4"
+    ],
+    "hasAccessURL": [
+      "v3",
+      "v4"
+    ],
+    "hasActivityDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasAdditionalInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasAdditionalInformationDeadline": [
+      "v3",
+      "v4"
+    ],
+    "hasAdditionalNonAwardJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasAddressURL": [
+      "v4"
+    ],
+    "hasAlias": [
+      "v3",
+      "v4"
+    ],
+    "hasAmountValue": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardCriteriaEvaluationFormula": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardCriteriaOrderJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardCriteriaStatedInProcurementDocuments": [
+      "v4"
+    ],
+    "hasAwardDateScheduled": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardDecisionDate": [
+      "v3",
+      "v4"
+    ],
+    "hasAwardRank": [
+      "v3",
+      "v4"
+    ],
+    "hasBeginning": [
+      "v3",
+      "v4"
+    ],
+    "hasBuyerCategoryDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasBuyerLegalTypeDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasBuyerProfile": [
+      "v3",
+      "v4"
+    ],
+    "hasCalculationMethod": [
+      "v3",
+      "v4"
+    ],
+    "hasCertificationNumber": [
+      "v4"
+    ],
+    "hasChangeDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasChangeReasonDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasCleanVehicles": [
+      "v3",
+      "v4"
+    ],
+    "hasConditionVerificationMethod": [
+      "v4"
+    ],
+    "hasConfidentialityJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasContactName": [
+      "v3",
+      "v4"
+    ],
+    "hasContractConclusionDate": [
+      "v3",
+      "v4"
+    ],
+    "hasContractorLegalFormRequirement": [
+      "v3"
+    ],
+    "hasContractorLegalFormRequirementDescription": [
+      "v3"
+    ],
+    "hasCrossBorderLaw": [
+      "v3",
+      "v4"
+    ],
+    "hasCurrencyCodeListAgencyID": [
+      "v3",
+      "v4"
+    ],
+    "hasCurrencyCodeListAgencyName": [
+      "v3",
+      "v4"
+    ],
+    "hasCurrencyCodeListID": [
+      "v3",
+      "v4"
+    ],
+    "hasDeadline": [
+      "v3",
+      "v4"
+    ],
+    "hasDecisionDate": [
+      "v3",
+      "v4"
+    ],
+    "hasDescription": [
+      "v3"
+    ],
+    "hasDescriptionOfPrizes": [
+      "v4"
+    ],
+    "hasDispatchDate": [
+      "v3",
+      "v4"
+    ],
+    "hasDurationExtensionJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasEAuctionURL": [
+      "v3",
+      "v4"
+    ],
+    "hasEEAReceivedTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasEFormsSubtype": [
+      "v4"
+    ],
+    "hasEInvoicing": [
+      "v3",
+      "v4"
+    ],
+    "hasElectronicSubmission": [
+      "v3",
+      "v4"
+    ],
+    "hasElectronicTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasElementReference": [
+      "v3",
+      "v4"
+    ],
+    "hasEnd": [
+      "v3",
+      "v4"
+    ],
+    "hasEndpoint": [
+      "v3"
+    ],
+    "hasEntryIntoForceDate": [
+      "v3",
+      "v4"
+    ],
+    "hasEOrdering": [
+      "v3",
+      "v4"
+    ],
+    "hasEPayment": [
+      "v3",
+      "v4"
+    ],
+    "hasESenderDispatchDate": [
+      "v4"
+    ],
+    "hasEstimatedContractNoticePublicationDate": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedInvitationToExpressInterestDate": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedInvitationToTenderDate": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedPercentage": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedTenderInvitationDate": [
+      "v3",
+      "v4"
+    ],
+    "hasEstimatedTotalSubcontracts": [
+      "v3",
+      "v4"
+    ],
+    "hasEUReceivedTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasFax": [
+      "v3",
+      "v4"
+    ],
+    "hasFixedValue": [
+      "v3",
+      "v4"
+    ],
+    "hasFollowupContract": [
+      "v3",
+      "v4"
+    ],
+    "hasFollowupContractInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasFormNumber": [
+      "v4"
+    ],
+    "hasFormula": [
+      "v3",
+      "v4"
+    ],
+    "hasGroupLotEvaluationMethod": [
+      "v3",
+      "v4"
+    ],
+    "hasGroupType": [
+      "v3",
+      "v4"
+    ],
+    "hasGuaranteeDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasIdentifierValue": [
+      "v3"
+    ],
+    "hasInadmissibleTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasInstanceReference": [
+      "v3"
+    ],
+    "hasInternetAddress": [
+      "v3",
+      "v4"
+    ],
+    "hasJuryDecisionBinding": [
+      "v3"
+    ],
+    "hasJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasLateSubmissionInformationDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasLegalBasisDescription": [
+      "v4"
+    ],
+    "hasLegalFormRequirement": [
+      "v4"
+    ],
+    "hasLegalFormType": [
+      "v3",
+      "v4"
+    ],
+    "hasLegalName": [
+      "v3",
+      "v4"
+    ],
+    "hasLotAwardCombination": [
+      "v3",
+      "v4"
+    ],
+    "hasLotAwardLimit": [
+      "v3"
+    ],
+    "hasMainActivityDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasMainFeature": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumLotSubmissionAllowed": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumNumberOfCandidates": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumNumberOfLotsToBeAwarded": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumNumberOfRenewals": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumParticipantsNumber": [
+      "v3",
+      "v4"
+    ],
+    "hasMaximumShare": [
+      "v3",
+      "v4"
+    ],
+    "hasMediumTenderPerLots": [
+      "v3",
+      "v4"
+    ],
+    "hasMinimumNumberOfCandidates": [
+      "v3",
+      "v4"
+    ],
+    "hasMinimumShare": [
+      "v3",
+      "v4"
+    ],
+    "hasMinimumSubcontractorsProposedObligation": [
+      "v3",
+      "v4"
+    ],
+    "hasModificationDescription": [
+      "v3"
+    ],
+    "hasModificationReasonDescription": [
+      "v3"
+    ],
+    "hasName": [
+      "v3"
+    ],
+    "hasNationalProcedureRules": [
+      "v3",
+      "v4"
+    ],
+    "hasNonAccessibilityCriterionJustification": [
+      "v3",
+      "v4"
+    ],
+    "hasNonAwardedContractNumber": [
+      "v3",
+      "v4"
+    ],
+    "hasNonAwardedContractTitle": [
+      "v3",
+      "v4"
+    ],
+    "hasNonEEAReceivedTenders": [
+      "v4"
+    ],
+    "hasNoNegotiationNecessary": [
+      "v3",
+      "v4"
+    ],
+    "hasNonElectronicSubmissionDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasNonEUReceivedTenders": [
+      "v4"
+    ],
+    "hasNoticePublicationNumber": [
+      "v4"
+    ],
+    "hasNumberOfReviewRequests": [
+      "v3",
+      "v4"
+    ],
+    "hasNumberOfTenderersInvited": [
+      "v3",
+      "v4"
+    ],
+    "hasOJSIssueNumber": [
+      "v4"
+    ],
+    "hasOJSType": [
+      "v4"
+    ],
+    "hasOpeningDateTime": [
+      "v3",
+      "v4"
+    ],
+    "hasOpeningDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasOpeningURL": [
+      "v3",
+      "v4"
+    ],
+    "hasOptions": [
+      "v3",
+      "v4"
+    ],
+    "hasOptionsDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasOrganisationUnit": [
+      "v3"
+    ],
+    "hasOtherCountriesReceivedTenders": [
+      "v4"
+    ],
+    "hasOverallCostAwardCriteriaPonderation": [
+      "v3",
+      "v4"
+    ],
+    "hasOverallPriceAwardCriteriaPonderation": [
+      "v3",
+      "v4"
+    ],
+    "hasOverallQualityAwardCriteriaPonderation": [
+      "v3",
+      "v4"
+    ],
+    "hasParticipationPayment": [
+      "v3",
+      "v4"
+    ],
+    "hasPaymentArrangement": [
+      "v3",
+      "v4"
+    ],
+    "hasPaymentValueDiscrepancyJustification": [
+      "v4"
+    ],
+    "hasPerformanceConditions": [
+      "v3",
+      "v4"
+    ],
+    "hasPlaceOfPerformanceAdditionalInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasPreferredPublicationDate": [
+      "v3"
+    ],
+    "hasPreviousVersionOfElementReference": [
+      "v3"
+    ],
+    "hasPrizeRank": [
+      "v3",
+      "v4"
+    ],
+    "hasProcurementDocumentChangeDate": [
+      "v3",
+      "v4"
+    ],
+    "hasPropertyReference": [
+      "v3"
+    ],
+    "hasPublicAccessURL": [
+      "v3",
+      "v4"
+    ],
+    "hasPublicationDate": [
+      "v3",
+      "v4"
+    ],
+    "hasQualificationCondition": [
+      "v4"
+    ],
+    "hasQualificationSystemRenewalDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasQuantityValue": [
+      "v3",
+      "v4"
+    ],
+    "hasReceiptDeadline": [
+      "v3",
+      "v4"
+    ],
+    "hasReceiptExpressionDeadline": [
+      "v3",
+      "v4"
+    ],
+    "hasReceiptParticipationRequestDeadline": [
+      "v4"
+    ],
+    "hasReceiptPreliminaryMarketConsultationDeadline": [
+      "v4"
+    ],
+    "hasReceiptTenderDeadline": [
+      "v4"
+    ],
+    "hasReceivedMicroTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasReceivedNonEEATenders": [
+      "v3"
+    ],
+    "hasReceivedNonEUTenders": [
+      "v3"
+    ],
+    "hasReceivedParticipationRequests": [
+      "v3",
+      "v4"
+    ],
+    "hasReceivedSmallTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasReceivedSMETenders": [
+      "v3"
+    ],
+    "hasReceivedTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasReceptionDate": [
+      "v3",
+      "v4"
+    ],
+    "hasRecurrenceDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasReferenceURI": [
+      "v4"
+    ],
+    "hasRenewalDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasRequestDate": [
+      "v3",
+      "v4"
+    ],
+    "hasRestrictedAccessURL": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewDeadline": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewDeadlineInformation": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewIrregularityCount": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewProcedure": [
+      "v3",
+      "v4"
+    ],
+    "hasReviewURL": [
+      "v3",
+      "v4"
+    ],
+    "hasScheme": [
+      "v4"
+    ],
+    "hasSchemeAgencyId": [
+      "v3"
+    ],
+    "hasSchemeAgencyName": [
+      "v3"
+    ],
+    "hasSchemeDataURI": [
+      "v3"
+    ],
+    "hasSchemeID": [
+      "v3"
+    ],
+    "hasSchemeName": [
+      "v3"
+    ],
+    "hasSchemeURI": [
+      "v3"
+    ],
+    "hasSchemeVersion": [
+      "v4"
+    ],
+    "hasSchemeVersionID": [
+      "v3"
+    ],
+    "hasSelectionCriteriaStatedInProcurementDocuments": [
+      "v4"
+    ],
+    "hasServiceReservedToParticularProfession": [
+      "v4"
+    ],
+    "hasSMEReceivedTenders": [
+      "v4"
+    ],
+    "hasSMEReceivedTendersExcludingSubcontractors": [
+      "v4"
+    ],
+    "hasStrategicProcurementDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasSubcontractingInvolved": [
+      "v3",
+      "v4"
+    ],
+    "hasSubcontractorsProposedAboveObligation": [
+      "v3",
+      "v4"
+    ],
+    "hasSubjectMatter": [
+      "v3",
+      "v4"
+    ],
+    "hasSubmissionURL": [
+      "v3",
+      "v4"
+    ],
+    "hasSuccessiveReduction": [
+      "v3",
+      "v4"
+    ],
+    "hasThresholdValue": [
+      "v3",
+      "v4"
+    ],
+    "hasTitle": [
+      "v3"
+    ],
+    "hasTotalNumberOfComplainants": [
+      "v3",
+      "v4"
+    ],
+    "hasTotalVehicles": [
+      "v3",
+      "v4"
+    ],
+    "hasUnitDescription": [
+      "v3",
+      "v4"
+    ],
+    "hasUnverifiedTenders": [
+      "v3",
+      "v4"
+    ],
+    "hasURL": [
+      "v3",
+      "v4"
+    ],
+    "hasVersion": [
+      "v3",
+      "v4"
+    ],
+    "hasWithdrawalDate": [
+      "v3",
+      "v4"
+    ],
+    "hasWithdrawalReason": [
+      "v3",
+      "v4"
+    ],
+    "hasZeroEmissionVehicles": [
+      "v3",
+      "v4"
+    ],
+    "indicatesPerformingStaffInformationRequirement": [
+      "v4"
+    ],
+    "isAccelerated": [
+      "v3",
+      "v4"
+    ],
+    "isAdhocChannel": [
+      "v3"
+    ],
+    "isAdvancedElectronicSignatureRequired": [
+      "v3",
+      "v4"
+    ],
+    "isAwardedByCPB": [
+      "v3",
+      "v4"
+    ],
+    "isCompetitionTerminated": [
+      "v3",
+      "v4"
+    ],
+    "isContractingEntity": [
+      "v3",
+      "v4"
+    ],
+    "isCoveredByGPA": [
+      "v3",
+      "v4"
+    ],
+    "isDesignContest": [
+      "v3",
+      "v4"
+    ],
+    "isDPSTerminated": [
+      "v3",
+      "v4"
+    ],
+    "isGuaranteeRequired": [
+      "v3",
+      "v4"
+    ],
+    "isJointProcurement": [
+      "v3",
+      "v4"
+    ],
+    "isJuryDecisionBinding": [
+      "v4"
+    ],
+    "isListedCompany": [
+      "v3",
+      "v4"
+    ],
+    "isMultipleTenderSubmissionAllowed": [
+      "v3",
+      "v4"
+    ],
+    "isNonDisclosureAgreementRequired": [
+      "v4"
+    ],
+    "isOneLotOnlyAllowed": [
+      "v3",
+      "v4"
+    ],
+    "isProcurementDocumentChanged": [
+      "v3",
+      "v4"
+    ],
+    "isProcurementDocumentRestricted": [
+      "v3",
+      "v4"
+    ],
+    "isRecurrent": [
+      "v3",
+      "v4"
+    ],
+    "isRenewalIndicator": [
+      "v3",
+      "v4"
+    ],
+    "isSecurityClearanceRequired": [
+      "v4"
+    ],
+    "isSMESuitable": [
+      "v3",
+      "v4"
+    ],
+    "isSubcontractingPercentageKnown": [
+      "v4"
+    ],
+    "isSubcontractingValueKnown": [
+      "v4"
+    ],
+    "isSubmissionForAllLotsAllowed": [
+      "v3"
+    ],
+    "isSubmissionForAllLotsRequired": [
+      "v4"
+    ],
+    "isToBeRelaunched": [
+      "v3",
+      "v4"
+    ],
+    "isUsedForCandidateRestriction": [
+      "v3",
+      "v4"
+    ],
+    "isUsingEUFunds": [
+      "v3",
+      "v4"
+    ],
+    "isVariant": [
+      "v3",
+      "v4"
+    ],
+    "isWithdrawn": [
+      "v3",
+      "v4"
+    ],
+    "isWithinFrameworkAgreement": [
+      "v3"
+    ],
+    "name": [
+      "v3"
+    ],
+    "usesCleanVehicleDirective": [
+      "v4"
+    ]
+  },
+  "prefixes": {
+    "epo": "http://data.europa.eu/a4g/ontology#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "adms": "http://www.w3.org/ns/adms#",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "m8g": "http://data.europa.eu/m8g/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "org": "http://www.w3.org/ns/org#",
+    "cdm": "http://publications.europa.eu/ontology/cdm#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
+  "keywords": [
+    "SELECT",
+    "CONSTRUCT",
+    "DESCRIBE",
+    "ASK",
+    "WHERE",
+    "FILTER",
+    "OPTIONAL",
+    "UNION",
+    "MINUS",
+    "GRAPH",
+    "SERVICE",
+    "BIND",
+    "VALUES",
+    "GROUP BY",
+    "ORDER BY",
+    "HAVING",
+    "LIMIT",
+    "OFFSET",
+    "DISTINCT",
+    "REDUCED",
+    "AS",
+    "FROM",
+    "NAMED",
+    "PREFIX",
+    "BASE",
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "AVG",
+    "SAMPLE",
+    "GROUP_CONCAT",
+    "BOUND",
+    "IF",
+    "COALESCE",
+    "EXISTS",
+    "NOT EXISTS",
+    "STR",
+    "LANG",
+    "LANGMATCHES",
+    "DATATYPE",
+    "IRI",
+    "URI",
+    "STRSTARTS",
+    "STRENDS",
+    "CONTAINS",
+    "STRLEN",
+    "SUBSTR",
+    "REPLACE",
+    "UCASE",
+    "LCASE",
+    "CONCAT",
+    "REGEX",
+    "YEAR",
+    "MONTH",
+    "DAY",
+    "HOURS",
+    "MINUTES",
+    "SECONDS",
+    "NOW",
+    "RAND",
+    "ABS",
+    "CEIL",
+    "FLOOR",
+    "ROUND",
+    "ASC",
+    "DESC",
+    "true",
+    "false",
+    "IN",
+    "NOT IN",
+    "a"
+  ]
+}

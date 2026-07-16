@@ -30,7 +30,7 @@ let exchangeRatesPromise = null;
 async function ensureLoaded() {
   if (epoData) return;
   if (loadingPromise) return loadingPromise;
-  loadingPromise = fetch('src/assets/epo-terms-v4.json')
+  loadingPromise = fetch('src/assets/epo-terms.json')
     .then(r => r.json())
     .then(data => { epoData = data; })
     .catch(err => {
@@ -82,6 +82,17 @@ async function ensureExchangeRatesLoaded() {
 }
 
 /**
+ * Build a CodeMirror completion option for an ePO term.
+ * Appends a version suffix ((v3) or (v4)) to the label for terms that exist
+ * in only one version; terms common to both have no suffix.
+ * The `apply` field always inserts just epo:TermName without the suffix.
+ */
+function epoOption(term, versions, type, boost = 0) {
+  const vLabel = versions.length === 2 ? '' : ` (${versions[0]})`;
+  return { label: `epo:${term}${vLabel}`, apply: `epo:${term}`, type, boost };
+}
+
+/**
  * CodeMirror completion source for SPARQL + ePO.
  * Provides completions for:
  * - SPARQL keywords (SELECT, WHERE, FILTER, etc.)
@@ -123,8 +134,8 @@ export function epoCompletionSource(context) {
 
   // After "a " or "rdf:type " — suggest classes (even with no word typed)
   if (/\ba\s+$/.test(lineText) || /rdf:type\s+$/.test(lineText)) {
-    for (const cls of epoData.classes) {
-      options.push({ label: `epo:${cls}`, type: 'class' });
+    for (const [cls, versions] of Object.entries(epoData.classes)) {
+      options.push(epoOption(cls, versions, 'class'));
     }
     if (options.length > 0) return { from: context.pos, options };
   }
@@ -135,19 +146,19 @@ export function epoCompletionSource(context) {
   // After "epo:" — suggest classes and properties
   if (text.startsWith('epo:')) {
     const fragment = text.substring(4).toLowerCase();
-    for (const cls of epoData.classes) {
+    for (const [cls, versions] of Object.entries(epoData.classes)) {
       if (cls.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${cls}`, type: 'class', boost: 2 });
+        options.push(epoOption(cls, versions, 'class', 2));
       }
     }
-    for (const prop of epoData.objectProperties) {
+    for (const [prop, versions] of Object.entries(epoData.objectProperties)) {
       if (prop.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${prop}`, type: 'property', boost: 1 });
+        options.push(epoOption(prop, versions, 'property', 1));
       }
     }
-    for (const prop of epoData.datatypeProperties) {
+    for (const [prop, versions] of Object.entries(epoData.datatypeProperties)) {
       if (prop.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${prop}`, type: 'property', boost: 1 });
+        options.push(epoOption(prop, versions, 'property', 1));
       }
     }
     if (options.length > 0) return { from, options };
