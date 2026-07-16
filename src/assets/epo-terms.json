@@ -71,9 +71,11 @@
       "v4"
     ],
     "CANSocialNotice": [
+      "v3",
       "v4"
     ],
     "CANStandardNotice": [
+      "v3",
       "v4"
     ],
     "CatalogueProvider": [
@@ -101,15 +103,19 @@
       "v4"
     ],
     "CNSocialNotice": [
+      "v3",
       "v4"
     ],
     "CNStandardNotice": [
+      "v3",
       "v4"
     ],
     "CompetitionNotice": [
+      "v3",
       "v4"
     ],
     "CompletionNotice": [
+      "v3",
       "v4"
     ],
     "ConcessionContract": [
@@ -142,6 +148,7 @@
       "v3"
     ],
     "ContractModificationNotice": [
+      "v3",
       "v4"
     ],
     "Contractor": [
@@ -157,6 +164,7 @@
       "v4"
     ],
     "DesignContestNotice": [
+      "v3",
       "v4"
     ],
     "DesignContestRegimeTerm": [
@@ -164,9 +172,11 @@
       "v4"
     ],
     "DesignContestResultNotice": [
+      "v3",
       "v4"
     ],
     "DirectAwardPrenotificationNotice": [
+      "v3",
       "v4"
     ],
     "DirectAwardTerm": [
@@ -201,6 +211,9 @@
     ],
     "eFormsNotice": [
       "v4"
+    ],
+    "EFormsNotice": [
+      "v3"
     ],
     "ElectronicSignature": [
       "v4"
@@ -333,123 +346,163 @@
       "v4"
     ],
     "Notice1": [
+      "v3",
       "v4"
     ],
     "Notice10": [
+      "v3",
       "v4"
     ],
     "Notice11": [
+      "v3",
       "v4"
     ],
     "Notice12": [
+      "v3",
       "v4"
     ],
     "Notice13": [
+      "v3",
       "v4"
     ],
     "Notice14": [
+      "v3",
       "v4"
     ],
     "Notice15": [
+      "v3",
       "v4"
     ],
     "Notice16": [
+      "v3",
       "v4"
     ],
     "Notice17": [
+      "v3",
       "v4"
     ],
     "Notice18": [
+      "v3",
       "v4"
     ],
     "Notice19": [
+      "v3",
       "v4"
     ],
     "Notice2": [
+      "v3",
       "v4"
     ],
     "Notice20": [
+      "v3",
       "v4"
     ],
     "Notice21": [
+      "v3",
       "v4"
     ],
     "Notice22": [
+      "v3",
       "v4"
     ],
     "Notice23": [
+      "v3",
       "v4"
     ],
     "Notice24": [
+      "v3",
       "v4"
     ],
     "Notice25": [
+      "v3",
       "v4"
     ],
     "Notice26": [
+      "v3",
       "v4"
     ],
     "Notice27": [
+      "v3",
       "v4"
     ],
     "Notice28": [
+      "v3",
       "v4"
     ],
     "Notice29": [
+      "v3",
       "v4"
     ],
     "Notice3": [
+      "v3",
       "v4"
     ],
     "Notice30": [
+      "v3",
       "v4"
     ],
     "Notice31": [
+      "v3",
       "v4"
     ],
     "Notice32": [
+      "v3",
       "v4"
     ],
     "Notice33": [
+      "v3",
       "v4"
     ],
     "Notice34": [
+      "v3",
       "v4"
     ],
     "Notice35": [
+      "v3",
       "v4"
     ],
     "Notice36": [
+      "v3",
       "v4"
     ],
     "Notice37": [
+      "v3",
       "v4"
     ],
     "Notice38": [
+      "v3",
       "v4"
     ],
     "Notice39": [
+      "v3",
       "v4"
     ],
     "Notice4": [
+      "v3",
       "v4"
     ],
     "Notice40": [
+      "v3",
       "v4"
     ],
     "Notice5": [
+      "v3",
       "v4"
     ],
     "Notice6": [
+      "v3",
       "v4"
     ],
     "Notice7": [
+      "v3",
       "v4"
     ],
     "Notice8": [
+      "v3",
       "v4"
     ],
     "Notice9": [
+      "v3",
       "v4"
     ],
     "NoticeAwardInformation": [
@@ -548,12 +601,15 @@
       "v3"
     ],
     "PINOnlyNotice": [
+      "v3",
       "v4"
     ],
     "PINProfileNotice": [
+      "v3",
       "v4"
     ],
     "PINTimeLimitNotice": [
+      "v3",
       "v4"
     ],
     "PlannedProcurementPart": [
@@ -561,7 +617,11 @@
       "v4"
     ],
     "PlanningNotice": [
+      "v3",
       "v4"
+    ],
+    "PMCNotice": [
+      "v3"
     ],
     "PreMarketConsultationNotice": [
       "v4"
@@ -635,6 +695,7 @@
       "v4"
     ],
     "QSNotice": [
+      "v3",
       "v4"
     ],
     "QualificationCriteriaSummary": [
@@ -656,6 +717,7 @@
       "v4"
     ],
     "ResultNotice": [
+      "v3",
       "v4"
     ],
     "ReviewDecision": [
@@ -721,6 +783,7 @@
       "v4"
     ],
     "StandardFormsNotice": [
+      "v3",
       "v4"
     ],
     "StatisticalInformation": [
@@ -736,6 +799,7 @@
       "v4"
     ],
     "SubcontractNotice": [
+      "v3",
       "v4"
     ],
     "Subcontractor": [
@@ -1450,6 +1514,7 @@
       "v3"
     ],
     "hasImplementingRegulation": [
+      "v3",
       "v4"
     ],
     "hasInternalIdentifier": [
