@@ -164,3 +164,34 @@ test('SearchPanel still corrects the editor when the editor reader is not wired'
   assert.ok(writes.some((t) => t.includes('hasIdentifierValue')),
     'without an editor reader, the fallback query is still reflected');
 });
+
+// ── "not found" chip in the history dropdown (issue #79) ─────────
+
+// Walk the stub-element tree (the DOM shim exposes appended children on
+// `_children`) and return the first element whose className matches.
+function findByClass(el, cls) {
+  for (const child of el._children || []) {
+    if ((child.className || '').includes(cls)) return child;
+    const nested = findByClass(child, cls);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+test('a not-found history item renders a "not found" chip', () => {
+  const controller = new ExplorerController({ doSPARQL: async () => EMPTY_RESULT });
+  const panel = new SearchPanel(controller, {});
+  const li = panel._buildHistoryItem({ type: 'notice-number', value: '00172531-2026', notFound: true }, false);
+
+  const chip = findByClass(li, 'badge-not-found');
+  assert.ok(chip, 'a not-found item should render the chip');
+  assert.equal(chip.textContent, 'not found');
+});
+
+test('a found history item renders no "not found" chip', () => {
+  const controller = new ExplorerController({ doSPARQL: async () => EMPTY_RESULT });
+  const panel = new SearchPanel(controller, {});
+  const li = panel._buildHistoryItem({ type: 'notice-number', value: '00172531-2026' }, false);
+
+  assert.equal(findByClass(li, 'badge-not-found'), null, 'no chip for a found notice');
+});

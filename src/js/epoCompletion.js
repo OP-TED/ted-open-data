@@ -17,8 +17,12 @@
  * Loads terms from a local JSON file and provides context-aware completions.
  */
 
+import { buildCurrencySnippet } from './utils/currencySnippet.js';
+
 let epoData = null;
 let loadingPromise = null;
+let exchangeRatesData = null;
+let exchangeRatesPromise = null;
 
 /**
  * Load ePO terms from the JSON file. Called once, cached thereafter.
@@ -26,7 +30,7 @@ let loadingPromise = null;
 async function ensureLoaded() {
   if (epoData) return;
   if (loadingPromise) return loadingPromise;
-  loadingPromise = fetch('src/assets/epo-terms-v4.json')
+  loadingPromise = fetch('src/assets/epo-terms.json')
     .then(r => r.json())
     .then(data => { epoData = data; })
     .catch(err => {
@@ -34,6 +38,58 @@ async function ensureLoaded() {
       loadingPromise = null;
     });
   return loadingPromise;
+}
+
+// Exchange rates are served from the protected `data/exchange-rates` branch so they can be
+// refreshed by CI without an app release (see issue #96). The `refs/heads/` form is required
+// because the branch name contains a slash. If the remote is unreachable — or slow: the fetch
+// is time-boxed so a hanging request still fails over promptly — we fall back to the copy
+// bundled with the app, which is approximate but keeps the snippet working.
+const REMOTE_EXCHANGE_RATES_URL =
+  'https://raw.githubusercontent.com/OP-TED/ted-open-data/refs/heads/data/exchange-rates/exchange-rates.json';
+const LOCAL_EXCHANGE_RATES_URL = 'src/assets/exchange-rates.json';
+const REMOTE_EXCHANGE_RATES_TIMEOUT_MS = 4000;
+
+/**
+ * Load exchange rates, preferring the CI-maintained data branch and falling back to the
+ * bundled copy. Called once, cached thereafter.
+ */
+async function ensureExchangeRatesLoaded() {
+  if (exchangeRatesData) return;
+  if (exchangeRatesPromise) return exchangeRatesPromise;
+  // AbortController + setTimeout (as in NoticeView) rather than AbortSignal.timeout(): the latter
+  // would be evaluated synchronously in the fetch arguments, so on a runtime that lacks it the
+  // TypeError would throw before the .catch is attached — skipping the fallback and leaving an
+  // unhandled rejection. AbortController exists wherever fetch does.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REMOTE_EXCHANGE_RATES_TIMEOUT_MS);
+  exchangeRatesPromise = fetch(REMOTE_EXCHANGE_RATES_URL, { signal: controller.signal })
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .catch(err => {
+      console.warn('Remote exchange rates unavailable, using bundled copy:', err);
+      return fetch(LOCAL_EXCHANGE_RATES_URL).then(r => r.json());
+    })
+    .then(data => { exchangeRatesData = data; })
+    .catch(err => {
+      console.error('Failed to load exchange rates:', err);
+      exchangeRatesPromise = null;
+    })
+    .finally(() => clearTimeout(timer));
+  return exchangeRatesPromise;
+}
+
+/**
+ * Build a CodeMirror completion option for an ePO term.
+ * Appends a version suffix ((v3) or (v4)) to the label for terms that exist
+ * in only one version; terms common to both have no suffix.
+ * The `apply` field always inserts just epo:TermName without the suffix.
+ */
+function epoOption(term, versions, type, boost = 0) {
+  const vLabel = versions.length === 2 ? '' : ` (${versions[0]})`;
+  return { label: `epo:${term}${vLabel}`, apply: `epo:${term}`, type, boost };
 }
 
 /**
@@ -49,6 +105,8 @@ export function epoCompletionSource(context) {
     ensureLoaded();
     return null;
   }
+  // Also ensure exchange rates are loading (non-blocking)
+  if (!exchangeRatesData) ensureExchangeRatesLoaded();
 
   // Get the word being typed
   const word = context.matchBefore(/[\w:]+/);
@@ -76,8 +134,8 @@ export function epoCompletionSource(context) {
 
   // After "a " or "rdf:type " — suggest classes (even with no word typed)
   if (/\ba\s+$/.test(lineText) || /rdf:type\s+$/.test(lineText)) {
-    for (const cls of epoData.classes) {
-      options.push({ label: `epo:${cls}`, type: 'class' });
+    for (const [cls, versions] of Object.entries(epoData.classes)) {
+      options.push(epoOption(cls, versions, 'class'));
     }
     if (options.length > 0) return { from: context.pos, options };
   }
@@ -88,19 +146,19 @@ export function epoCompletionSource(context) {
   // After "epo:" — suggest classes and properties
   if (text.startsWith('epo:')) {
     const fragment = text.substring(4).toLowerCase();
-    for (const cls of epoData.classes) {
+    for (const [cls, versions] of Object.entries(epoData.classes)) {
       if (cls.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${cls}`, type: 'class', boost: 2 });
+        options.push(epoOption(cls, versions, 'class', 2));
       }
     }
-    for (const prop of epoData.objectProperties) {
+    for (const [prop, versions] of Object.entries(epoData.objectProperties)) {
       if (prop.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${prop}`, type: 'property', boost: 1 });
+        options.push(epoOption(prop, versions, 'property', 1));
       }
     }
-    for (const prop of epoData.datatypeProperties) {
+    for (const [prop, versions] of Object.entries(epoData.datatypeProperties)) {
       if (prop.toLowerCase().startsWith(fragment)) {
-        options.push({ label: `epo:${prop}`, type: 'property', boost: 1 });
+        options.push(epoOption(prop, versions, 'property', 1));
       }
     }
     if (options.length > 0) return { from, options };
@@ -138,6 +196,16 @@ export function epoCompletionSource(context) {
     });
   }
 
+  // Snippet: insert currency conversion OPTIONAL VALUES block and BIND
+  if ('currencyconversion'.startsWith(lowerText) && lowerText.length > 0 && exchangeRatesData) {
+    options.push({
+      label: 'currencyconversion (insert exchange rates to EUR)',
+      type: 'text',
+      apply: buildCurrencySnippet(exchangeRatesData),
+      boost: 3
+    });
+  }
+
   if (options.length === 0) return null;
   return { from, options };
 }
@@ -151,3 +219,4 @@ export function getEpoData() {
 
 // Start loading immediately when the module is imported
 ensureLoaded();
+ensureExchangeRatesLoaded();

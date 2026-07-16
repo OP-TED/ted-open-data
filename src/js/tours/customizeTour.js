@@ -35,15 +35,6 @@ export async function startCustomizeTour() {
       placement: 'bottom',
     },
     {
-      element: '#options-button',
-      title: 'Options',
-      content:
-        'Click to expand the options panel. Fine-tune how the endpoint executes your query: ' +
-        'set a <strong>timeout</strong>, toggle strict checking of void variables, or ask the ' +
-        'server for debug output and a compilation report.',
-      placement: 'bottom',
-    },
-    {
       element: '#run-query-button-top',
       title: 'Run your query',
       content:

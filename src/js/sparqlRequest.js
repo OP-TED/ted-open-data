@@ -13,76 +13,32 @@
  */
 // Shared SPARQL request-shape helpers.
 //
-// Three sites used to hand-build the same parameter block for the
-// Virtuoso endpoint: QueryEditor.onSubmit (POST body), QueryResults
-// .downloadAs (POST body with a caller-supplied format), and
-// QueryResults.generateUrl (GET URL for Copy endpoint URL).
+// Three sites build the same parameter block for the Virtuoso endpoint:
+// QueryEditor.onSubmit (POST body), QueryResults.downloadAs (POST body
+// with a caller-supplied format), and QueryResults.generateUrl (GET URL
+// for Copy endpoint URL). Consolidating them here keeps them honest so
+// "Copy endpoint URL" reproduces exactly what "Run Query" just ran.
 //
-// They had drifted out of sync in two places:
-//   - onSubmit / downloadAs omit `default-graph-uri` and `timeout`
-//     when the form input is blank; generateUrl always included
-//     them, so a copied URL could diverge from the query the user
-//     had just run.
-//   - onSubmit uses whatever value the timeout input has (possibly
-//     blank → omitted); generateUrl substituted 30000 when blank.
-//
-// Consolidating the three sites here keeps them honest.
+// The options they carry used to come from the Customize tab's Options
+// panel; that UI was removed (issue #32), so readSparqlOptions now returns
+// a fixed block (strict on, debug/report off, timeout/default-graph-uri
+// blank and therefore omitted).
 
 const DEFAULT_FORMAT = 'application/sparql-results+json';
 
 /**
- * Read the SPARQL options panel inputs from the DOM and return a
- * normalised object. Used by `buildSparqlBody` (for the SELECT
- * lane) and by QueryEditor's CONSTRUCT/DESCRIBE routing (which
- * passes these to ExplorerController → doSPARQL → sparqlWorker).
+ * The fixed SPARQL endpoint options every request carries. The Options UI
+ * was removed (issue #32): debug/report produced output the app never
+ * rendered, and the endpoint ignores the timeout for the values it
+ * accepted, so nothing was left worth exposing. `strict` checking stays on
+ * (the former default); `timeout` and `default-graph-uri` stay blank so the
+ * endpoint applies its own defaults (buildSparqlBody omits both). Returns a
+ * fresh object so callers can't mutate a shared constant. Used by
+ * `buildSparqlBody` (the SELECT lane) and by QueryEditor's CONSTRUCT/DESCRIBE
+ * routing (which passes these to ExplorerController → doSPARQL → sparqlWorker).
  */
 export function readSparqlOptions() {
-  const defaultGraphUri = document.getElementById('default-graph-uri')?.value || '';
-  const timeout = document.getElementById('timeout')?.value || '';
-  const strict = document.getElementById('strict')?.checked ? 'true' : 'false';
-  const debug = document.getElementById('debug')?.checked ? 'true' : 'false';
-  const report = document.getElementById('report')?.checked ? 'true' : 'false';
-  return { defaultGraphUri, timeout, strict, debug, report };
-}
-
-/**
- * Write SPARQL options into the Options panel form inputs. The
- * mirror of `readSparqlOptions` — called when a shared URL carries
- * `?opts=<JSON>` so the Customize tab's form reflects the sender's
- * settings. Without this, the first execution from the URL is
- * correct (the controller holds the options in `_sparqlOptions`),
- * but a subsequent "Run Query" from the Customize tab reads the
- * DOM form via `buildSparqlBody` and silently reverts to the
- * recipient's local defaults.
- *
- * @param {{defaultGraphUri?: string, timeout?: string,
- *          strict?: string, debug?: string, report?: string}} opts
- */
-export function hydrateSparqlOptions(opts) {
-  if (!opts || typeof opts !== 'object') return;
-
-  // Always write ALL five fields, defaulting absent keys to their
-  // empty / unchecked state. The share URL's serialiser strips
-  // empty-string values (defaultGraphUri='', timeout='') to keep
-  // the URL short, so their absence in `opts` means "the sender
-  // left this blank". If we only wrote keys that are *present*,
-  // a recipient whose form already held a non-empty timeout or
-  // default-graph-uri would keep that stale local value and a
-  // re-run from Customize would diverge from the shared request.
-  const dgu = document.getElementById('default-graph-uri');
-  if (dgu) dgu.value = opts.defaultGraphUri || '';
-
-  const timeout = document.getElementById('timeout');
-  if (timeout) timeout.value = opts.timeout || '';
-
-  const strict = document.getElementById('strict');
-  if (strict) strict.checked = opts.strict === 'true';
-
-  const debug = document.getElementById('debug');
-  if (debug) debug.checked = opts.debug === 'true';
-
-  const report = document.getElementById('report');
-  if (report) report.checked = opts.report === 'true';
+  return { defaultGraphUri: '', timeout: '', strict: 'true', debug: 'false', report: 'false' };
 }
 
 /**

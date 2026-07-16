@@ -17,7 +17,7 @@
 import { startTour } from './tour.js';
 
 export function startReuseSelectTour() {
-  startTour([
+  const steps = [
     {
       element: '#results',
       title: 'Your results',
@@ -26,6 +26,25 @@ export function startReuseSelectTour() {
         'variables you asked for in the SELECT clause.',
       placement: 'top',
     },
+  ];
+
+  // Only include the chart step when the Table/Chart toggle is actually
+  // visible (i.e. the results are chartable; ECharts itself loads on demand
+  // when the toggle is clicked). Otherwise the toggle is `d-none` and the
+  // popover would anchor to a hidden element.
+  const viewToggle = document.getElementById('results-view-toggle');
+  if (viewToggle && !viewToggle.classList.contains('d-none')) {
+    steps.push({
+      element: '#results-view-toggle',
+      title: 'Table or chart',
+      content:
+        'When your results have a numeric column, switch from the table to an interactive ' +
+        'chart — bar, line, pie or scatter — and choose which columns to plot on each axis.',
+      placement: 'bottom',
+    });
+  }
+
+  steps.push(
     {
       element: '#copy-url-button',
       title: 'Copy endpoint URL',
@@ -50,5 +69,7 @@ export function startReuseSelectTour() {
         'or visit the <strong>Explore</strong> tab to pick a different ready-made query from ' +
         'the library.',
     },
-  ]);
+  );
+
+  startTour(steps);
 }

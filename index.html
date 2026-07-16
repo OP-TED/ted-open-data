@@ -420,57 +420,11 @@
                     <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="clear-editor" title="Clear the editor">
                         <i class="bi bi-trash"></i> Clear
                     </button>
-                    <button class="btn btn-sm btn-outline-secondary ms-1" type="button" id="options-button"
-                            data-bs-toggle="collapse" data-bs-target="#options-collapse"
-                            aria-expanded="false" aria-controls="options-collapse">
-                        <i class="bi bi-gear"></i> Options
-                    </button>
                     <button type="submit" class="btn btn-sm btn-primary ms-1" id="run-query-button-top" disabled>
                         <i class="bi bi-play-fill"></i> Run
                     </button>
                 </div>
                 <p class="small text-muted mb-2" id="query-label">Compose or refine your query in SPARQL</p>
-
-                <div class="collapse mb-2" id="options-collapse">
-                    <div class="card card-body">
-                        <div class="row">
-                            <!-- First Column: Checkboxes -->
-                            <div class="col-md-6">
-                                <div class="d-flex flex-column">
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="strict" name="strict" checked>
-                                        <label class="form-check-label" for="strict">Strict checking of void variables</label>
-                                    </div>
-
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" id="debug" name="debug">
-                                        <label class="form-check-label" for="debug">Log debug info at the end of output</label>
-                                    </div>
-
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="report" name="report">
-                                        <label class="form-check-label" for="report">Generate SPARQL compilation report</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Second Column: Inputs -->
-                            <div class="col-md-6">
-                                <div class="form-floating mb-3">
-                                    <input type="number" id="timeout" name="timeout" class="form-control"
-                                        placeholder="Enter timeout in milliseconds (optional)">
-                                    <label for="timeout">Timeout (ms)</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Keep the hidden default-graph-uri input -->
-                        <div class="d-none">
-                            <input type="text" id="default-graph-uri" name="default-graph-uri" class="form-control"
-                                placeholder="Enter Graph IRI (optional)">
-                        </div>
-                    </div>
-                </div>
 
                 <div class="flex-grow-1 d-flex flex-column">
                     <div class="form-group flex-grow-1 d-flex flex-column">
@@ -493,16 +447,17 @@
                  #copy-url-alert (the id is kept for JS back-compat,
                  the class has changed from `alert` to a custom bar). -->
             <div id="copy-url-alert" class="results-toolbar d-none">
-                <span id="alert-message" class="results-toolbar-hint tab-prompt"
-                      title="Here are the results of your query.">
-                    Here are the results of your query.
+                <div id="alert-message" class="results-toolbar-hint"
+                     title="Query results">
+                    <h5 class="mb-0 d-inline">Query results</h5>
                     <button type="button" class="tour-trigger" id="reuse-select-tour-trigger"
                             data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Take a quick tour of this tab"
                             aria-label="Take a quick tour of this tab">
                         <i class="bi bi-play-circle"></i>
                     </button>
-                </span>
+                    <p class="small text-muted mb-0" id="query-execution-time" style="display: none;">Execution time: <span id="query-execution-time-value"></span></p>
+                </div>
                 <div class="results-toolbar-actions">
                     <button type="button" id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
                     <div class="dropdown d-inline-block">
@@ -517,6 +472,18 @@
                             <li><a class="dropdown-item" href="#" data-download-format="application/vnd.ms-excel">Spreadsheet</a></li>
                             <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+xml">XML</a></li>
                         </ul>
+                    </div>
+                    <div id="results-view-toggle" class="d-none d-flex align-items-center ms-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Switch between table and chart view">
+                            <input type="radio" class="btn-check" name="results-view" id="results-view-table" value="table" checked>
+                            <label class="btn btn-outline-secondary px-4" for="results-view-table">
+                                <i class="bi bi-table"></i> Table
+                            </label>
+                            <input type="radio" class="btn-check" name="results-view" id="results-view-chart" value="chart">
+                            <label class="btn btn-outline-secondary px-4" for="results-view-chart">
+                                <i class="bi bi-bar-chart"></i> Chart
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -547,6 +514,30 @@
             <div id="results">
                 <p class="text-muted">Query results will appear here...</p>
             </div>
+            <div id="chart-settings" class="d-none d-flex align-items-center justify-content-end gap-3 flex-wrap my-3 px-2">
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-type-select" class="small text-muted mb-0">Type:</label>
+                    <select id="chart-type-select" class="form-select form-select-sm" style="width: auto;">
+                        <option value="bar">Bar</option>
+                        <option value="line">Line</option>
+                        <option value="pie">Pie</option>
+                        <option value="scatter">Scatter</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-x-select" class="small text-muted mb-0">X:</label>
+                    <select id="chart-x-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-y-select" class="small text-muted mb-0">Y:</label>
+                    <select id="chart-y-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <label for="chart-group-select" class="small text-muted mb-0">Group:</label>
+                    <select id="chart-group-select" class="form-select form-select-sm" style="width: auto;"></select>
+                </div>
+            </div>
+            <div id="chart-container" class="d-none" style="width: 100%; height: 500px;"></div>
         </div> <!-- Close query-results div -->
 
         <!-- ═══ EXPLORE TAB ═══ -->
@@ -764,7 +755,7 @@
                             <li>Use the <b>Query Library</b> tab to explore suggested SPARQL queries. These will help you get started.</li>
                             <li>Use the <b>Query Editor</b> tab to compose your SPARQL query.</li>
                             <li>To test your query use the <b>Run Query</b> button.</li>
-                            <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table.</li>
+                            <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table — or as an interactive chart (bar, line, pie, scatter) via the <b>Table / Chart</b> toggle when the results are chartable.</li>
                             <li>CONSTRUCT and DESCRIBE results are displayed in the <b>Query Results</b> tab as an RDF graph (the same tree/turtle/backlinks view used by notice lookup).</li>
                             <li>For SELECT queries you can get a URL that runs the query directly by clicking on the <b>Copy URL</b> button.<br/>
                                 You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
@@ -778,9 +769,20 @@
                             <li>Type <code>epo:</code> followed by a class or property name to see ePO ontology suggestions</li>
                             <li>Type <code>a </code> after a subject to see available ePO classes</li>
                             <li>SPARQL keywords are suggested as you type</li>
+                            <li>Type <code>prefixes</code> to insert all standard PREFIX declarations at once</li>
+                            <li>Type <code>currency</code> to insert a currency-conversion snippet — an exchange-rate lookup table plus a <code>BIND</code> that converts monetary amounts to EUR</li>
                             <li>Press <b>Ctrl+Space</b> to manually trigger suggestions at any time</li>
                         </ul>
-                        <p class="small text-muted">Autocomplete is based on the eProcurement Ontology (ePO) v4.2.0.</p>
+                        <p class="small text-muted">Autocomplete covers terms from ePO v3 (Standard Forms) and v4 (eForms). Version-specific terms are labelled <code>(v3)</code> or <code>(v4)</code> in the suggestions; terms common to both versions have no label.</p>
+                        <p class="small text-muted">
+                            The exchange rates in the <code>currency</code> snippet are approximate and provided only to
+                            illustrate how conversion can be expressed in SPARQL. They are sourced from the European
+                            Commission's monthly
+                            <a href="https://ec.europa.eu/budg/inforeuro/" target="_blank" rel="noopener noreferrer">InforEuro</a>
+                            accounting rates and refreshed periodically. Amounts are converted at the latest available
+                            rate — not the rate at the time each notice was published — so do not rely on the result for
+                            precise or legally meaningful figures.
+                        </p>
 
                         <h4>Query Library</h4>
                         <p>
@@ -1006,6 +1008,11 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Apache ECharts (query-results charting) is ~1 MB, so it is lazy-loaded
+         on the first switch to Chart view by ChartView._loadECharts() rather
+         than shipped to every page load. -->
+
 
     <!-- N3 (Turtle parser) — used by the ported explorer modules
          (sparqlService.js parses CONSTRUCT/DESCRIBE results into quads).

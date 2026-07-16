@@ -28,6 +28,7 @@ import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 import {copyToClipboard} from './utils/clipboardCopy.js';
+import {formatElapsedTime} from './utils/formatTime.js';
 
 /**
  * Class representing the Query Editor.
@@ -87,7 +88,7 @@ export class QueryEditor {
       // ePO term validation — check epo:Term references against known terms
       const epo = getEpoData();
       if (epo) {
-        const allTerms = new Set([...epo.classes, ...epo.objectProperties, ...epo.datatypeProperties]);
+        const allTerms = new Set([...Object.keys(epo.classes), ...Object.keys(epo.objectProperties), ...Object.keys(epo.datatypeProperties)]);
         const allTermsLower = new Map();
         for (const term of allTerms) {
           allTermsLower.set(term.toLowerCase(), term);
@@ -362,9 +363,9 @@ export class QueryEditor {
           // need a try/catch here. If that contract ever changes
           // the unhandled rejection will surface the regression
           // immediately rather than being silently logged.
-          // Read the Options panel so CONSTRUCT/DESCRIBE queries
-          // honour timeout / strict / debug / report /
-          // default-graph-uri the same way SELECT queries do.
+          // Read the fixed endpoint options so CONSTRUCT/DESCRIBE queries
+          // send timeout / strict / debug / report / default-graph-uri
+          // the same way SELECT queries do.
           const sparqlOptions = readSparqlOptions();
           await this.explorerController.search(
             { type: 'query', query: queryText },
@@ -404,6 +405,10 @@ export class QueryEditor {
       this.resultsErrorState.style.display = 'none';
       this.resultsErrorMessage.textContent = '';
       this.resultsDiv.innerHTML = '';
+
+      // Hide execution time from previous run
+      const execTimeContainer = document.getElementById('query-execution-time');
+      if (execTimeContainer) execTimeContainer.style.display = 'none';
 
       try {
         const query = this.getQuery();
@@ -450,6 +455,15 @@ export class QueryEditor {
         progressBar.style.width = '0%';
         progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
         queryTimer.textContent = `${elapsed}s`;
+
+        // Display the execution time in the results toolbar
+        const execTimeContainer = document.getElementById('query-execution-time');
+        const execTimeValue = document.getElementById('query-execution-time-value');
+        if (execTimeContainer && execTimeValue) {
+          execTimeValue.textContent = formatElapsedTime(elapsed);
+          execTimeContainer.style.display = 'block';
+        }
+
         submitButtons.forEach(b => b.disabled = false);
         const hasLibrarySelection = document.querySelector('#query-accordion .list-group-item.active') !== null;
         document.querySelectorAll('#try-query-button, .query-try-btn, #customise-query-button, .query-customise-btn').forEach(b => b.disabled = !hasLibrarySelection);

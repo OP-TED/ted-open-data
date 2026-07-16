@@ -17,6 +17,15 @@ import { triggerBlobDownload } from './utils/download.js';
 import { classifyError } from './utils/errorMessages.js';
 import { buildSparqlBody, buildSparqlUrl } from './sparqlRequest.js';
 import { showToast } from './utils/toast.js';
+import { ChartView } from './ChartView.js';
+
+// Domains that host actual navigable web pages in TED query results.
+// An allowlist is safer than a blocklist: it stays correct as new
+// data namespaces are added to the triplestore without needing updates here.
+// Only URIs whose hostname is in this set are rendered as clickable links.
+const NAVIGABLE_DOMAINS = new Set([
+  'ted.europa.eu',
+]);
 
 /**
  * Class representing the Query Results.
@@ -35,6 +44,7 @@ export class QueryResults {
     this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
+    this.chartView = new ChartView();
 
     this.initEventListeners();
   }
@@ -112,6 +122,7 @@ export class QueryResults {
       td.textContent = String(data.boolean);
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.destroy();
       return;
     }
 
@@ -134,15 +145,63 @@ export class QueryResults {
         tr.className = index % 2 === 1 ? 'even' : '';
         headers.forEach((header) => {
           const td = tr.insertCell();
-          td.textContent = row[header]?.value || "";
+          const binding = row[header];
+          td.appendChild(this._renderCell(binding));
         });
       });
 
       this.resultsDiv.appendChild(table);
       this.setToolbarVisible(true);
+      this.chartView.setData(data);
     } else {
       this.resultsDiv.textContent = "No results found.";
       this.setToolbarVisible(false);
+      this.chartView.destroy();
+    }
+  }
+
+  /**
+   * Render a single SPARQL result binding as a DOM node.
+   * URI bindings that look like navigable web URLs (http/https pointing
+   * to a known web domain) are rendered as clickable links opening in a
+   * new tab. Everything else is plain text.
+   *
+   * Security is provided entirely by _isWebUrl: it uses new URL() to parse
+   * the value and checks the hostname against an allowlist of known
+   * navigable domains. Any dangerous scheme (javascript:, data:, etc.)
+   * either fails to parse or returns a hostname that isn't in the allowlist.
+   *
+   * @param {{ type: string, value: string }|undefined} binding
+   * @returns {Node}
+   */
+  _renderCell(binding) {
+    const value = binding?.value || '';
+    if (binding?.type === 'uri' && QueryResults._isWebUrl(value)) {
+      const a = document.createElement('a');
+      a.href = value;
+      a.textContent = value;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      return a;
+    }
+    return document.createTextNode(value);
+  }
+
+  /**
+   * Returns true only for http/https URIs whose hostname is in the
+   * NAVIGABLE_DOMAINS allowlist — i.e. URIs that point to real web pages
+   * rather than ontology terms or RDF data resources.
+   *
+   * @param {string} value
+   * @returns {boolean}
+   */
+  static _isWebUrl(value) {
+    try {
+      const { protocol, hostname } = new URL(value);
+      if (protocol !== 'http:' && protocol !== 'https:') return false;
+      return NAVIGABLE_DOMAINS.has(hostname);
+    } catch {
+      return false;
     }
   }
 
@@ -171,6 +230,7 @@ export class QueryResults {
 
     this.resultsDiv.appendChild(pre);
     this.setToolbarVisible(true);
+    this.chartView.destroy();
   }
 
   /**
@@ -231,8 +291,9 @@ export class QueryResults {
     const body = buildSparqlBody(minifiedQuery, format);
 
     try {
-      const sparqlTimeout = Number(document.getElementById('timeout')?.value) || 60_000;
-      const downloadTimeout = Math.max(sparqlTimeout, 10_000);
+      // Client-side abort ceiling for the download fetch. The user-facing
+      // server timeout option was removed (issue #32), so use a fixed 60s.
+      const downloadTimeout = 60_000;
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), downloadTimeout);
       const response = await fetch(this.queryEditor.sparqlEndpoint, {
@@ -258,7 +319,7 @@ export class QueryResults {
     } catch (error) {
       console.error('Download failed:', error);
       if (error?.name === 'AbortError') {
-        showToast('Download timed out', 'The download took too long. Try a narrower query or increase the timeout in Options.', { variant: 'danger' });
+        showToast('Download timed out', 'The download took too long. Try narrowing your query with a LIMIT or more specific filters.', { variant: 'danger' });
       } else {
         const { friendly } = classifyError(error, 'select');
         showToast('Download failed', friendly, { variant: 'danger' });
