@@ -22,6 +22,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
+import { fillTemplate, isValidDate } from './utils/queryParameters.js';
 
 /**
  * Class representing the Query Library.
@@ -73,11 +74,20 @@ export class QueryLibrary {
     this.customiseQueryButton = document.getElementById('customise-query-button');
     this.tryQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-try-btn');
     this.customiseQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-customise-btn');
+    this.parametersForm = document.getElementById('query-parameters-form');
+    this.parametersFields = document.getElementById('query-parameters-fields');
+    this.toggleSparqlButton = document.getElementById('toggle-sparql-button');
+    this.sparqlWrapper = document.getElementById('query-sparql-wrapper');
     this.selectedQueryElement = null;
     this.queries = [];
+    this.currentParams = [];
+    this.currentQueryText = '';
+    this.currentTemplate = null;
+    this.queryParametersData = null;
 
     this.initEventListeners();
     this.loadQueries();
+    this._loadParametersData();
   }
 
   /**
@@ -111,6 +121,17 @@ export class QueryLibrary {
         setTimeout(() => {
           copySparqlBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
         }, 2000);
+      });
+    }
+
+    // Toggle SPARQL query visibility
+    if (this.toggleSparqlButton) {
+      this.toggleSparqlButton.addEventListener('click', () => {
+        const isHidden = this.sparqlWrapper.classList.toggle('d-none');
+        this.toggleSparqlButton.setAttribute('aria-expanded', String(!isHidden));
+        this.toggleSparqlButton.innerHTML = isHidden
+          ? '<i class="bi bi-eye"></i> Show query'
+          : '<i class="bi bi-eye-slash"></i> Hide query';
       });
     }
   }
@@ -328,6 +349,8 @@ export class QueryLibrary {
     this.queryTitle.textContent = selectedQuery.title;
     this.queryDescription.textContent = selectedQuery.description;
     this.setSparqlEditorValue(querySparqlText);
+    this.currentQueryText = querySparqlText;
+    this._renderParameterForm(selectedQuery.sparql);
     const queryRunning = this.queryEditor.isQueryRunning;
     this.tryQueryButton.disabled = queryRunning;
     if (this.customiseQueryButton) this.customiseQueryButton.disabled = queryRunning;
@@ -346,33 +369,195 @@ export class QueryLibrary {
 
   /**
    * Handle "Try this query" click: load the query into the editor
-   * and immediately run it. The user lands on the Reuse tab (via
-   * QueryEditor's auto-routing) without a detour through the
-   * Customize tab — this is for users who want to see the result,
-   * not to modify the query. Customise is the separate path for
-   * editing.
+   * and immediately run it. If the query has parameters, inject the
+   * form values before execution. The user lands on the Reuse tab
+   * (via QueryEditor's auto-routing) without a detour through the
+   * Customize tab.
    */
   onTryQuery() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
+    if (!this._validateParams()) return;
+    const queryText = this._getQueryWithInjectedParams();
     this.queryEditor.setValue(queryText);
-    // Submit the form programmatically. QueryEditor.onSubmit takes
-    // care of everything: syntax check, POST, auto-route to either
-    // the SELECT lane (`#query-results`) or the graph lane
-    // (`#app-tab-explorer`) of the Reuse tab.
     document.getElementById('query-form')?.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );
   }
 
   /**
-   * Handle "Customise" click: load the query into the editor and
-   * switch to the Editor tab so the user can edit it before running.
-   * This is the old Try-this-query behaviour, now a separate path.
+   * Handle "Customise" click: load the query (with injected params)
+   * into the editor and switch to the Editor tab so the user can
+   * edit it before running.
    */
   onCustomise() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
+    if (!this._validateParams()) return;
+    const queryText = this._getQueryWithInjectedParams();
     this.queryEditor.setValue(queryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     queryEditorTab.show();
+  }
+
+  /**
+   * Validate all parameter form inputs. Marks invalid fields with
+   * a red border and shows feedback text. Shows a toast if any
+   * field fails validation.
+   * @returns {boolean} true if all valid, false if any invalid.
+   * @private
+   */
+  _validateParams() {
+    if (this.currentParams.length === 0) return true;
+
+    let allValid = true;
+
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const input = document.getElementById(`query-param-${i}`);
+      if (!input) continue;
+
+      if (!isValidDate(input.value)) {
+        input.classList.add('is-invalid');
+        allValid = false;
+      } else {
+        input.classList.remove('is-invalid');
+      }
+    }
+
+    if (!allValid) {
+      showToast(
+        'Invalid parameters',
+        'Please correct the highlighted date fields before running the query.',
+        { variant: 'danger' },
+      );
+    }
+
+    return allValid;
+  }
+
+  /**
+   * Load the declared query parameters from the local JSON file.
+   * Called once at construction. If the file fails to load, the form
+   * simply won't appear (graceful degradation).
+   * @private
+   */
+  async _loadParametersData() {
+    try {
+      const response = await fetch('src/assets/query-parameters.json');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      this.queryParametersData = await response.json();
+    } catch (err) {
+      console.warn('[QueryLibrary] Could not load query-parameters.json:', err);
+      this.queryParametersData = {};
+    }
+  }
+
+  /**
+   * Render date parameter input fields for the selected query.
+   * Looks up declared parameters from query-parameters.json by filename.
+   * If the query has declared parameters, shows a form with date pickers
+   * pre-filled with default values. Otherwise hides the form.
+   * @param {string} sparqlFilename - The .sparql filename (e.g. "notices-per-period.sparql")
+   * @private
+   */
+  _renderParameterForm(sparqlFilename) {
+    const entry = this.queryParametersData?.[sparqlFilename];
+    this.currentParams = entry?.parameters?.filter(p => p.type === 'date') || [];
+    this.currentTemplate = entry?.template || null;
+
+    if (this.currentParams.length === 0 || !this.currentTemplate) {
+      this.parametersForm.classList.add('d-none');
+      // Show SPARQL by default when no parameters
+      this.sparqlWrapper.classList.remove('d-none');
+      this.toggleSparqlButton.setAttribute('aria-expanded', 'true');
+      this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye-slash"></i> Hide query';
+      return;
+    }
+
+    // Show the form, hide SPARQL by default for parameterised queries
+    this.parametersForm.classList.remove('d-none');
+    this.sparqlWrapper.classList.add('d-none');
+    this.toggleSparqlButton.setAttribute('aria-expanded', 'false');
+    this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye"></i> Show query';
+
+    // Show preview with defaults filled in
+    this._updatePreview();
+
+    // Clear existing fields
+    this.parametersFields.replaceChildren();
+
+    // Create a date input for each parameter
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
+      const col = document.createElement('div');
+      col.className = 'col-auto';
+
+      const label = document.createElement('label');
+      label.className = 'form-label small mb-1';
+      label.setAttribute('for', `query-param-${i}`);
+      label.textContent = param.label;
+
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.className = 'form-control form-control-sm';
+      input.id = `query-param-${i}`;
+      input.value = param.default;
+      input.dataset.paramIndex = i;
+
+      // Validation feedback message (hidden by default)
+      const feedback = document.createElement('div');
+      feedback.className = 'invalid-feedback';
+      feedback.textContent = 'Please enter a valid date';
+
+      // Clear validation error on input change and update preview
+      input.addEventListener('input', () => {
+        input.classList.remove('is-invalid');
+        this._updatePreview();
+      });
+
+      col.appendChild(label);
+      col.appendChild(input);
+      col.appendChild(feedback);
+      this.parametersFields.appendChild(col);
+    }
+  }
+
+  /**
+   * Collect current values from the parameter form inputs.
+   * @returns {Array<string>}
+   * @private
+   */
+  _collectFormValues() {
+    const values = [];
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const input = document.getElementById(`query-param-${i}`);
+      values.push(input ? input.value : this.currentParams[i].default);
+    }
+    return values;
+  }
+
+  /**
+   * Update the read-only SPARQL editor preview with current form values
+   * filled into the template. Shows valid SPARQL at all times (falls back
+   * to defaults for invalid inputs).
+   * @private
+   */
+  _updatePreview() {
+    if (!this.currentTemplate || this.currentParams.length === 0) return;
+    const values = this._collectFormValues();
+    const filled = fillTemplate(this.currentTemplate, this.currentParams, values);
+    this.setSparqlEditorValue(filled);
+  }
+
+  /**
+   * Get the final query with user values filled into the template.
+   * If no parameters exist, returns the raw query text from the editor.
+   * Also updates the SPARQL preview to show the filled query.
+   * @returns {string}
+   * @private
+   */
+  _getQueryWithInjectedParams() {
+    if (this.currentParams.length === 0) {
+      return this.querySparqlEditor.state.doc.toString();
+    }
+
+    const values = this._collectFormValues();
+    return fillTemplate(this.currentTemplate, this.currentParams, values);
   }
 }

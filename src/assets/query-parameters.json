@@ -1,0 +1,506 @@
+{
+  "awarded-tender-amounts.sparql": {
+    "title": "Amounts awarded by tender.",
+    "template": null,
+    "parameters": []
+  },
+  "buyer-count-per-month.sparql": {
+    "title": "Buyer count per month",
+    "template": "# Retrieves the count of distinct buyers per month for a specific year.\n# Returns: month (YYYY-MM) and the buyer count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?organisation) AS ?buyerCount)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToRole ?buyer .\n\n    ?buyer a epo:Buyer ;\n           epo:playedBy ?organisation .\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "competition-notices.sparql": {
+    "title": "Information about competition notices published on a specific date",
+    "template": "# Retrieve competition notices published on a specific date, including\n# procedure type, buyer name, and buyer country.\n# Change the date below to query a different day.\n\nPREFIX cccev: <http://data.europa.eu/m8g/>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?publicationDate ?publicationNumber ?formType ?procedureType ?legalName ?country\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n  # Filter for competition notices only\n  FILTER (?formTypeUri = <http://publications.europa.eu/resource/authority/form-type/competition>)\n\n  GRAPH ?g {\n    # Get notice details and link to procedure and buyer\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasFormType ?formTypeUri ;\n            epo:refersToProcedure ?procedure ;\n            epo:announcesRole | epo:refersToRole ?agentInRole .\n\n    # Get procedure type\n    ?procedure epo:hasProcedureType ?procedureTypeUri .\n\n    # Get buyer organisation and country\n    { ?agentInRole a epo:Buyer ;\n                   epo:playedBy ?organization .\n\n      ?organization epo:hasLegalName ?legalName ;\n                    cccev:registeredAddress / epo:hasCountryCode ?countryUri .\n    }\n  }\n\n  # Resolve labels in English\n  ?formTypeUri skos:prefLabel ?formType .\n  FILTER (lang(?formType) = \"en\")\n\n  ?procedureTypeUri skos:prefLabel ?procedureType .\n  FILTER (lang(?procedureType) = \"en\")\n\n  ?countryUri skos:prefLabel ?country .\n  FILTER (lang(?country) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "contract-count-per-currency.sparql": {
+    "title": "Contract count per currency",
+    "template": "# Retrieves the count of contracts per currency for a specific date range.\n# Returns: contract currency and the number of contracts, ordered by highest count.\n# Change the date range as per your requirements.\n\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?contractCurrency (COUNT(DISTINCT ?tender) AS ?numberOfContracts)\nWHERE {\n  FILTER (?contractConclusionDate >= {{contractConclusionDateStart}} &&\n          ?contractConclusionDate <= {{contractConclusionDateEnd}})\n\n  GRAPH ?g {\n    ?contract a epo:Contract ;\n              epo:hasContractConclusionDate ?contractConclusionDate ;\n              epo:includesTender ?tender .\n\n    ?tender epo:hasFinancialOfferValue ?offerValue .\n\n    ?offerValue epo:hasCurrency ?contractCurrencyURI .\n  }\n\n  ?contractCurrencyURI dc:identifier ?contractCurrency .\n}\nGROUP BY ?contractCurrency\nORDER BY DESC(?numberOfContracts)\n",
+    "parameters": [
+      {
+        "label": "Contract conclusion start date",
+        "type": "date",
+        "placeholder": "contractConclusionDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Contract conclusion end date",
+        "type": "date",
+        "placeholder": "contractConclusionDateEnd",
+        "default": "2025-01-31"
+      }
+    ]
+  },
+  "contracts-awarded-by-eu-inst.sparql": {
+    "title": "Contracts awarded by EU institutions",
+    "template": "# Retrieves contracts awarded by EU institutions and bodies.\n# Returns: publication number, date, title, buyer name, procedure type, contract identifier,\n#          lot identifier, framework agreement type, contract value and currency.\n# Change the publication date range as per your requirements.\n# Notes: 1: Here it is attempted to get the same results as that is provided in the TED site -\n#          https://ted.europa.eu/en/simap/contracts-awarded-by-eu-institutions?year=2026&eu-institution=ALL\n# 2: TED provides both old forms and eForms whereas this query currently fetches only eForms.\n# 3: Query executes successfully with LIMIT 1000 or for a single date range \n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX blt: <http://publications.europa.eu/resource/authority/buyer-legal-type/>\nPREFIX dcterms: <http://purl.org/dc/terms/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\n\nSELECT DISTINCT ?publicationNumber ?publicationDate ?title ?buyerName ?procedureType\n       ?frameworkAgreementType ?contractIdentifier ?contractTitle\n       ?lotIdentifier ?winner ?tenderValue ?tenderCurrency\nWHERE {\n  GRAPH ?g {\n    # Start with buyer legal type filter (most selective)\n    ?org epo:hasBuyerLegalType ?buyerLegalType ;\n         epo:hasLegalName ?buyerName .\n         \n    VALUES ?buyerLegalType { blt:eu-ins-bod-ag blt:body-pl }\n     \n    ?buyer a epo:Buyer ;\n           epo:playedBy ?org .\n\n    # Notice with date filter applied early\n    ?notice a epo:ResultNotice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToProcedure ?procedure ;\n            epo:refersToRole ?buyer ;\n            epo:refersToLot ?lot .\n\n    FILTER(?publicationDate >= {{publicationDateStart}} && ?publicationDate <= {{publicationDateEnd}})\n\n    # Lot\n    ?lot adms:identifier / skos:notation ?lotIdentifier .\n\n    # Procedure\n    ?procedure a epo:Procedure ;\n               dcterms:title ?title ;\n               epo:hasProcedureType ?procedureTypeURI .\n\n    # Contract\n    ?contract a epo:Contract ;\n              adms:identifier / skos:notation ?contractIdentifier ;\n              dcterms:title ?contractTitle ;\n              epo:hasLotReference ?lot .\n\n    # Framework agreement (optional)\n    OPTIONAL {\n      ?lot epo:isSubjectToLotSpecificTerm ?frameworkAgreementTerm .\n      ?frameworkAgreementTerm a epo:FrameworkAgreementTerm ;\n                              epo:hasFrameworkAgreementType ?frameworkAgreementTypeURI .\n    }\n\n    # Tender + winner + value (single optional block)\n    OPTIONAL {\n      ?contract epo:includesTender ?tender .\n      ?tender a epo:Tender ;\n              epo:isSubmittedForLot ?lot ;\n              epo:isSubmitedBy ?tenderer ;\n              epo:hasFinancialOfferValue ?financialOfferValue .\n\n      ?financialOfferValue epo:hasAmountValue ?tenderValue ;\n                           epo:hasCurrency ?tenderCurrencyURI .\n\n      ?tenderer a epo:Tenderer ;\n                epo:playedBy / epo:hasLegalName ?winner .\n    }\n  }\n\n  # Resolve labels outside the graph (small lookups)\n  ?procedureTypeURI skos:prefLabel ?procedureType .\n  FILTER(LANG(?procedureType) = \"en\")\n\n  OPTIONAL {\n    ?frameworkAgreementTypeURI skos:prefLabel ?frameworkAgreementType .\n    FILTER(LANG(?frameworkAgreementType) = \"en\")\n  }\n\n  OPTIONAL { ?tenderCurrencyURI dc:identifier ?tenderCurrency . }\n}\n#LIMIT 1000\n\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2026-01-05"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2026-01-05"
+      }
+    ]
+  },
+  "count-of-notices-date-range.sparql": {
+    "title": "Information about number of notices published for a date range",
+    "template": "# Retrieves the count (number of notices) per date range\n# Returns: publication date and the count per date.\n# Change the range of the publication dates as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?pubDate (COUNT(DISTINCT ?noticePublicationNumber) AS ?NoticeCount)\nWHERE {\n\n  FILTER (\n    ?pubDate >= {{pubDateStart}} &&\n    ?pubDate <= {{pubDateEnd}}\n  )\n\n  GRAPH ?g {\n    ?Notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?noticePublicationNumber ;\n            epo:hasPublicationDate ?pubDate .\n  }\n}\nGROUP BY ?pubDate\nORDER BY ?pubDate\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "pubDateStart",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "pubDateEnd",
+        "default": "2025-12-07"
+      }
+    ]
+  },
+  "highest-estimated-procedure-amount.sparql": {
+    "title": "Highest estimated procedure amount",
+    "template": "# Retrieves the notice with the highest estimated procedure amount in EUR for a specific date range.\n# Returns: publication date, publication number, and the estimated procedure amount.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?publicationNumber ?procedureEstimatedAmount\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}})\n  FILTER (?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToProcedure ?procedure .\n\n    ?procedure a epo:Procedure ;\n               epo:hasEstimatedValue ?procedureEstimatedValue .\n\n    ?procedureEstimatedValue epo:hasAmountValue ?procedureEstimatedAmount ;\n                             epo:hasCurrency <http://publications.europa.eu/resource/authority/currency/EUR> .\n  }\n}\nORDER BY DESC(?procedureEstimatedAmount)\nLIMIT 1\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-07"
+      }
+    ]
+  },
+  "joint-procurement-notice-count.sparql": {
+    "title": "Joint procurement notice count",
+    "template": "# Retrieves the count of notices that have more than one buyer (joint procurement) for a specific date.\n# Returns: the total number of such notices.\n# Change the publication date as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (COUNT(DISTINCT ?publicationNumber) AS ?noticeCount)\nWHERE {\n  {\n    SELECT ?publicationNumber (COUNT(DISTINCT ?legalName) AS ?buyersCount)\n    WHERE {\n      FILTER (?publicationDate = {{publicationDate}})\n\n      GRAPH ?g {\n        ?notice a epo:Notice ;\n                epo:hasNoticePublicationNumber ?publicationNumber ;\n                epo:hasPublicationDate ?publicationDate ;\n                epo:refersToRole ?buyer .\n\n        ?buyer a epo:Buyer ;\n               epo:playedBy ?organization .\n\n        ?organization epo:hasLegalName ?legalName .\n      }\n    }\n    GROUP BY ?publicationNumber\n    HAVING (COUNT(DISTINCT ?legalName) > 1)\n  }\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2025-07-29"
+      }
+    ]
+  },
+  "lots-associated-to-procedure.sparql": {
+    "title": "Lots associated to a specific procedure",
+    "template": null,
+    "parameters": []
+  },
+  "named-graphs-per-period.sparql": {
+    "title": "Named graphs published on a specified period",
+    "template": null,
+    "parameters": []
+  },
+  "notice-count-per-buyer.sparql": {
+    "title": "Notice count per buyer",
+    "template": "# Retrieves the count of notices per buyer for a specific date.\n# Returns: buyer name and the notice count, ordered by highest count.\n# Change the publication date as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?buyerName (COUNT(DISTINCT ?publicationNumber) AS ?noticeCount)\nWHERE {\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToRole ?buyer .\n\n    ?buyer a epo:Buyer ;\n           epo:playedBy ?organization .\n\n    ?organization epo:hasLegalName ?buyerName .\n  }\n}\nGROUP BY ?buyerName\nORDER BY DESC(?noticeCount)\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2025-07-29"
+      }
+    ]
+  },
+  "notice-count-per-date-and-notice-type.sparql": {
+    "title": "Notice count per date and notice type",
+    "template": "# Retrieves the count of notices per publication date and notice type for a specific date range.\n# Returns: publication date, notice type, and the notice count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?noticeType (COUNT(DISTINCT ?noticePublicationNumber) AS ?NoticeCount)\nWHERE {\n  VALUES (?startDate ?endDate) { ({{startDate}} {{date}}) }\n\n  FILTER (?publicationDate >= ?startDate && ?publicationDate <= ?endDate)\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?noticePublicationNumber ;\n            epo:hasNoticeType ?noticeTypeUri .\n  }\n\n  ?noticeTypeUri skos:prefLabel ?noticeType .\n  FILTER (LANG(?noticeType) = \"en\")\n}\nGROUP BY ?publicationDate ?noticeType\nORDER BY ?publicationDate DESC(?NoticeCount)\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "startDate",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "date",
+        "default": "2025-12-07"
+      }
+    ]
+  },
+  "notice-count-per-date-and-procedure-type.sparql": {
+    "title": "Notice count per date and procedure type",
+    "template": "# Retrieves the count of notices per publication date and procedure type for a specific date range.\n# Returns: publication date, procedure type, and the notice count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?procedureType (COUNT(DISTINCT ?noticePublicationNumber) AS ?NoticeCount)\nWHERE {\n  VALUES (?startDate ?endDate) { ({{startDate}} {{date}}) }\n\n  FILTER (?publicationDate >= ?startDate && ?publicationDate <= ?endDate)\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?noticePublicationNumber ;\n            epo:announcesProcedure ?procedure .\n\n    ?procedure epo:hasProcedureType ?procedureTypeUri .\n  }\n\n  ?procedureTypeUri skos:prefLabel ?procedureType .\n  FILTER (LANG(?procedureType) = \"en\")\n}\nGROUP BY ?publicationDate ?procedureType\nORDER BY ?publicationDate DESC(?NoticeCount)\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "startDate",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "date",
+        "default": "2025-12-07"
+      }
+    ]
+  },
+  "notice-count-per-form-type.sparql": {
+    "title": "Notice count per form type",
+    "template": "# Retrieves the count of notices per form type for a specific date range.\n# Returns: form type and the notice count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?formType (COUNT(DISTINCT ?noticePublicationNumber) AS ?NoticeCount)\nWHERE {\n  VALUES (?startDate ?endDate) { ({{startDate}} {{date}}) }\n\n  FILTER (?publicationDate >= ?startDate && ?publicationDate <= ?endDate)\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?noticePublicationNumber ;\n            epo:hasFormType ?formTypeUri .\n  }\n\n  ?formTypeUri skos:prefLabel ?formType .\n  FILTER (LANG(?formType) = \"en\")\n}\nGROUP BY ?formType\nORDER BY DESC(?NoticeCount)\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "startDate",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "date",
+        "default": "2025-12-07"
+      }
+    ]
+  },
+  "notice-count-per-month.sparql": {
+    "title": "Notice count per month",
+    "template": "# Retrieves the count of distinct notices per month for a specific date range.\n# Returns: month (YYYY-MM) and the number of notices.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?publicationNumber) AS ?numberOfNotices)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber .\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2024-01-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2026-03-31"
+      }
+    ]
+  },
+  "notice-count-per-year.sparql": {
+    "title": "Notice count per year",
+    "template": "# Retrieves the count of distinct notices per year for a specific date range.\n# Returns: year and the number of notices.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?year (COUNT(DISTINCT ?publicationNumber) AS ?numberOfNotices)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber .\n\n    BIND(YEAR(?publicationDate) AS ?year)\n  }\n}\nGROUP BY ?year\nORDER BY ?year\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2024-01-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2026-03-31"
+      }
+    ]
+  },
+  "notice-per-publication-number.sparql": {
+    "title": "Retrieve the RDF of a notice with a specific publication number",
+    "template": null,
+    "parameters": []
+  },
+  "notices-per-buyer-country.sparql": {
+    "title": "Buyers for a specific date",
+    "template": "# Retrieve buyers from specific countries for notices published on a specific date.\n# Returns: publication number, buyer name, country, legal type, and main activity.\n# Change the date and country filter below to adjust the query.\n\nPREFIX cccev: <http://data.europa.eu/m8g/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationNumber ?publicationDate ?legalName ?country ?legalType ?mainActivity\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n  # Filter by country code (LUX = Luxembourg, DEU = Germany)\n  FILTER(REGEX(?countryUri, \"(LUX|DEU)$\"))\n\n  GRAPH ?g {\n    # Get notice details and link to buyer\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:announcesRole | epo:refersToRole ?buyer .\n\n    # Get buyer organisation details\n    { ?buyer a epo:Buyer ;\n             epo:playedBy ?organization .\n\n      ?organization epo:hasLegalName ?legalName ;\n                    cccev:registeredAddress / epo:hasCountryCode ?countryUri ;\n                    epo:hasBuyerLegalType ?legalTypeUri ;\n                    epo:hasMainActivity ?mainActivityUri .\n    }\n  }\n\n  # Resolve labels in English\n  ?countryUri skos:prefLabel ?country .\n  FILTER(lang(?country) = \"en\")\n\n  ?legalTypeUri skos:prefLabel ?legalType .\n  FILTER(lang(?legalType) = \"en\")\n\n  ?mainActivityUri skos:prefLabel ?mainActivity .\n  FILTER(lang(?mainActivity) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "notices-per-day.sparql": {
+    "title": "Information about notices published on a specific date",
+    "template": "# Retrieve notices published on a specific date with their procedure type,\n# notice type, and form type.\n# Change the date below to query a different day.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?publicationNumber ?procedureType ?noticeType ?formType\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    # Get notice details\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasNoticeType ?noticeTypeUri ;\n            epo:hasFormType ?formTypeUri ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure type\n    ?procedure epo:hasProcedureType ?procedureTypeUri .\n  }\n\n  # Resolve labels in English\n  ?noticeTypeUri skos:prefLabel ?noticeType .\n  FILTER (lang(?noticeType) = \"en\")\n\n  ?formTypeUri skos:prefLabel ?formType .\n  FILTER (lang(?formType) = \"en\")\n\n  ?procedureTypeUri skos:prefLabel ?procedureType .\n  FILTER (lang(?procedureType) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-06"
+      }
+    ]
+  },
+  "notices-per-million-population-buyer-country.sparql": {
+    "title": "Notices per million population by buyer country",
+    "template": "# Retrieves the number of notices per million population for each buyer country.\n# Joins TED notice counts per buyer country with Wikidata population data using a federated query.\n# Returns: buyer country, notice count, population, and notices per million population.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX m8g: <http://data.europa.eu/m8g/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX wd: <http://www.wikidata.org/entity/>\nPREFIX wdt: <http://www.wikidata.org/prop/direct/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?buyerCountry ?noticeCount ?population (ROUND(?noticeCount / (?population / 1000000)) AS ?noNoticesPerMillion)\nWHERE {\n  # --- TED DATA ---\n  {\n    SELECT ?buyerCountry (COUNT(DISTINCT ?publicationNumber) AS ?noticeCount)\n    WHERE {\n      FILTER (?publicationDate >= {{publicationDateStart}} &&\n              ?publicationDate <= {{publicationDateEnd}})\n\n      GRAPH ?g {\n        ?notice a epo:Notice ;\n                epo:hasNoticePublicationNumber ?publicationNumber ;\n                epo:hasPublicationDate ?publicationDate ;\n                epo:refersToRole ?buyer .\n\n        ?buyer a epo:Buyer ;\n               epo:playedBy ?organization .\n\n        ?organization epo:hasLegalName ?buyerName ;\n                      m8g:registeredAddress ?regAdd .\n\n        ?regAdd epo:hasCountryCode ?buyerCountryCode .\n      }\n\n      ?buyerCountryCode skos:prefLabel ?buyerCountry .\n      FILTER (LANG(?buyerCountry) = \"en\")\n    }\n    GROUP BY ?buyerCountry\n    ORDER BY DESC(?noticeCount)\n    LIMIT 30\n  }\n\n  # --- WIKIDATA SERVICE ---\n  SERVICE <https://query.wikidata.org/sparql> {\n    ?country wdt:P31 wd:Q6256 ;\n             rdfs:label ?wdCountryLabel ;\n             wdt:P1082 ?population .\n    FILTER (LANG(?wdCountryLabel) = \"en\")\n  }\n\n  # --- JOIN ---\n  FILTER (LCASE(?buyerCountry) = LCASE(?wdCountryLabel))\n}\nORDER BY DESC(?noticeCount)\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "notices-per-period.sparql": {
+    "title": "Information about notices published during a specific period",
+    "template": "# Retrieve notices published during a specific period with their procedure type,\n# notice type, and form type.\n# Change the start and end dates below to adjust the period.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?publicationNumber ?procedureType ?noticeType ?formType\n\nWHERE {\n\n  VALUES (?startDate ?endDate) { ({{startDate}} {{date}}) }\n\n  FILTER (?publicationDate >= ?startDate && ?publicationDate <= ?endDate)\n\n  GRAPH ?g {\n    # Get notice details\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasNoticeType ?noticeTypeUri ;\n            epo:hasFormType ?formTypeUri ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure type\n    ?procedure epo:hasProcedureType ?procedureTypeUri .\n  }\n\n  # Resolve labels in English\n  ?noticeTypeUri skos:prefLabel ?noticeType .\n  FILTER (lang(?noticeType) = \"en\")\n\n  ?formTypeUri skos:prefLabel ?formType .\n  FILTER (lang(?formType) = \"en\")\n\n  ?procedureTypeUri skos:prefLabel ?procedureType .\n  FILTER (lang(?procedureType) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "startDate",
+        "default": "2024-11-04"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "date",
+        "default": "2024-11-05"
+      }
+    ]
+  },
+  "number-of-notices-per-day.sparql": {
+    "title": "Number of notices published in a specific date range",
+    "template": "# Count the number of distinct notices published within a date range.\n# Change the dates below to adjust the range.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT (COUNT(DISTINCT ?noticePublicationNumber) as ?count)\n\nWHERE {\n\n  # Date range filter\n  FILTER (?publicationDate >= {{publicationDateStart}})\n  FILTER (?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?noticePublicationNumber ;\n            epo:hasPublicationDate ?publicationDate .\n  }\n}\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2024-11-06"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2024-11-07"
+      }
+    ]
+  },
+  "organizations-per-day.sparql": {
+    "title": "Organisations and their roles for notices published on a specific date",
+    "template": "# Retrieve organisations and their roles for notices published on a specific date.\n# Returns: publication number, organisation name, and role type (e.g. Buyer, Tenderer).\n# Change the date below to query a different day.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?publicationNumber ?legalName ?role\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n  FILTER(lang(?legalName) = \"en\")\n\n  GRAPH ?g {\n    # Get notice and its associated roles (both announced and referred)\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:announcesRole | epo:refersToRole ?agentInRole .\n\n    # Get the organisation playing the role\n    ?agentInRole a ?role ;\n                 epo:playedBy / epo:hasLegalName ?legalName .\n  }\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "procedures-broad-place-of-performance.sparql": {
+    "title": "Broad place of performance of procedures published on a specific date",
+    "template": "# Retrieve the broad place of performance of procedures published on a specific date.\n# Returns whether the place is \"Anywhere\", \"Anywhere in the given country\",\n# \"Anywhere in the EEA\", etc., plus the specific country if available.\n# Change the date below to query a different day.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?publicationDate ?procedureIdentifier ?broadPlaceOfPerformance ?country\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    # Get notice and link to procedure\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure broad place of performance via contract term\n    { ?procedure a epo:Procedure ;\n                 adms:identifier / skos:notation ?procedureIdentifier ;\n                 epo:foreseesContractSpecificTerm ?procedureContractTerm .\n\n      ?procedureContractTerm epo:hasBroadPlaceOfPerformance ?broadPlaceOfPerformanceUri .\n    }\n  }\n\n  # Resolve broad place label\n  ?broadPlaceOfPerformanceUri skos:prefLabel ?broadPlaceOfPerformance .\n  FILTER(lang(?broadPlaceOfPerformance) = \"en\")\n\n  # Optionally get the specific country\n  OPTIONAL {\n    ?procedureContractTerm epo:definesSpecificPlaceOfPerformance ?location .\n    ?location epo:hasCountryCode / skos:prefLabel ?country .\n    FILTER(lang(?country) = \"en\")\n  }\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "procedures-estimated-amounts.sparql": {
+    "title": "Estimated amounts of procedures published on a specific date",
+    "template": "# Retrieve the estimated amounts of procedures published on a specific date.\n# Returns: publication number, form type, procedure identifier, estimated amount, and currency.\n# Change the date below to query a different day.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationDate ?publicationNumber ?formType ?procedureIdentifier ?procedureEstimatedAmount ?currency\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    # Get notice details\n    ?notice a epo:Notice ;\n            epo:hasFormType ?formTypeUri ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure estimated value\n    { ?procedure a epo:Procedure ;\n                 adms:identifier / skos:notation ?procedureIdentifier ;\n                 epo:hasEstimatedValue ?procedureEstimatedValue .\n\n      ?procedureEstimatedValue epo:hasAmountValue ?procedureEstimatedAmount ;\n                               epo:hasCurrency ?currencyUri .\n    }\n  }\n\n  # Resolve labels in English\n  ?formTypeUri skos:prefLabel ?formType .\n  FILTER (lang(?formType) = \"en\")\n\n  ?currencyUri skos:prefLabel ?currency .\n  FILTER (lang(?currency) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "procedures-place-of-performance.sparql": {
+    "title": "Place of performance of procedures published on a specific date",
+    "template": "# Retrieve the place of performance (country) of procedures published on a specific date.\n# Returns: publication date, procedure identifier, and country code.\n# Change the date below to query a different day.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?publicationDate ?procedureIdentifier ?countryCode\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    # Get notice and link to procedure\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure place of performance via contract term\n    { ?procedure a epo:Procedure ;\n                 adms:identifier / skos:notation ?procedureIdentifier ;\n                 epo:foreseesContractSpecificTerm ?procedureContractTerm .\n\n      ?procedureContractTerm epo:definesSpecificPlaceOfPerformance ?location .\n      ?location epo:hasCountryCode ?countryCodeUri .\n    }\n  }\n\n  # Resolve country code\n  ?countryCodeUri dc:identifier ?countryCode .\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "procedures-purpose.sparql": {
+    "title": "Purpose of procedures published on a specific date",
+    "template": "# Retrieve the CPV (Common Procurement Vocabulary) codes of procedures\n# published on a specific date.\n# Returns: publication number, procedure identifier, CPV code, and CPV label.\n# Change the date below to query a different day.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?publicationDate ?publicationNumber ?procedureIdentifier ?procedureMainCPVCode ?procedureMainCPV\n\nWHERE {\n\n  FILTER (?publicationDate = {{publicationDate}})\n\n  GRAPH ?g {\n    # Get notice and link to procedure\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToProcedure ?procedure .\n\n    # Get procedure purpose and main CPV classification\n    { ?procedure a epo:Procedure ;\n                 adms:identifier / skos:notation ?procedureIdentifier ;\n                 epo:hasPurpose ?procedurePurpose .\n\n      ?procedurePurpose epo:hasMainClassification ?procedureMainCPVUri .\n    }\n  }\n\n  # Resolve CPV code and label\n  ?procedureMainCPVUri dc:identifier ?procedureMainCPVCode ;\n                       skos:prefLabel ?procedureMainCPV .\n  FILTER(lang(?procedureMainCPV) = \"en\")\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  },
+  "publication-date-stats.sparql": {
+    "title": "Publication date statistics",
+    "template": null,
+    "parameters": []
+  },
+  "sme-tenders-per-date.sparql": {
+    "title": "SME tenders per date",
+    "template": "# Retrieves the total number of tenders from SMEs per publication date for a specific date range.\n# Returns: publication date and the total number of tenders from SMEs.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?pubDate (SUM(?noOfTendersFromSMEs) AS ?totalNoOfTendersFromSMEs)\nWHERE {\n  FILTER (?pubDate >= {{pubDateStart}} &&\n          ?pubDate <= {{pubDateEnd}})\n  #FILTER (?pubNum = \"00153462-2026\") #uncomment for testing\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?pubNum ;\n            epo:hasPublicationDate ?pubDate;\n            epo:refersToLot ?lot.\n\n    ?sSI a epo:SubmissionStatisticalInformation ;\n         epo:summarisesInformationForAwardOutcome / epo:concernsLot ?lot; #joining notice and sSI based on lot\n         epo:hasSMEReceivedTenders ?noOfTendersFromSMEs .\n  }\n}\nGROUP BY ?pubDate\nORDER BY ?pubDate",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "pubDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "pubDateEnd",
+        "default": "2025-01-31"
+      }
+    ]
+  },
+  "tenderer-count-per-month.sparql": {
+    "title": "Tenderer count per month",
+    "template": "# Retrieves the count of distinct tenderer organisations per month for a specific year.\n# Handles both individual organisations and members of organisation groups.\n# Returns: month (YYYY-MM) and the number of tenderer organisations.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?organization) AS ?numberOfTenderers)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n  #FILTER (?publicationNumber = \"00153462-2026\")        \n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:announcesRole ?tenderer .\n\n    ?tenderer a epo:Tenderer ;\n              epo:playedBy ?org .\n  #to ensure orgs and org group members (organizations) are considered\n    { ?org a org:Organization .\n      BIND(?org AS ?organization) }\n    UNION\n    { ?org a epo:OrganisationGroup ;\n           epo:hasMember ?organization . }\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "top-buyer-countries-by-notice-count.sparql": {
+    "title": "Top buyer countries by notice count",
+    "template": "# Retrieves the top 10 buyer countries by notice count for a specific date range.\n# Returns: buyer country and the notice count, ordered by highest count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX m8g: <http://data.europa.eu/m8g/>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?buyerCountry (COUNT(DISTINCT ?publicationNumber) AS ?noticeCount)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToRole ?buyer .\n\n    ?buyer a epo:Buyer ;\n           epo:playedBy ?organization .\n\n    ?organization epo:hasLegalName ?buyerName ;\n                  m8g:registeredAddress ?regAdd .\n\n    ?regAdd epo:hasCountryCode ?buyerCountryCode .\n  }\n\n  ?buyerCountryCode skos:prefLabel ?buyerCountry .\n  FILTER (LANG(?buyerCountry) = \"en\")\n}\nGROUP BY ?buyerCountry\nORDER BY DESC(?noticeCount)\nLIMIT 10\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "top-buyers-by-notice-count.sparql": {
+    "title": "Top buyers by notice count",
+    "template": "# Retrieves the top 10 buyers by notice count for a specific date range.\n# Returns: buyer name and the notice count, ordered by highest count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?buyerName (COUNT(DISTINCT ?publicationNumber) AS ?noticeCount)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} && ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToRole ?buyer .\n\n    ?buyer a epo:Buyer ;\n           epo:playedBy ?organization .\n\n    ?organization epo:hasLegalName ?buyerName .\n  }\n}\nGROUP BY ?buyerName\nORDER BY DESC(?noticeCount)\nLIMIT 10\n",
+    "parameters": [
+      {
+        "label": "Publication start date",
+        "type": "date",
+        "placeholder": "publicationDateStart",
+        "default": "2025-12-01"
+      },
+      {
+        "label": "Publication end date",
+        "type": "date",
+        "placeholder": "publicationDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "top-winners-by-contract-count.sparql": {
+    "title": "Top winners by contract count",
+    "template": "# Retrieves the top 10 winners by contract count for a specific date range.\n# Joins contracts to notices through lots. Handles both individual organisations and organisation groups.\n# Returns: winner name and the number of contracts, ordered by highest count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?winnerName (COUNT(DISTINCT ?contract) AS ?numberOfContracts)\nWHERE {\n  FILTER (?contractConclusionDate >= {{contractConclusionDateStart}} &&\n          ?contractConclusionDate <= {{contractConclusionDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToLot ?lot .\n\n    ?contract a epo:Contract ;\n              epo:hasLotReference ?lot ;\n              epo:hasContractConclusionDate ?contractConclusionDate ;\n              epo:includesTender ?tender .\n\n    ?tender epo:isSubmitedBy ?tenderer .\n\n    ?tenderer a epo:Tenderer ;\n              epo:playedBy ?org .\n\n    OPTIONAL {\n      { ?org a org:Organization ;\n             epo:hasLegalName ?winnerName . }\n      UNION\n      { ?org a epo:OrganisationGroup ;\n             epo:hasMember / epo:hasLegalName ?winnerName . }\n    }\n  }\n}\nGROUP BY ?winnerName\nORDER BY DESC(?numberOfContracts)\nLIMIT 10\n",
+    "parameters": [
+      {
+        "label": "Contract conclusion start date",
+        "type": "date",
+        "placeholder": "contractConclusionDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Contract conclusion end date",
+        "type": "date",
+        "placeholder": "contractConclusionDateEnd",
+        "default": "2025-01-10"
+      }
+    ]
+  },
+  "total-notice-count.sparql": {
+    "title": "Total notice count",
+    "template": null,
+    "parameters": []
+  },
+  "winner-count-per-contract-month.sparql": {
+    "title": "Winner count per contract conclusion month",
+    "template": "# Retrieves the count of distinct winner organisations per contract conclusion month for a specific year.\n# Joins contracts to notices through lots. Handles both individual organisations and members of organisation groups.\n# Returns: contract conclusion month (YYYY-MM) and the number of winner organisations.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?contractConclusionMonth (COUNT(DISTINCT ?organization) AS ?numberOfWinners)\nWHERE {\n  FILTER (?contractConclusionDate >= {{contractConclusionDateStart}} &&\n          ?contractConclusionDate <= {{contractConclusionDateEnd}})\n  #FILTER(?publicationNumber = '00153462-2026')\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToLot ?lot .\n\n    ?contract a epo:Contract ;\n              epo:hasLotReference ?lot ;\n              epo:hasContractConclusionDate ?contractConclusionDate ;\n              epo:includesTender ?tender .\n\n    ?tender epo:isSubmitedBy ?tenderer .\n\n    ?tenderer a epo:Tenderer ;\n              epo:playedBy ?org .\n\n    { ?org a org:Organization .\n      BIND(?org AS ?organization) }\n    UNION\n    { ?org a epo:OrganisationGroup ;\n           epo:hasMember ?organization . }\n\n    BIND(SUBSTR(STR(?contractConclusionDate), 1, 7) AS ?contractConclusionMonth)\n  }\n}\nGROUP BY ?contractConclusionMonth\nORDER BY ?contractConclusionMonth",
+    "parameters": [
+      {
+        "label": "Contract conclusion start date",
+        "type": "date",
+        "placeholder": "contractConclusionDateStart",
+        "default": "2025-01-01"
+      },
+      {
+        "label": "Contract conclusion end date",
+        "type": "date",
+        "placeholder": "contractConclusionDateEnd",
+        "default": "2025-12-31"
+      }
+    ]
+  },
+  "winners-per-day.sparql": {
+    "title": "List of winners published on a specific date",
+    "template": "# Retrieve winning tenderers and their awarded amounts for a specific date.\n# Filters for rank 1 (winner) and \"selected\" award status.\n# Returns: publication number, winner name, amount, and currency.\n# Change the date filter below to adjust the query.\n\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?publicationNumber ?winnerLegalName ?amount ?currency\nWHERE {\n  GRAPH ?g {\n    # Notice - uses ResultNotice to avoid fetching competition notices\n    ?notice a epo:ResultNotice ;\n            epo:hasPublicationDate {{publicationDate}} ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:announcesAwardDecision / epo:comprisesAwardOutcome ?lotAwardOutcome .\n\n    # Only \"selected as winner\" status, rank 1\n    ?lotAwardOutcome epo:hasAwardStatus <http://publications.europa.eu/resource/authority/winner-selection-status/selec-w> ;\n                     epo:comprisesTenderAwardOutcome [ epo:hasAwardRank 1 ;\n                                                      epo:concernsTender ?tender ] .\n\n    # Tender -> Winner\n    ?tender epo:isSubmitedBy / epo:playedBy / epo:hasLegalName ?winnerLegalName ;\n            epo:hasFinancialOfferValue ?financialOfferValue .\n\n    # Financial value\n    ?financialOfferValue epo:hasAmountValue ?amount ;\n                         epo:hasCurrency ?currencyUri .\n  }\n\n  ?currencyUri dc:identifier ?currency .\n}\n",
+    "parameters": [
+      {
+        "label": "Publication date",
+        "type": "date",
+        "placeholder": "publicationDate",
+        "default": "2024-11-04"
+      }
+    ]
+  }
+}

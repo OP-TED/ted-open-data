@@ -384,11 +384,21 @@
                                         <button type="button" id="try-query-button" class="btn btn-primary" disabled>Try this query</button>
                                     </div>
                                 </div>
-                                <div class="d-flex align-items-end mb-2">
+                                <!-- Parameter form: auto-generated date inputs for parameterised queries -->
+                                <div id="query-parameters-form" class="d-none mb-3 px-0">
+                                    <h6 class="text-muted mb-2">Parameters</h6>
+                                    <div id="query-parameters-fields" class="row g-2"></div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
                                     <h6 class="text-muted mb-0">SPARQL query</h6>
+                                    <button type="button" id="toggle-sparql-button" class="btn btn-sm btn-outline-secondary ms-2" title="Show or hide the SPARQL query" aria-expanded="true" aria-controls="query-sparql-wrapper">
+                                        <i class="bi bi-eye-slash"></i> Hide query
+                                    </button>
                                     <button type="button" id="copy-sparql-button" class="btn btn-sm btn-outline-secondary ms-auto" title="Copy SPARQL to clipboard"><i class="bi bi-clipboard"></i> Copy</button>
                                 </div>
-                                <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
+                                <div id="query-sparql-wrapper">
+                                    <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
+                                </div>
                                 <div id="query-action-buttons-bottom" class="d-flex justify-content-end p-3 gap-2">
                                     <button type="button" class="btn btn-outline-secondary query-customise-btn" disabled>Customise</button>
                                     <button type="button" class="btn btn-primary query-try-btn" disabled>Try this query</button>
