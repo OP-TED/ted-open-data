@@ -1795,3 +1795,38 @@ main {
 #query-parameters-fields input[type="text"] {
   min-width: 320px;
 }
+
+/* ── Tree: copy property path button ── */
+
+.tree-path-copy {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 8px;
+  font-size: 0.8rem;
+  vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+/* Reveal the button when the row or card header is hovered */
+.tree-node:hover > .tree-path-copy,
+.tree-card-header:hover > .tree-path-copy {
+  opacity: 1;
+}
+
+.tree-path-copy:hover {
+  color: var(--ted-primary, #2c862d);
+}
+
+/* Keep it visible while focused (keyboard users) */
+.tree-path-copy:focus,
+.tree-path-copy:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--ted-primary, #2c862d);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+}

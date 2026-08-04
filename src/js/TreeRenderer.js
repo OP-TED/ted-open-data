@@ -70,8 +70,10 @@ export class TreeRenderer {
 
     // `ancestors` is per-branch, not global: the same subject can appear
     // under multiple parents but a real A → B → A cycle is guarded against.
+    // Each root computes its own type context for the copy-path snippet.
     for (const subj of roots) {
-      const node = this._renderSubjectTree(subj, new Set(), null);
+      const rootContext = this._buildRootContext(subj);
+      const node = this._renderSubjectTree(subj, new Set(), null, [], rootContext);
       this.container.appendChild(node);
     }
   }
@@ -217,7 +219,9 @@ export class TreeRenderer {
 
   // Render one subject as a card. Nested cards are lazily built on first
   // toggle-expand to keep the initial DOM small.
-  _renderSubjectTree(subjectValue, ancestors, incomingPredicate) {
+  // `predicatePath` is the chain of predicate URIs from the root to this
+  // card (empty for the root). It drives the "copy path" affordance.
+  _renderSubjectTree(subjectValue, ancestors, incomingPredicate, predicatePath = [], rootContext = null) {
     const fragment = document.createDocumentFragment();
     const predicates = this.subjectIndex.get(subjectValue);
     if (!predicates) return fragment;
@@ -233,14 +237,14 @@ export class TreeRenderer {
     const card = document.createElement('div');
     card.className = 'tree-card';
     card.dataset.subject = subjectValue;
-    card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate));
+    card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate, predicatePath, rootContext));
 
     // Root cards render their body eagerly so the tree is
     // immediately visible. Nested cards defer body creation until
     // first expand (lazy render).
     const startExpanded = !incomingPredicate;
     const toggle = card.querySelector('.tree-toggle');
-    const buildBody = () => this._buildCardBody(predicates, branchAncestors);
+    const buildBody = () => this._buildCardBody(predicates, branchAncestors, predicatePath, rootContext);
     let body = null;
 
     if (startExpanded) {
@@ -304,7 +308,7 @@ export class TreeRenderer {
     return el;
   }
 
-  _buildCardHeader(subjectValue, predicates, incomingPredicate) {
+  _buildCardHeader(subjectValue, predicates, incomingPredicate, predicatePath = [], rootContext = null) {
     const header = document.createElement('div');
     header.className = 'tree-card-header';
 
@@ -329,6 +333,12 @@ export class TreeRenderer {
     // Add info icon for root-level cards (no incoming predicate)
     if (!incomingPredicate) {
       header.appendChild(this._buildInfoButton(subjectValue, predicates));
+    }
+
+    // "Copy path" affordance for nested cards — the property path from the
+    // root to this resource. Hidden until the header is hovered (see CSS).
+    if (predicatePath.length > 0) {
+      header.appendChild(this._buildCopyPathButton(predicatePath, rootContext));
     }
 
     return header;
@@ -457,18 +467,19 @@ export class TreeRenderer {
     return btn;
   }
 
-  _buildCardBody(predicates, branchAncestors) {
+  _buildCardBody(predicates, branchAncestors, predicatePath = [], rootContext = null) {
     const body = document.createElement('div');
     body.className = 'tree-card-body';
 
     for (const [predValue, objects] of predicates) {
       const [nestable, nonNestable] = this._partitionObjects(objects, branchAncestors);
+      const childPath = [...predicatePath, predValue];
 
       for (const obj of nonNestable) {
-        body.appendChild(this._renderPredicateObject(predValue, obj));
+        body.appendChild(this._renderPredicateObject(predValue, obj, childPath, rootContext));
       }
       for (const obj of nestable) {
-        body.appendChild(this._renderSubjectTree(obj.value, branchAncestors, predValue));
+        body.appendChild(this._renderSubjectTree(obj.value, branchAncestors, predValue, childPath, rootContext));
       }
     }
 
@@ -490,7 +501,7 @@ export class TreeRenderer {
     return [nestable, nonNestable];
   }
 
-  _renderPredicateObject(predValue, object) {
+  _renderPredicateObject(predValue, object, predicatePath = [], rootContext = null) {
     const row = document.createElement('div');
     row.className = 'tree-node';
     row.dataset.predicate = predValue;
@@ -503,7 +514,81 @@ export class TreeRenderer {
     row.appendChild(document.createTextNode(' → '));
     row.appendChild(renderTerm(object));
 
+    // "Copy path" affordance — the property path from the root to this
+    // leaf value. Hidden until the row is hovered (see CSS).
+    // Skip rdf:type rows — they are classification metadata, not useful query paths.
+    if (predicatePath.length > 0 && predValue !== RDF_TYPE) {
+      row.appendChild(this._buildCopyPathButton(predicatePath, rootContext));
+    }
+
     return row;
+  }
+
+  // Format a predicate-URI chain as a SPARQL property path string,
+  // e.g. ["...#refersToLot", "...#hasPurpose"] →
+  // "epo:refersToLot / epo:hasPurpose". Each URI is shrunk to its
+  // prefixed form when a known namespace matches, else its local name.
+  _formatPropertyPath(predicatePath) {
+    return predicatePath
+      .map(uri => {
+        const shortened = shrink(uri);
+        // shrink() returns the URI unchanged when no known namespace
+        // matches. In that case wrap it in angle brackets so the path
+        // stays valid SPARQL (a bare local name would not be).
+        return shortened !== uri ? shortened : `<${uri}>`;
+      })
+      .join(' / ');
+  }
+
+  // Build a root context object for a given root subject — its shrunk type
+  // and a variable name derived from the type's local name.
+  _buildRootContext(subjectValue) {
+    const predicates = this.subjectIndex.get(subjectValue);
+    const types = predicates?.get(RDF_TYPE) || [];
+    if (types.length > 0) {
+      // Prefer the type with the shortest local name — this picks the most
+      // general/canonical class (e.g. "Notice" over "Notice29" or "ResultNotice").
+      const typeUri = types
+        .map(t => t.value)
+        .sort((a, b) => a.split(/[#/]/).pop().length - b.split(/[#/]/).pop().length)[0];
+      const typeShrunk = shrink(typeUri);
+      const rootType = typeShrunk !== typeUri ? typeShrunk : `<${typeUri}>`;
+      const localName = typeUri.split(/[#/]/).pop();
+      const rootVarName = localName.charAt(0).toLowerCase() + localName.slice(1);
+      return { rootType, rootVarName };
+    }
+    return { rootType: null, rootVarName: 'subject' };
+  }
+
+  // Build a small button that copies a SPARQL triple pattern snippet from
+  // the root to the current node, e.g.:
+  // "?notice a epo:Notice ; epo:refersToLot / epo:hasPurpose / epo:hasMainClassification ?value ."
+  _buildCopyPathButton(predicatePath, rootContext = null) {
+    const path = this._formatPropertyPath(predicatePath);
+    const varName = rootContext?.rootVarName || 'subject';
+    const rootType = rootContext?.rootType || '';
+
+    let snippet;
+    if (rootType) {
+      snippet = `?${varName} a ${rootType} ; ${path} ?value .`;
+    } else {
+      snippet = `?${varName} ${path} ?value .`;
+    }
+
+    const btn = document.createElement('button');
+    btn.className = 'tree-path-copy';
+    btn.setAttribute('aria-label', 'Copy property path');
+    btn.title = snippet;
+    btn.innerHTML = '<i class="bi bi-clipboard"></i>';
+
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const ok = await copyToClipboard(snippet);
+      btn.innerHTML = ok ? '<i class="bi bi-check"></i>' : '<i class="bi bi-x"></i>';
+      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+    });
+
+    return btn;
   }
 }
 
