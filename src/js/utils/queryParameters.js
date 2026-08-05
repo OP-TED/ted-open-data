@@ -127,6 +127,13 @@ export function fillTemplate(template, parameters, values) {
         literal = `"${val}-12-31"^^xsd:date`;
         break;
       }
+      case 'date-raw': {
+        // Outputs just the bare date string (no quotes, no type suffix).
+        // The template itself contains the surrounding formatting.
+        const val = (userValue && isValidDate(userValue)) ? userValue : param.default;
+        literal = val;
+        break;
+      }
       default: {
         const val = (userValue && userValue.trim()) ? userValue : param.default;
         literal = `"${val}"`;

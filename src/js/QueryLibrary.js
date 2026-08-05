@@ -416,7 +416,7 @@ export class QueryLibrary {
       if (!input) continue;
 
       let valid;
-      if (param.type === 'date') {
+      if (param.type === 'date' || param.type === 'date-raw') {
         valid = isValidDate(input.value);
       } else if (param.type === 'month-start' || param.type === 'month-end') {
         valid = isValidMonth(input.value);
@@ -511,7 +511,7 @@ export class QueryLibrary {
       input.id = `query-param-${i}`;
       input.dataset.paramIndex = i;
 
-      if (param.type === 'date') {
+      if (param.type === 'date' || param.type === 'date-raw') {
         input.type = 'date';
         input.value = param.default;
       } else if (param.type === 'month-start' || param.type === 'month-end') {
@@ -532,7 +532,7 @@ export class QueryLibrary {
       // Validation feedback message (hidden by default)
       const feedback = document.createElement('div');
       feedback.className = 'invalid-feedback';
-      if (param.type === 'date') {
+      if (param.type === 'date' || param.type === 'date-raw') {
         feedback.textContent = 'Please enter a valid date';
       } else if (param.type === 'month-start' || param.type === 'month-end') {
         feedback.textContent = 'Please select a valid month';

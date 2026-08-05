@@ -139,8 +139,21 @@
   },
   "named-graphs-per-period.sparql": {
     "title": "Named graphs published on a specified period",
-    "template": null,
-    "parameters": []
+    "template": "# Retrieve named graphs (notice metadata) published during a specific period.\n# Uses CDM (Common Data Model) metadata to find notice graphs and constructs\n# links to the TED website and XML source.\n# Returns: date, journal number, METS graph, notice graph, TED URL, and XML URL.\n# Change the date range below to adjust the period.\n\nPREFIX cdm: <http://publications.europa.eu/ontology/cdm#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?date ?journalNumber ?metsNamedGraph ?noticeNamedGraph ?accessUrl ?xmlSource\n\nWHERE {\n\n  # Date range filter (uses dateTime, not date)\n  FILTER (?date >= \"{{startDate}}T00:00:00\"^^xsd:dateTime &&\n          ?date <= \"{{endDate}}T23:59:59\"^^xsd:dateTime)\n\n  GRAPH ?metsNamedGraph {\n    # Get procurement metadata from CDM\n    ?s a cdm:procurement_public .\n    ?s cdm:procurement_public_number_document_in_official-journal ?journalNumber .\n    ?s cdm:work_date_document ?date .\n\n    # Construct the notice named graph URI\n    BIND(IRI(CONCAT(\n               \"http://data.europa.eu/a4g/resource/\",\n               STR(YEAR(xsd:dateTime(?date))), \"/\",\n               ?journalNumber, \"_\",\n               STR(YEAR(xsd:dateTime(?date)))\n            )) AS ?noticeNamedGraph)\n\n    # Construct the TED website URL for this notice\n    BIND(IRI(CONCAT(\n               \"https://ted.europa.eu/en/notice/-/detail/\",\n               ?journalNumber, \"-\",\n               STR(YEAR(xsd:dateTime(?date)))\n            )) AS ?accessUrl)\n\n    # Construct the XML source URL for this notice\n    BIND(IRI(CONCAT(\n               \"https://ted.europa.eu/en/notice/\",\n               ?journalNumber, \"-\",\n               STR(YEAR(xsd:dateTime(?date))), \"/xml\"\n            )) AS ?xmlSource)\n  }\n}",
+    "parameters": [
+      {
+        "label": "Period start date",
+        "type": "date-raw",
+        "placeholder": "startDate",
+        "default": "2024-11-04"
+      },
+      {
+        "label": "Period end date",
+        "type": "date-raw",
+        "placeholder": "endDate",
+        "default": "2024-11-05"
+      }
+    ]
   },
   "notice-count-per-buyer.sparql": {
     "title": "Notice count per buyer",
@@ -246,8 +259,15 @@
   },
   "notice-per-publication-number.sparql": {
     "title": "Retrieve the RDF of a notice with a specific publication number",
-    "template": null,
-    "parameters": []
+    "template": "# Retrieve the full RDF graph of a notice by its publication number.\n# Returns all triples from the notice's named graph.\n# Change the publication number below to retrieve a different notice.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\n\nCONSTRUCT {\n  ?s ?p ?o .\n}\n\nWHERE {\n\n  # Change this to the publication number you want to look up\n  FILTER (?publicationNumber = {{publicationNumber}})\n\n  # Find the named graph for this notice\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber .\n  }\n\n  # Return all triples from that graph\n  GRAPH ?g {\n    ?s ?p ?o .\n  }\n}",
+    "parameters": [
+      {
+        "label": "Publication number",
+        "type": "text",
+        "placeholder": "publicationNumber",
+        "default": "00665936-2024"
+      }
+    ]
   },
   "notices-per-buyer-country.sparql": {
     "title": "Buyers for a specific date",
