@@ -14,7 +14,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidDate, fillTemplate } from '../src/js/utils/queryParameters.js';
+import { isValidDate, isValidMonth, isValidYear, lastDayOfMonth, fillTemplate } from '../src/js/utils/queryParameters.js';
 
 // ── isValidDate ────────────────────────────────────────────────────
 
@@ -110,4 +110,93 @@ test('fillTemplate leaves template unchanged when no parameters', () => {
   const template = 'SELECT ?x WHERE { ?x a epo:Notice }';
   const result = fillTemplate(template, [], []);
   assert.equal(result, template);
+});
+
+// ── isValidMonth ───────────────────────────────────────────────────
+
+test('isValidMonth accepts valid months', () => {
+  assert.equal(isValidMonth('2025-01'), true);
+  assert.equal(isValidMonth('2025-12'), true);
+  assert.equal(isValidMonth('2024-06'), true);
+});
+
+test('isValidMonth rejects invalid months', () => {
+  assert.equal(isValidMonth('2025-13'), false);
+  assert.equal(isValidMonth('2025-00'), false);
+  assert.equal(isValidMonth('2025-1'), false);   // must be zero-padded
+  assert.equal(isValidMonth('2025'), false);
+  assert.equal(isValidMonth(''), false);
+  assert.equal(isValidMonth(null), false);
+});
+
+// ── isValidYear ────────────────────────────────────────────────────
+
+test('isValidYear accepts 4-digit years', () => {
+  assert.equal(isValidYear('2024'), true);
+  assert.equal(isValidYear('2030'), true);
+});
+
+test('isValidYear rejects non-4-digit values', () => {
+  assert.equal(isValidYear('202'), false);
+  assert.equal(isValidYear('20245'), false);
+  assert.equal(isValidYear('abcd'), false);
+  assert.equal(isValidYear(''), false);
+  assert.equal(isValidYear(null), false);
+});
+
+// ── lastDayOfMonth ─────────────────────────────────────────────────
+
+test('lastDayOfMonth returns correct last day for various months', () => {
+  assert.equal(lastDayOfMonth(2025, 1), 31);  // January
+  assert.equal(lastDayOfMonth(2025, 2), 28);  // February (non-leap)
+  assert.equal(lastDayOfMonth(2024, 2), 29);  // February (leap year)
+  assert.equal(lastDayOfMonth(2025, 4), 30);  // April
+  assert.equal(lastDayOfMonth(2025, 12), 31); // December
+});
+
+// ── fillTemplate: month and year types ─────────────────────────────
+
+test('fillTemplate month-start produces first day of month', () => {
+  const template = 'FILTER (?d >= {{start}})';
+  const params = [{ label: 'Start', type: 'month-start', placeholder: 'start', default: '2025-01' }];
+  const result = fillTemplate(template, params, ['2025-06']);
+  assert.equal(result, 'FILTER (?d >= "2025-06-01"^^xsd:date)');
+});
+
+test('fillTemplate month-end produces last day of month', () => {
+  const template = 'FILTER (?d <= {{end}})';
+  const params = [{ label: 'End', type: 'month-end', placeholder: 'end', default: '2025-01' }];
+  const result = fillTemplate(template, params, ['2025-02']);
+  assert.equal(result, 'FILTER (?d <= "2025-02-28"^^xsd:date)');
+});
+
+test('fillTemplate month-end handles leap year February', () => {
+  const template = 'FILTER (?d <= {{end}})';
+  const params = [{ label: 'End', type: 'month-end', placeholder: 'end', default: '2024-02' }];
+  const result = fillTemplate(template, params, ['2024-02']);
+  assert.equal(result, 'FILTER (?d <= "2024-02-29"^^xsd:date)');
+});
+
+test('fillTemplate year-start produces January 1', () => {
+  const template = 'FILTER (?d >= {{start}})';
+  const params = [{ label: 'Start', type: 'year-start', placeholder: 'start', default: '2024' }];
+  const result = fillTemplate(template, params, ['2026']);
+  assert.equal(result, 'FILTER (?d >= "2026-01-01"^^xsd:date)');
+});
+
+test('fillTemplate year-end produces December 31', () => {
+  const template = 'FILTER (?d <= {{end}})';
+  const params = [{ label: 'End', type: 'year-end', placeholder: 'end', default: '2026' }];
+  const result = fillTemplate(template, params, ['2026']);
+  assert.equal(result, 'FILTER (?d <= "2026-12-31"^^xsd:date)');
+});
+
+test('fillTemplate month/year types fall back to default on invalid input', () => {
+  const template = 'FILTER (?d >= {{start}} && ?d <= {{end}})';
+  const params = [
+    { label: 'Start', type: 'month-start', placeholder: 'start', default: '2025-01' },
+    { label: 'End', type: 'year-end', placeholder: 'end', default: '2026' },
+  ];
+  const result = fillTemplate(template, params, ['invalid', '']);
+  assert.equal(result, 'FILTER (?d >= "2025-01-01"^^xsd:date && ?d <= "2026-12-31"^^xsd:date)');
 });

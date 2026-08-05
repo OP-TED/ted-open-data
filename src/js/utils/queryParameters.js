@@ -22,9 +22,6 @@
 
 /**
  * Validate that a string is a real calendar date in YYYY-MM-DD format.
- * Checks both the shape and that the date actually exists — rejecting
- * impossible dates like 2024-13-01 (month 13), 2024-02-30 (Feb 30),
- * or malformed values like 2024-115-15.
  * @param {string} str
  * @returns {boolean}
  */
@@ -44,10 +41,50 @@ export function isValidDate(str) {
 }
 
 /**
+ * Validate that a string is a valid month in YYYY-MM format (month 01-12).
+ * @param {string} str
+ * @returns {boolean}
+ */
+export function isValidMonth(str) {
+  if (typeof str !== 'string') return false;
+  const match = str.match(/^(\d{4})-(\d{2})$/);
+  if (!match) return false;
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12;
+}
+
+/**
+ * Validate that a string is a valid 4-digit year.
+ * @param {string} str
+ * @returns {boolean}
+ */
+export function isValidYear(str) {
+  if (typeof str !== 'string') return false;
+  return /^\d{4}$/.test(str);
+}
+
+/**
+ * Get the last day of a given month (handles leap years).
+ * @param {number} year
+ * @param {number} month - 1-indexed (1=Jan, 12=Dec)
+ * @returns {number} The last day (28, 29, 30, or 31)
+ */
+export function lastDayOfMonth(year, month) {
+  // Day 0 of the next month gives the last day of the current month
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
  * Fill a query template by replacing {{placeholder}} tokens with values.
  *
- * For each parameter, replaces {{placeholder}} with a properly formatted
- * typed literal. For date parameters: "value"^^xsd:date.
+ * Supported parameter types:
+ *   - "date": user provides YYYY-MM-DD → outputs "YYYY-MM-DD"^^xsd:date
+ *   - "month-start": user provides YYYY-MM → outputs "YYYY-MM-01"^^xsd:date
+ *   - "month-end": user provides YYYY-MM → outputs "YYYY-MM-{lastDay}"^^xsd:date
+ *   - "year-start": user provides YYYY → outputs "YYYY-01-01"^^xsd:date
+ *   - "year-end": user provides YYYY → outputs "YYYY-12-31"^^xsd:date
+ *   - "text": user provides a string → outputs "value"
+ *
  * If a value is invalid or missing, the default is used instead.
  *
  * @param {string} template - The query template with {{placeholder}} tokens.
@@ -61,23 +98,42 @@ export function fillTemplate(template, parameters, values) {
     const param = parameters[i];
     const userValue = values[i];
 
-    // Use the user value if valid, otherwise fall back to default
-    let finalValue;
-    if (param.type === 'date') {
-      finalValue = (userValue && isValidDate(userValue)) ? userValue : param.default;
-    } else {
-      finalValue = userValue || param.default;
-    }
-
-    // Build the typed literal
     let literal;
-    if (param.type === 'date') {
-      literal = `"${finalValue}"^^xsd:date`;
-    } else {
-      literal = `"${finalValue}"`;
+    switch (param.type) {
+      case 'date': {
+        const val = (userValue && isValidDate(userValue)) ? userValue : param.default;
+        literal = `"${val}"^^xsd:date`;
+        break;
+      }
+      case 'month-start': {
+        const val = (userValue && isValidMonth(userValue)) ? userValue : param.default;
+        literal = `"${val}-01"^^xsd:date`;
+        break;
+      }
+      case 'month-end': {
+        const val = (userValue && isValidMonth(userValue)) ? userValue : param.default;
+        const [y, m] = val.split('-').map(Number);
+        const last = String(lastDayOfMonth(y, m)).padStart(2, '0');
+        literal = `"${val}-${last}"^^xsd:date`;
+        break;
+      }
+      case 'year-start': {
+        const val = (userValue && isValidYear(userValue)) ? userValue : param.default;
+        literal = `"${val}-01-01"^^xsd:date`;
+        break;
+      }
+      case 'year-end': {
+        const val = (userValue && isValidYear(userValue)) ? userValue : param.default;
+        literal = `"${val}-12-31"^^xsd:date`;
+        break;
+      }
+      default: {
+        const val = (userValue && userValue.trim()) ? userValue : param.default;
+        literal = `"${val}"`;
+        break;
+      }
     }
 
-    // Replace all occurrences of the placeholder
     result = result.replaceAll(`{{${param.placeholder}}}`, literal);
   }
   return result;

@@ -1,24 +1,31 @@
 {
   "awarded-tender-amounts.sparql": {
     "title": "Amounts awarded by tender.",
-    "template": null,
-    "parameters": []
+    "template": "# Retrieve the amounts awarded per tender for a specific procedure.\n# Returns: publication number, tender identifier, tenderer name, amount, currency,\n# and optionally the lot and lot group identifiers.\n# Change the procedure identifier below to query a different procedure.\n#\n# Note: The notice, procedure, and tender are linked implicitly through\n# the named graph. Adding explicit links (e.g. epo:announcesRole) would\n# make the query more precise but significantly slower with the OPTIONAL blocks.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX m8g: <http://data.europa.eu/m8g/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?procedureIdentifier ?publicationDate ?publicationNumber ?tenderIdentifier ?tendererLegalName ?offerAmountValue ?currency ?lotGroupIdentifier ?lotIdentifier\n\nWHERE {\n\n  # Change this to the procedure you want to look up\n  VALUES (?procedureIdentifier) { ({{procedureIdentifier}}) }\n\n  GRAPH ?g {\n    # Get the procedure by its identifier\n    ?procedure a epo:Procedure ;\n               adms:identifier / skos:notation ?procedureIdentifier .\n\n    # Get notice and link to procedure\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToProcedure ?procedure .\n\n    # Get tender details: identifier, tenderer name, and financial offer\n    ?tender a epo:Tender ;\n            adms:identifier / skos:notation ?tenderIdentifier ;\n            epo:isSubmitedBy ?tenderer ;\n            epo:hasFinancialOfferValue ?offerValue .\n\n    ?offerValue epo:hasAmountValue ?offerAmountValue ;\n                epo:hasCurrency ?currencyUri .\n\n    ?tenderer epo:playedBy / epo:hasLegalName ?tendererLegalName .\n\n    # Optionally get the lot the tender was submitted for\n    OPTIONAL {\n      ?tender epo:isSubmittedForLot ?lot .\n      OPTIONAL { ?lot adms:identifier / skos:notation ?lotIdentifier . }\n    }\n\n    # Optionally get the lot group\n    OPTIONAL {\n      ?tender epo:isSubjectToGrouping ?lotGroup .\n      ?lotGroup epo:setsGroupingContextForLot ?lot .\n      OPTIONAL { ?lotGroup adms:identifier / skos:notation ?lotGroupIdentifier . }\n      OPTIONAL { ?lot adms:identifier / skos:notation ?lotIdentifier . }\n    }\n  }\n\n  # Resolve currency label\n  ?currencyUri skos:prefLabel ?currency .\n  FILTER (lang(?currency) = \"en\")\n}\nORDER BY ?publicationNumber ?lotGroupIdentifier ?lotIdentifier",
+    "parameters": [
+      {
+        "label": "Procedure identifier",
+        "type": "text",
+        "placeholder": "procedureIdentifier",
+        "default": "d4f39891-4114-4199-829b-57437df27872"
+      }
+    ]
   },
   "buyer-count-per-month.sparql": {
     "title": "Buyer count per month",
     "template": "# Retrieves the count of distinct buyers per month for a specific year.\n# Returns: month (YYYY-MM) and the buyer count.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?organisation) AS ?buyerCount)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:refersToRole ?buyer .\n\n    ?buyer a epo:Buyer ;\n           epo:playedBy ?organisation .\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month",
     "parameters": [
       {
-        "label": "Publication start date",
-        "type": "date",
+        "label": "Publication start month",
+        "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01"
       },
       {
-        "label": "Publication end date",
-        "type": "date",
+        "label": "Publication end month",
+        "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12"
       }
     ]
   },
@@ -120,8 +127,15 @@
   },
   "lots-associated-to-procedure.sparql": {
     "title": "Lots associated to a specific procedure",
-    "template": null,
-    "parameters": []
+    "template": "# Retrieve the lots associated to a specific procedure.\n# Returns: procedure identifier, lot identifier, lot title, and main CPV code.\n# Change the procedure identifier below to query a different procedure.\n\nPREFIX adms: <http://www.w3.org/ns/adms#>\nPREFIX dc: <http://purl.org/dc/elements/1.1/>\nPREFIX dcterms: <http://purl.org/dc/terms/>\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT DISTINCT ?procedureIdentifier ?lotIdentifier ?lotTitle ?lotMainCPVCode ?lotMainCPV\n\nWHERE {\n\n  # Change this to the procedure you want to look up\n  VALUES (?procedureIdentifier) {\n    ({{procedureIdentifier}})\n  }\n\n  GRAPH ?g {\n    # Get procedure and its lots\n    ?procedure a epo:Procedure ;\n               adms:identifier / skos:notation ?procedureIdentifier ;\n               epo:hasProcurementScopeDividedIntoLot ?lot .\n\n    # Get lot details and CPV classification\n    ?lot adms:identifier / skos:notation ?lotIdentifier ;\n         epo:hasPurpose / epo:hasMainClassification ?lotMainCPVUri .\n\n    OPTIONAL { ?lot dcterms:title ?lotTitle . }\n  }\n\n  # Resolve CPV code and label\n  ?lotMainCPVUri dc:identifier ?lotMainCPVCode ;\n                 skos:prefLabel ?lotMainCPV .\n  FILTER(lang(?lotMainCPV) = \"en\")\n}\nORDER BY ASC(?lotIdentifier)",
+    "parameters": [
+      {
+        "label": "Procedure identifier",
+        "type": "text",
+        "placeholder": "procedureIdentifier",
+        "default": "c9fc740a-2b2e-42a9-9fee-fb4965914b6b"
+      }
+    ]
   },
   "named-graphs-per-period.sparql": {
     "title": "Named graphs published on a specified period",
@@ -199,16 +213,16 @@
     "template": "# Retrieves the count of distinct notices per month for a specific date range.\n# Returns: month (YYYY-MM) and the number of notices.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?publicationNumber) AS ?numberOfNotices)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber .\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month\n",
     "parameters": [
       {
-        "label": "Publication start date",
-        "type": "date",
+        "label": "Publication start month",
+        "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2024-01-01"
+        "default": "2024-01"
       },
       {
-        "label": "Publication end date",
-        "type": "date",
+        "label": "Publication end month",
+        "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2026-03-31"
+        "default": "2026-03"
       }
     ]
   },
@@ -217,16 +231,16 @@
     "template": "# Retrieves the count of distinct notices per year for a specific date range.\n# Returns: year and the number of notices.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?year (COUNT(DISTINCT ?publicationNumber) AS ?numberOfNotices)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber .\n\n    BIND(YEAR(?publicationDate) AS ?year)\n  }\n}\nGROUP BY ?year\nORDER BY ?year\n",
     "parameters": [
       {
-        "label": "Publication start date",
-        "type": "date",
+        "label": "Publication start year",
+        "type": "year-start",
         "placeholder": "publicationDateStart",
-        "default": "2024-01-01"
+        "default": "2024"
       },
       {
-        "label": "Publication end date",
-        "type": "date",
+        "label": "Publication end year",
+        "type": "year-end",
         "placeholder": "publicationDateEnd",
-        "default": "2026-03-31"
+        "default": "2026"
       }
     ]
   },
@@ -401,16 +415,16 @@
     "template": "# Retrieves the count of distinct tenderer organisations per month for a specific year.\n# Handles both individual organisations and members of organisation groups.\n# Returns: month (YYYY-MM) and the number of tenderer organisations.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?month (COUNT(DISTINCT ?organization) AS ?numberOfTenderers)\nWHERE {\n  FILTER (?publicationDate >= {{publicationDateStart}} &&\n          ?publicationDate <= {{publicationDateEnd}})\n  #FILTER (?publicationNumber = \"00153462-2026\")        \n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasPublicationDate ?publicationDate ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:announcesRole ?tenderer .\n\n    ?tenderer a epo:Tenderer ;\n              epo:playedBy ?org .\n  #to ensure orgs and org group members (organizations) are considered\n    { ?org a org:Organization .\n      BIND(?org AS ?organization) }\n    UNION\n    { ?org a epo:OrganisationGroup ;\n           epo:hasMember ?organization . }\n\n    BIND(SUBSTR(STR(?publicationDate), 1, 7) AS ?month)\n  }\n}\nGROUP BY ?month\nORDER BY ?month\n",
     "parameters": [
       {
-        "label": "Publication start date",
-        "type": "date",
+        "label": "Publication start month",
+        "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01"
       },
       {
-        "label": "Publication end date",
-        "type": "date",
+        "label": "Publication end month",
+        "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12"
       }
     ]
   },
@@ -478,16 +492,16 @@
     "template": "# Retrieves the count of distinct winner organisations per contract conclusion month for a specific year.\n# Joins contracts to notices through lots. Handles both individual organisations and members of organisation groups.\n# Returns: contract conclusion month (YYYY-MM) and the number of winner organisations.\n# Change the date range as per your requirements.\n\nPREFIX epo: <http://data.europa.eu/a4g/ontology#>\nPREFIX org: <http://www.w3.org/ns/org#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\nSELECT ?contractConclusionMonth (COUNT(DISTINCT ?organization) AS ?numberOfWinners)\nWHERE {\n  FILTER (?contractConclusionDate >= {{contractConclusionDateStart}} &&\n          ?contractConclusionDate <= {{contractConclusionDateEnd}})\n  #FILTER(?publicationNumber = '00153462-2026')\n\n  GRAPH ?g {\n    ?notice a epo:Notice ;\n            epo:hasNoticePublicationNumber ?publicationNumber ;\n            epo:refersToLot ?lot .\n\n    ?contract a epo:Contract ;\n              epo:hasLotReference ?lot ;\n              epo:hasContractConclusionDate ?contractConclusionDate ;\n              epo:includesTender ?tender .\n\n    ?tender epo:isSubmitedBy ?tenderer .\n\n    ?tenderer a epo:Tenderer ;\n              epo:playedBy ?org .\n\n    { ?org a org:Organization .\n      BIND(?org AS ?organization) }\n    UNION\n    { ?org a epo:OrganisationGroup ;\n           epo:hasMember ?organization . }\n\n    BIND(SUBSTR(STR(?contractConclusionDate), 1, 7) AS ?contractConclusionMonth)\n  }\n}\nGROUP BY ?contractConclusionMonth\nORDER BY ?contractConclusionMonth",
     "parameters": [
       {
-        "label": "Contract conclusion start date",
-        "type": "date",
+        "label": "Contract conclusion start month",
+        "type": "month-start",
         "placeholder": "contractConclusionDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01"
       },
       {
-        "label": "Contract conclusion end date",
-        "type": "date",
+        "label": "Contract conclusion end month",
+        "type": "month-end",
         "placeholder": "contractConclusionDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12"
       }
     ]
   },

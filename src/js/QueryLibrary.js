@@ -22,7 +22,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
-import { fillTemplate, isValidDate } from './utils/queryParameters.js';
+import { fillTemplate, isValidDate, isValidMonth, isValidYear } from './utils/queryParameters.js';
 
 /**
  * Class representing the Query Library.
@@ -74,6 +74,7 @@ export class QueryLibrary {
     this.customiseQueryButton = document.getElementById('customise-query-button');
     this.tryQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-try-btn');
     this.customiseQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-customise-btn');
+    this.bottomButtons = document.getElementById('query-action-buttons-bottom');
     this.parametersForm = document.getElementById('query-parameters-form');
     this.parametersFields = document.getElementById('query-parameters-fields');
     this.toggleSparqlButton = document.getElementById('toggle-sparql-button');
@@ -128,6 +129,7 @@ export class QueryLibrary {
     if (this.toggleSparqlButton) {
       this.toggleSparqlButton.addEventListener('click', () => {
         const isHidden = this.sparqlWrapper.classList.toggle('d-none');
+        this.bottomButtons.classList.toggle('d-none', isHidden);
         this.toggleSparqlButton.setAttribute('aria-expanded', String(!isHidden));
         this.toggleSparqlButton.innerHTML = isHidden
           ? '<i class="bi bi-eye"></i> Show query'
@@ -409,10 +411,22 @@ export class QueryLibrary {
     let allValid = true;
 
     for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
       const input = document.getElementById(`query-param-${i}`);
       if (!input) continue;
 
-      if (!isValidDate(input.value)) {
+      let valid;
+      if (param.type === 'date') {
+        valid = isValidDate(input.value);
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        valid = isValidMonth(input.value);
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        valid = isValidYear(input.value);
+      } else {
+        valid = input.value.trim().length > 0;
+      }
+
+      if (!valid) {
         input.classList.add('is-invalid');
         allValid = false;
       } else {
@@ -423,7 +437,7 @@ export class QueryLibrary {
     if (!allValid) {
       showToast(
         'Invalid parameters',
-        'Please correct the highlighted date fields before running the query.',
+        'Please correct the highlighted fields before running the query.',
         { variant: 'danger' },
       );
     }
@@ -458,23 +472,22 @@ export class QueryLibrary {
    */
   _renderParameterForm(sparqlFilename) {
     const entry = this.queryParametersData?.[sparqlFilename];
-    this.currentParams = entry?.parameters?.filter(p => p.type === 'date') || [];
+    this.currentParams = entry?.parameters || [];
     this.currentTemplate = entry?.template || null;
+
+    // Always hide the SPARQL by default — user can reveal via toggle
+    this.sparqlWrapper.classList.add('d-none');
+    this.bottomButtons.classList.add('d-none');
+    this.toggleSparqlButton.setAttribute('aria-expanded', 'false');
+    this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye"></i> Show query';
 
     if (this.currentParams.length === 0 || !this.currentTemplate) {
       this.parametersForm.classList.add('d-none');
-      // Show SPARQL by default when no parameters
-      this.sparqlWrapper.classList.remove('d-none');
-      this.toggleSparqlButton.setAttribute('aria-expanded', 'true');
-      this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye-slash"></i> Hide query';
       return;
     }
 
-    // Show the form, hide SPARQL by default for parameterised queries
+    // Show the parameter form
     this.parametersForm.classList.remove('d-none');
-    this.sparqlWrapper.classList.add('d-none');
-    this.toggleSparqlButton.setAttribute('aria-expanded', 'false');
-    this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye"></i> Show query';
 
     // Show preview with defaults filled in
     this._updatePreview();
@@ -494,16 +507,40 @@ export class QueryLibrary {
       label.textContent = param.label;
 
       const input = document.createElement('input');
-      input.type = 'date';
       input.className = 'form-control form-control-sm';
       input.id = `query-param-${i}`;
-      input.value = param.default;
       input.dataset.paramIndex = i;
+
+      if (param.type === 'date') {
+        input.type = 'date';
+        input.value = param.default;
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        input.type = 'month';
+        input.value = param.default;
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        input.type = 'number';
+        input.min = '2015';
+        input.max = '2035';
+        input.value = param.default;
+        input.style.maxWidth = '100px';
+      } else {
+        input.type = 'text';
+        input.value = param.default;
+        input.placeholder = param.label;
+      }
 
       // Validation feedback message (hidden by default)
       const feedback = document.createElement('div');
       feedback.className = 'invalid-feedback';
-      feedback.textContent = 'Please enter a valid date';
+      if (param.type === 'date') {
+        feedback.textContent = 'Please enter a valid date';
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        feedback.textContent = 'Please select a valid month';
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        feedback.textContent = 'Please enter a valid year';
+      } else {
+        feedback.textContent = 'This field is required';
+      }
 
       // Clear validation error on input change and update preview
       input.addEventListener('input', () => {
