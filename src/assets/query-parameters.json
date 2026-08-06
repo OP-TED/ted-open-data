@@ -19,13 +19,17 @@
         "label": "Publication start month",
         "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2025-01"
+        "default": "2025-01",
+        "rangeGroup": "buyer-count-per-month",
+        "role": "start"
       },
       {
         "label": "Publication end month",
         "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12"
+        "default": "2025-12",
+        "rangeGroup": "buyer-count-per-month",
+        "role": "end"
       }
     ]
   },
@@ -49,13 +53,17 @@
         "label": "Contract conclusion start date",
         "type": "date",
         "placeholder": "contractConclusionDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01-01",
+        "rangeGroup": "contract-count-per-currency",
+        "role": "start"
       },
       {
         "label": "Contract conclusion end date",
         "type": "date",
         "placeholder": "contractConclusionDateEnd",
-        "default": "2025-01-31"
+        "default": "2025-01-31",
+        "rangeGroup": "contract-count-per-currency",
+        "role": "end"
       }
     ]
   },
@@ -67,13 +75,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2026-01-05"
+        "default": "2026-01-05",
+        "rangeGroup": "contracts-awarded-by-eu-inst",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2026-01-05"
+        "default": "2026-01-05",
+        "rangeGroup": "contracts-awarded-by-eu-inst",
+        "role": "end"
       }
     ]
   },
@@ -85,13 +97,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "pubDateStart",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "count-of-notices-date-range",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "pubDateEnd",
-        "default": "2025-12-07"
+        "default": "2025-12-07",
+        "rangeGroup": "count-of-notices-date-range",
+        "role": "end"
       }
     ]
   },
@@ -103,13 +119,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "highest-estimated-procedure-amount",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-07"
+        "default": "2025-12-07",
+        "rangeGroup": "highest-estimated-procedure-amount",
+        "role": "end"
       }
     ]
   },
@@ -145,13 +165,17 @@
         "label": "Period start date",
         "type": "date-raw",
         "placeholder": "startDate",
-        "default": "2024-11-04"
+        "default": "2024-11-04",
+        "rangeGroup": "named-graphs-per-period",
+        "role": "start"
       },
       {
         "label": "Period end date",
         "type": "date-raw",
         "placeholder": "endDate",
-        "default": "2024-11-05"
+        "default": "2024-11-05",
+        "rangeGroup": "named-graphs-per-period",
+        "role": "end"
       }
     ]
   },
@@ -175,13 +199,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "startDate",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "notice-count-per-date-and-notice-type",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "date",
-        "default": "2025-12-07"
+        "default": "2025-12-07",
+        "rangeGroup": "notice-count-per-date-and-notice-type",
+        "role": "end"
       }
     ]
   },
@@ -193,13 +221,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "startDate",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "notice-count-per-date-and-procedure-type",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "date",
-        "default": "2025-12-07"
+        "default": "2025-12-07",
+        "rangeGroup": "notice-count-per-date-and-procedure-type",
+        "role": "end"
       }
     ]
   },
@@ -211,13 +243,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "startDate",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "notice-count-per-form-type",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "date",
-        "default": "2025-12-07"
+        "default": "2025-12-07",
+        "rangeGroup": "notice-count-per-form-type",
+        "role": "end"
       }
     ]
   },
@@ -229,13 +265,17 @@
         "label": "Publication start month",
         "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2024-01"
+        "default": "2024-01",
+        "rangeGroup": "notice-count-per-month",
+        "role": "start"
       },
       {
         "label": "Publication end month",
         "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2026-03"
+        "default": "2026-03",
+        "rangeGroup": "notice-count-per-month",
+        "role": "end"
       }
     ]
   },
@@ -247,13 +287,17 @@
         "label": "Publication start year",
         "type": "year-start",
         "placeholder": "publicationDateStart",
-        "default": "2024"
+        "default": "2024",
+        "rangeGroup": "notice-count-per-year",
+        "role": "start"
       },
       {
         "label": "Publication end year",
         "type": "year-end",
         "placeholder": "publicationDateEnd",
-        "default": "2026"
+        "default": "2026",
+        "rangeGroup": "notice-count-per-year",
+        "role": "end"
       }
     ]
   },
@@ -301,13 +345,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "notices-per-million-population-buyer-country",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12-31",
+        "rangeGroup": "notices-per-million-population-buyer-country",
+        "role": "end"
       }
     ]
   },
@@ -319,13 +367,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "startDate",
-        "default": "2024-11-04"
+        "default": "2024-11-04",
+        "rangeGroup": "notices-per-period",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "date",
-        "default": "2024-11-05"
+        "default": "2024-11-05",
+        "rangeGroup": "notices-per-period",
+        "role": "end"
       }
     ]
   },
@@ -337,13 +389,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2024-11-06"
+        "default": "2024-11-06",
+        "rangeGroup": "number-of-notices-per-day",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2024-11-07"
+        "default": "2024-11-07",
+        "rangeGroup": "number-of-notices-per-day",
+        "role": "end"
       }
     ]
   },
@@ -420,13 +476,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "pubDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01-01",
+        "rangeGroup": "sme-tenders-per-date",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "pubDateEnd",
-        "default": "2025-01-31"
+        "default": "2025-01-31",
+        "rangeGroup": "sme-tenders-per-date",
+        "role": "end"
       }
     ]
   },
@@ -438,13 +498,17 @@
         "label": "Publication start month",
         "type": "month-start",
         "placeholder": "publicationDateStart",
-        "default": "2025-01"
+        "default": "2025-01",
+        "rangeGroup": "tenderer-count-per-month",
+        "role": "start"
       },
       {
         "label": "Publication end month",
         "type": "month-end",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12"
+        "default": "2025-12",
+        "rangeGroup": "tenderer-count-per-month",
+        "role": "end"
       }
     ]
   },
@@ -456,13 +520,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "top-buyer-countries-by-notice-count",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12-31",
+        "rangeGroup": "top-buyer-countries-by-notice-count",
+        "role": "end"
       }
     ]
   },
@@ -474,13 +542,17 @@
         "label": "Publication start date",
         "type": "date",
         "placeholder": "publicationDateStart",
-        "default": "2025-12-01"
+        "default": "2025-12-01",
+        "rangeGroup": "top-buyers-by-notice-count",
+        "role": "start"
       },
       {
         "label": "Publication end date",
         "type": "date",
         "placeholder": "publicationDateEnd",
-        "default": "2025-12-31"
+        "default": "2025-12-31",
+        "rangeGroup": "top-buyers-by-notice-count",
+        "role": "end"
       }
     ]
   },
@@ -492,13 +564,17 @@
         "label": "Contract conclusion start date",
         "type": "date",
         "placeholder": "contractConclusionDateStart",
-        "default": "2025-01-01"
+        "default": "2025-01-01",
+        "rangeGroup": "top-winners-by-contract-count",
+        "role": "start"
       },
       {
         "label": "Contract conclusion end date",
         "type": "date",
         "placeholder": "contractConclusionDateEnd",
-        "default": "2025-01-10"
+        "default": "2025-01-10",
+        "rangeGroup": "top-winners-by-contract-count",
+        "role": "end"
       }
     ]
   },
@@ -515,13 +591,17 @@
         "label": "Contract conclusion start month",
         "type": "month-start",
         "placeholder": "contractConclusionDateStart",
-        "default": "2025-01"
+        "default": "2025-01",
+        "rangeGroup": "winner-count-per-contract-month",
+        "role": "start"
       },
       {
         "label": "Contract conclusion end month",
         "type": "month-end",
         "placeholder": "contractConclusionDateEnd",
-        "default": "2025-12"
+        "default": "2025-12",
+        "rangeGroup": "winner-count-per-contract-month",
+        "role": "end"
       }
     ]
   },

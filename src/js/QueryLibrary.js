@@ -391,11 +391,13 @@ export class QueryLibrary {
    * edit it before running.
    */
   onCustomise() {
-    if (!this._validateParams()) return;
     const queryText = this._getQueryWithInjectedParams();
     this.queryEditor.setValue(queryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     queryEditorTab.show();
+
+    // Non-blocking warning if start > end
+    this._warnIfRangeInverted();
   }
 
   /**
@@ -434,15 +436,67 @@ export class QueryLibrary {
       }
     }
 
+    // Cross-field validation: within each rangeGroup, start must be ≤ end.
+    let rangeInvalid = false;
+    if (allValid) {
+      const groups = {};
+      for (let i = 0; i < this.currentParams.length; i++) {
+        const param = this.currentParams[i];
+        if (param.rangeGroup && param.role) {
+          if (!groups[param.rangeGroup]) groups[param.rangeGroup] = {};
+          groups[param.rangeGroup][param.role] = i;
+        }
+      }
+      for (const group of Object.values(groups)) {
+        if (group.start == null || group.end == null) continue;
+        const startInput = document.getElementById(`query-param-${group.start}`);
+        const endInput = document.getElementById(`query-param-${group.end}`);
+        if (startInput && endInput && startInput.value > endInput.value) {
+          startInput.classList.add('is-invalid');
+          endInput.classList.add('is-invalid');
+          allValid = false;
+          rangeInvalid = true;
+        }
+      }
+    }
+
     if (!allValid) {
-      showToast(
-        'Invalid parameters',
-        'Please correct the highlighted fields before running the query.',
-        { variant: 'danger' },
-      );
+      const msg = rangeInvalid
+        ? 'Start date must be before or equal to end date.'
+        : 'Please correct the highlighted fields before running the query.';
+      showToast('Invalid parameters', msg, { variant: 'danger' });
     }
 
     return allValid;
+  }
+
+  /**
+   * Non-blocking warning when start > end in a date range pair.
+   * Used by onCustomise — shows a toast but does not prevent navigation.
+   * @private
+   */
+  _warnIfRangeInverted() {
+    const groups = {};
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
+      if (param.rangeGroup && param.role) {
+        if (!groups[param.rangeGroup]) groups[param.rangeGroup] = {};
+        groups[param.rangeGroup][param.role] = i;
+      }
+    }
+    for (const group of Object.values(groups)) {
+      if (group.start == null || group.end == null) continue;
+      const startInput = document.getElementById(`query-param-${group.start}`);
+      const endInput = document.getElementById(`query-param-${group.end}`);
+      if (startInput && endInput && startInput.value > endInput.value) {
+        showToast(
+          'Date range warning',
+          'The start date is after the end date. The query may return no results.',
+          { variant: 'warning' },
+        );
+        return;
+      }
+    }
   }
 
   /**
@@ -489,13 +543,10 @@ export class QueryLibrary {
     // Show the parameter form
     this.parametersForm.classList.remove('d-none');
 
-    // Show preview with defaults filled in
-    this._updatePreview();
-
     // Clear existing fields
     this.parametersFields.replaceChildren();
 
-    // Create a date input for each parameter
+    // Create an input for each parameter
     for (let i = 0; i < this.currentParams.length; i++) {
       const param = this.currentParams[i];
       const col = document.createElement('div');
@@ -553,6 +604,9 @@ export class QueryLibrary {
       col.appendChild(feedback);
       this.parametersFields.appendChild(col);
     }
+
+    // Update preview using the freshly created fields (with defaults)
+    this._updatePreview();
   }
 
   /**

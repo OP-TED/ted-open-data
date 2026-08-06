@@ -1791,3 +1791,7 @@ main {
 #query-parameters-fields input[type="date"] {
   max-width: 180px;
 }
+
+#query-parameters-fields input[type="text"] {
+  min-width: 320px;
+}
