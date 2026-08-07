@@ -1761,3 +1761,37 @@ main {
   background: var(--ted-blue-5, #F3F6FC);
 }
 
+
+/* ── Query Library: Parameter form ── */
+
+#query-parameters-form {
+  background: var(--ted-blue-5, #F3F6FC);
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+}
+
+#query-parameters-form h6 {
+  color: var(--ted-text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-left: 0.5rem;
+}
+
+#query-parameters-fields {
+  padding-left: 0.5rem;
+}
+
+#query-parameters-fields label {
+  color: var(--ted-text);
+  font-weight: 500;
+}
+
+#query-parameters-fields input[type="date"] {
+  max-width: 180px;
+}
+
+#query-parameters-fields input[type="text"] {
+  min-width: 320px;
+}

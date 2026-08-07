@@ -22,6 +22,7 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
+import { fillTemplate, isValidDate, isValidMonth, isValidYear } from './utils/queryParameters.js';
 
 /**
  * Class representing the Query Library.
@@ -73,11 +74,21 @@ export class QueryLibrary {
     this.customiseQueryButton = document.getElementById('customise-query-button');
     this.tryQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-try-btn');
     this.customiseQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-customise-btn');
+    this.bottomButtons = document.getElementById('query-action-buttons-bottom');
+    this.parametersForm = document.getElementById('query-parameters-form');
+    this.parametersFields = document.getElementById('query-parameters-fields');
+    this.toggleSparqlButton = document.getElementById('toggle-sparql-button');
+    this.sparqlWrapper = document.getElementById('query-sparql-wrapper');
     this.selectedQueryElement = null;
     this.queries = [];
+    this.currentParams = [];
+    this.currentQueryText = '';
+    this.currentTemplate = null;
+    this.queryParametersData = null;
 
     this.initEventListeners();
     this.loadQueries();
+    this._loadParametersData();
   }
 
   /**
@@ -111,6 +122,18 @@ export class QueryLibrary {
         setTimeout(() => {
           copySparqlBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
         }, 2000);
+      });
+    }
+
+    // Toggle SPARQL query visibility
+    if (this.toggleSparqlButton) {
+      this.toggleSparqlButton.addEventListener('click', () => {
+        const isHidden = this.sparqlWrapper.classList.toggle('d-none');
+        this.bottomButtons.classList.toggle('d-none', isHidden);
+        this.toggleSparqlButton.setAttribute('aria-expanded', String(!isHidden));
+        this.toggleSparqlButton.innerHTML = isHidden
+          ? '<i class="bi bi-eye"></i> Show query'
+          : '<i class="bi bi-eye-slash"></i> Hide query';
       });
     }
   }
@@ -328,6 +351,8 @@ export class QueryLibrary {
     this.queryTitle.textContent = selectedQuery.title;
     this.queryDescription.textContent = selectedQuery.description;
     this.setSparqlEditorValue(querySparqlText);
+    this.currentQueryText = querySparqlText;
+    this._renderParameterForm(selectedQuery.sparql);
     const queryRunning = this.queryEditor.isQueryRunning;
     this.tryQueryButton.disabled = queryRunning;
     if (this.customiseQueryButton) this.customiseQueryButton.disabled = queryRunning;
@@ -346,33 +371,284 @@ export class QueryLibrary {
 
   /**
    * Handle "Try this query" click: load the query into the editor
-   * and immediately run it. The user lands on the Reuse tab (via
-   * QueryEditor's auto-routing) without a detour through the
-   * Customize tab — this is for users who want to see the result,
-   * not to modify the query. Customise is the separate path for
-   * editing.
+   * and immediately run it. If the query has parameters, inject the
+   * form values before execution. The user lands on the Reuse tab
+   * (via QueryEditor's auto-routing) without a detour through the
+   * Customize tab.
    */
   onTryQuery() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
+    if (!this._validateParams()) return;
+    const queryText = this._getQueryWithInjectedParams();
     this.queryEditor.setValue(queryText);
-    // Submit the form programmatically. QueryEditor.onSubmit takes
-    // care of everything: syntax check, POST, auto-route to either
-    // the SELECT lane (`#query-results`) or the graph lane
-    // (`#app-tab-explorer`) of the Reuse tab.
     document.getElementById('query-form')?.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );
   }
 
   /**
-   * Handle "Customise" click: load the query into the editor and
-   * switch to the Editor tab so the user can edit it before running.
-   * This is the old Try-this-query behaviour, now a separate path.
+   * Handle "Customise" click: load the query (with injected params)
+   * into the editor and switch to the Editor tab so the user can
+   * edit it before running.
    */
   onCustomise() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
+    const queryText = this._getQueryWithInjectedParams();
     this.queryEditor.setValue(queryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     queryEditorTab.show();
+
+    // Non-blocking warning if start > end
+    this._warnIfRangeInverted();
+  }
+
+  /**
+   * Validate all parameter form inputs. Marks invalid fields with
+   * a red border and shows feedback text. Shows a toast if any
+   * field fails validation.
+   * @returns {boolean} true if all valid, false if any invalid.
+   * @private
+   */
+  _validateParams() {
+    if (this.currentParams.length === 0) return true;
+
+    let allValid = true;
+
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
+      const input = document.getElementById(`query-param-${i}`);
+      if (!input) continue;
+
+      let valid;
+      if (param.type === 'date' || param.type === 'date-raw') {
+        valid = isValidDate(input.value);
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        valid = isValidMonth(input.value);
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        valid = isValidYear(input.value);
+      } else {
+        valid = input.value.trim().length > 0;
+      }
+
+      if (!valid) {
+        input.classList.add('is-invalid');
+        allValid = false;
+      } else {
+        input.classList.remove('is-invalid');
+      }
+    }
+
+    // Cross-field validation: within each rangeGroup, start must be ≤ end.
+    let rangeInvalid = false;
+    if (allValid) {
+      const groups = {};
+      for (let i = 0; i < this.currentParams.length; i++) {
+        const param = this.currentParams[i];
+        if (param.rangeGroup && param.role) {
+          if (!groups[param.rangeGroup]) groups[param.rangeGroup] = {};
+          groups[param.rangeGroup][param.role] = i;
+        }
+      }
+      for (const group of Object.values(groups)) {
+        if (group.start == null || group.end == null) continue;
+        const startInput = document.getElementById(`query-param-${group.start}`);
+        const endInput = document.getElementById(`query-param-${group.end}`);
+        if (startInput && endInput && startInput.value > endInput.value) {
+          startInput.classList.add('is-invalid');
+          endInput.classList.add('is-invalid');
+          allValid = false;
+          rangeInvalid = true;
+        }
+      }
+    }
+
+    if (!allValid) {
+      const msg = rangeInvalid
+        ? 'Start date must be before or equal to end date.'
+        : 'Please correct the highlighted fields before running the query.';
+      showToast('Invalid parameters', msg, { variant: 'danger' });
+    }
+
+    return allValid;
+  }
+
+  /**
+   * Non-blocking warning when start > end in a date range pair.
+   * Used by onCustomise — shows a toast but does not prevent navigation.
+   * @private
+   */
+  _warnIfRangeInverted() {
+    const groups = {};
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
+      if (param.rangeGroup && param.role) {
+        if (!groups[param.rangeGroup]) groups[param.rangeGroup] = {};
+        groups[param.rangeGroup][param.role] = i;
+      }
+    }
+    for (const group of Object.values(groups)) {
+      if (group.start == null || group.end == null) continue;
+      const startInput = document.getElementById(`query-param-${group.start}`);
+      const endInput = document.getElementById(`query-param-${group.end}`);
+      if (startInput && endInput && startInput.value > endInput.value) {
+        showToast(
+          'Date range warning',
+          'The start date is after the end date. The query may return no results.',
+          { variant: 'warning' },
+        );
+        return;
+      }
+    }
+  }
+
+  /**
+   * Load the declared query parameters from the local JSON file.
+   * Called once at construction. If the file fails to load, the form
+   * simply won't appear (graceful degradation).
+   * @private
+   */
+  async _loadParametersData() {
+    try {
+      const response = await fetch('src/assets/query-parameters.json');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      this.queryParametersData = await response.json();
+    } catch (err) {
+      console.warn('[QueryLibrary] Could not load query-parameters.json:', err);
+      this.queryParametersData = {};
+    }
+  }
+
+  /**
+   * Render date parameter input fields for the selected query.
+   * Looks up declared parameters from query-parameters.json by filename.
+   * If the query has declared parameters, shows a form with date pickers
+   * pre-filled with default values. Otherwise hides the form.
+   * @param {string} sparqlFilename - The .sparql filename (e.g. "notices-per-period.sparql")
+   * @private
+   */
+  _renderParameterForm(sparqlFilename) {
+    const entry = this.queryParametersData?.[sparqlFilename];
+    this.currentParams = entry?.parameters || [];
+    this.currentTemplate = entry?.template || null;
+
+    // Always hide the SPARQL by default — user can reveal via toggle
+    this.sparqlWrapper.classList.add('d-none');
+    this.bottomButtons.classList.add('d-none');
+    this.toggleSparqlButton.setAttribute('aria-expanded', 'false');
+    this.toggleSparqlButton.innerHTML = '<i class="bi bi-eye"></i> Show query';
+
+    if (this.currentParams.length === 0 || !this.currentTemplate) {
+      this.parametersForm.classList.add('d-none');
+      return;
+    }
+
+    // Show the parameter form
+    this.parametersForm.classList.remove('d-none');
+
+    // Clear existing fields
+    this.parametersFields.replaceChildren();
+
+    // Create an input for each parameter
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const param = this.currentParams[i];
+      const col = document.createElement('div');
+      col.className = 'col-auto';
+
+      const label = document.createElement('label');
+      label.className = 'form-label small mb-1';
+      label.setAttribute('for', `query-param-${i}`);
+      label.textContent = param.label;
+
+      const input = document.createElement('input');
+      input.className = 'form-control form-control-sm';
+      input.id = `query-param-${i}`;
+      input.dataset.paramIndex = i;
+
+      if (param.type === 'date' || param.type === 'date-raw') {
+        input.type = 'date';
+        input.value = param.default;
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        input.type = 'month';
+        input.value = param.default;
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        input.type = 'number';
+        input.min = '2015';
+        input.max = '2035';
+        input.value = param.default;
+        input.style.maxWidth = '100px';
+      } else {
+        input.type = 'text';
+        input.value = param.default;
+        input.placeholder = param.label;
+      }
+
+      // Validation feedback message (hidden by default)
+      const feedback = document.createElement('div');
+      feedback.className = 'invalid-feedback';
+      if (param.type === 'date' || param.type === 'date-raw') {
+        feedback.textContent = 'Please enter a valid date';
+      } else if (param.type === 'month-start' || param.type === 'month-end') {
+        feedback.textContent = 'Please select a valid month';
+      } else if (param.type === 'year-start' || param.type === 'year-end') {
+        feedback.textContent = 'Please enter a valid year';
+      } else {
+        feedback.textContent = 'This field is required';
+      }
+
+      // Clear validation error on input change and update preview
+      input.addEventListener('input', () => {
+        input.classList.remove('is-invalid');
+        this._updatePreview();
+      });
+
+      col.appendChild(label);
+      col.appendChild(input);
+      col.appendChild(feedback);
+      this.parametersFields.appendChild(col);
+    }
+
+    // Update preview using the freshly created fields (with defaults)
+    this._updatePreview();
+  }
+
+  /**
+   * Collect current values from the parameter form inputs.
+   * @returns {Array<string>}
+   * @private
+   */
+  _collectFormValues() {
+    const values = [];
+    for (let i = 0; i < this.currentParams.length; i++) {
+      const input = document.getElementById(`query-param-${i}`);
+      values.push(input ? input.value : this.currentParams[i].default);
+    }
+    return values;
+  }
+
+  /**
+   * Update the read-only SPARQL editor preview with current form values
+   * filled into the template. Shows valid SPARQL at all times (falls back
+   * to defaults for invalid inputs).
+   * @private
+   */
+  _updatePreview() {
+    if (!this.currentTemplate || this.currentParams.length === 0) return;
+    const values = this._collectFormValues();
+    const filled = fillTemplate(this.currentTemplate, this.currentParams, values);
+    this.setSparqlEditorValue(filled);
+  }
+
+  /**
+   * Get the final query with user values filled into the template.
+   * If no parameters exist, returns the raw query text from the editor.
+   * Also updates the SPARQL preview to show the filled query.
+   * @returns {string}
+   * @private
+   */
+  _getQueryWithInjectedParams() {
+    if (this.currentParams.length === 0) {
+      return this.querySparqlEditor.state.doc.toString();
+    }
+
+    const values = this._collectFormValues();
+    return fillTemplate(this.currentTemplate, this.currentParams, values);
   }
 }

@@ -28,6 +28,7 @@ import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 import {copyToClipboard} from './utils/clipboardCopy.js';
+import {isValidDate} from './utils/queryParameters.js';
 import {formatElapsedTime} from './utils/formatTime.js';
 
 /**
@@ -117,6 +118,19 @@ export class QueryEditor {
             }
           }
         }
+      }
+
+      // xsd:date literal validation — flag any date literal that is not a
+      // real calendar date (e.g. 2024-13-01, 2024-02-30, 2024-115-15).
+      // Catches invalid dates no matter how they entered the query:
+      // form injection, manual typing, or paste.
+      for (const bad of this.findInvalidDateLiterals(doc)) {
+        diagnostics.push({
+          from: bad.from,
+          to: bad.to,
+          severity: "error",
+          message: `"${bad.value}" is not a valid calendar date. Expected format YYYY-MM-DD with a real month (01-12) and day.`
+        });
       }
 
       return diagnostics;
@@ -277,14 +291,40 @@ export class QueryEditor {
   }
 
   /**
+   * Scan a query for xsd:date literals that are not real calendar dates.
+   * The regex is deliberately permissive on shape (1-3 digit month/day)
+   * so malformed literals like 2024-115-15 are caught too, not silently
+   * skipped. Each entry has the offending value and its character range.
+   * @param {string} query
+   * @returns {Array<{value: string, from: number, to: number}>}
+   */
+  findInvalidDateLiterals(query) {
+    const results = [];
+    const dateRegex = /(['"])(\d{1,4}-\d{1,3}-\d{1,3})\1\s*\^\^\s*xsd:date/g;
+    let match;
+    while ((match = dateRegex.exec(query)) !== null) {
+      const value = match[2];
+      if (!isValidDate(value)) {
+        results.push({ value, from: match.index, to: match.index + match[0].length });
+      }
+    }
+    return results;
+  }
+
+  /**
    * Handle editor change event.
-   * Updates the run query button state based on syntax validity.
+   * Updates the run query button state based on syntax validity and
+   * semantic checks (invalid xsd:date literals). The button is disabled
+   * when the query is empty, has a syntax error, or contains an invalid
+   * calendar date — keeping the button state consistent with the inline
+   * lint markers.
    */
   onEditorChange() {
     if (this.isQueryRunning) return;
     const query = this.getQuery();
     const error = this.checkSparqlSyntax(query);
-    const disabled = error ? true : !query.trim();
+    const hasInvalidDate = this.findInvalidDateLiterals(query).length > 0;
+    const disabled = (error || hasInvalidDate) ? true : !query.trim();
     this.queryForm.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = disabled);
   }
 
