@@ -254,3 +254,43 @@ test('_partitionObjects preserves per-object order within each bucket', () => {
   assert.deepEqual(nestable.map(o => o.value), [LOT, PROCEDURE]);
   assert.deepEqual(nonNestable.map(o => o.value), ['a', 'b']);
 });
+
+// ── _formatPropertyPath ─────────────────────────────────────────────
+
+const EPO = 'http://data.europa.eu/a4g/ontology#';
+
+test('_formatPropertyPath shrinks ePO predicates to prefixed form', () => {
+  const r = makeRenderer();
+  const path = r._formatPropertyPath([
+    EPO + 'refersToLot',
+    EPO + 'hasPurpose',
+    EPO + 'hasMainClassification',
+  ]);
+  assert.equal(path, 'epo:refersToLot / epo:hasPurpose / epo:hasMainClassification');
+});
+
+test('_formatPropertyPath handles a single-predicate path', () => {
+  const r = makeRenderer();
+  const path = r._formatPropertyPath([EPO + 'hasPublicationDate']);
+  assert.equal(path, 'epo:hasPublicationDate');
+});
+
+test('_formatPropertyPath wraps unknown-namespace URIs in angle brackets', () => {
+  const r = makeRenderer();
+  const path = r._formatPropertyPath(['http://example.org/custom#someProperty']);
+  assert.equal(path, '<http://example.org/custom#someProperty>');
+});
+
+test('_formatPropertyPath mixes prefixed and full URIs in one path', () => {
+  const r = makeRenderer();
+  const path = r._formatPropertyPath([
+    EPO + 'refersToLot',
+    'http://example.org/custom#link',
+  ]);
+  assert.equal(path, 'epo:refersToLot / <http://example.org/custom#link>');
+});
+
+test('_formatPropertyPath returns empty string for an empty path', () => {
+  const r = makeRenderer();
+  assert.equal(r._formatPropertyPath([]), '');
+});
