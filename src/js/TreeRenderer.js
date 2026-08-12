@@ -328,7 +328,21 @@ export class TreeRenderer {
       header.appendChild(document.createTextNode(' → '));
     }
 
-    header.appendChild(renderSubjectBadge(subjectValue));
+    const badge = renderSubjectBadge(subjectValue);
+    // Use the actual rdf:type local name for the badge type instead of the
+    // URI segment, which may be a mapping-specific class name (e.g.
+    // "SettledContract" instead of the ontology class "Contract").
+    const types = predicates.get(RDF_TYPE) || [];
+    if (types.length > 0 && badge.querySelector('.split-badge-type')) {
+      // Prefer the type with the shortest local name — picks the most
+      // general/canonical class (e.g. "Contract" over "PurchaseContract").
+      const typeUri = types
+        .map(t => t.value)
+        .sort((a, b) => a.split(/[#/]/).pop().length - b.split(/[#/]/).pop().length)[0];
+      const typeLocalName = typeUri.split(/[#/]/).pop();
+      badge.querySelector('.split-badge-type').textContent = typeLocalName;
+    }
+    header.appendChild(badge);
 
     // Add info icon for root-level cards (no incoming predicate)
     if (!incomingPredicate) {
