@@ -710,6 +710,112 @@
                 <div class="row">
                     <!-- Left Column - Help Content -->
                     <div class="col-lg-8">
+                        <h2>What's new</h2>
+                        <div class="accordion mb-4" id="release-notes-accordion">
+                            <!-- 2.4.0 — expanded by default -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="release-2-4-0-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-4-0" aria-expanded="true" aria-controls="release-2-4-0">
+                                        Version 2.4.0 — August 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-4-0" class="accordion-collapse collapse show"
+                                     aria-labelledby="release-2-4-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Query Library form mode:</b> Parameterised queries now show input fields (date pickers, month/year selectors, text inputs) so non-technical users can run queries without editing SPARQL.</li>
+                                            <li><b>Copy property path:</b> Hover any nested node in the tree view to reveal a clipboard icon. Clicking it copies a ready-to-use SPARQL triple pattern snippet.</li>
+                                            <li><b>Ontology-aligned badge labels:</b> Tree view badges now show ePO ontology class names (e.g. "Contract") instead of mapping-specific names (e.g. "SettledContract").</li>
+                                            <li><b>Date validation:</b> Invalid dates in the SPARQL editor are flagged with red underline and the Run button is disabled. The form validates date ranges (start ≤ end).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.3.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="release-2-3-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-3-0" aria-expanded="false" aria-controls="release-2-3-0">
+                                        Version 2.3.0 — July 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-3-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-3-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Chart visualization:</b> SELECT query results can now be displayed as interactive charts (bar, line, pie, scatter) via a Table/Chart toggle when results are chartable.</li>
+                                            <li><b>Exchange rate snippet:</b> Type <code>currency</code> in the editor to insert a currency conversion lookup table with EUR exchange rates, refreshed automatically from InforEuro.</li>
+                                            <li><b>Clickable URLs in results:</b> Web URLs in SELECT result tables are now rendered as clickable links.</li>
+                                            <li><b>Query execution time:</b> Elapsed time is displayed in the results toolbar after each query runs.</li>
+                                            <li><b>Not-found notice tracking:</b> Notices that don't exist are kept in search history with a "not found" badge, so you know which numbers you already tried.</li>
+                                            <li><b>ePO v3 + v4 autocomplete:</b> Editor now recognises terms from both Standard Forms (v3) and eForms (v4) ontology versions.</li>
+                                            <li><b>Guided tours:</b> Each tab has a play icon that launches an interactive walkthrough.</li>
+                                            <li><b>Query Library improvements:</b> "Try this query" and "Customise" buttons, copy SPARQL to clipboard, error handling with retry.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.2.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="release-2-2-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-2-0" aria-expanded="false" aria-controls="release-2-2-0">
+                                        Version 2.2.0 — May 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-2-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-2-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>ePO 3 (Standard Forms) support:</b> The Inspect tab now works for older notices published under Standard Forms, not just eForms. A fallback query finds notices by their identifier value when the primary lookup returns no results.</li>
+                                            <li><b>22 new SPARQL queries added:</b> New categories Stats, Federated queries and Contracts created and 22 new SPARQL queries have been added.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.1.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="release-2-1-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-1-0" aria-expanded="false" aria-controls="release-2-1-0">
+                                        Version 2.1.0 — April 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-1-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-1-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Search in tree:</b> A search bar above the tree view lets you find specific properties or values within a notice. Type at least 3 characters and use the arrow buttons to jump between matches.</li>
+                                            <li><b>SPARQL reference card:</b> Click the code icon on any tree resource to see its PREFIX declaration, prefixed name, and IRI — ready to copy into your SPARQL query.</li>
+                                            <li><b>Meaningful Turtle prefixes:</b> The Turtle view now uses human-readable namespace prefixes (e.g. <code>epo:</code>) instead of auto-generated ones.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.0.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="release-2-0-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-0-0" aria-expanded="false" aria-controls="release-2-0-0">
+                                        Version 2.0.0 — March 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-0-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-0-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Inspect tab:</b> Look up any notice by publication number and explore its full RDF graph as an interactive tree, raw Turtle, or backlinks view.</li>
+                                            <li><b>Procedure timeline:</b> See all notices belonging to the same procurement procedure, ordered chronologically with colour-coded cards (green for originals, yellow for amendments).</li>
+                                            <li><b>Share and download:</b> Copy a shareable URL that reproduces your exact view, or download the RDF data as Turtle, RDF/XML, or N-Triples.</li>
+                                            <li><b>Home tab:</b> A carousel introduction with quick-start CTAs for each workflow.</li>
+                                            <li><b>Redesigned layout:</b> EU institutional header, sticky navigation, and a unified tab structure (Inspect, Explore, Customize).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <h2>Help</h2>
                         <p>
                             The TED Open Data Service lets you explore the entire collection of public procurement data
