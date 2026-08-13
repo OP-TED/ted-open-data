@@ -149,7 +149,7 @@ export class QueryLibrary {
       // Fetch the YAML file containing the queries. Check
       // response.ok explicitly — otherwise a 404 HTML body flows
       // into yaml.load() and throws an opaque parse error.
-      const response = await fetch(`${this.remoteQueriesUrl}index.yaml`);
+      const response = await fetch(`${this.remoteQueriesUrl}web-library.yaml`);
       if (!response.ok) {
         throw new Error(`HTTP error. Status: ${response.status}`);
       }
@@ -525,7 +525,8 @@ export class QueryLibrary {
    * @private
    */
   _renderParameterForm(sparqlFilename) {
-    const entry = this.queryParametersData?.[sparqlFilename];
+    const basename = sparqlFilename.split('/').pop();
+    const entry = this.queryParametersData?.[basename];
     this.currentParams = entry?.parameters || [];
     this.currentTemplate = entry?.template || null;
 
