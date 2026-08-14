@@ -169,8 +169,8 @@ export class QueryLibrary {
       // All text is set via textContent and all identifiers are safely
       // slugified, so a query title or category name containing quotes,
       // angle brackets or HTML entities cannot escape the markup. The
-      // source YAML is trusted (OP-TED/ted-rdf-docs), but defence in depth
-      // is cheap here and prevents future supply-chain or typo issues.
+      // source YAML is trusted (OP-TED/ted-open-data-examples), but defence
+      // in depth is cheap here and prevents future supply-chain or typo issues.
       let categoryCounter = 0;
       categories.forEach((queries, category) => {
         const categoryId = `category-${categoryCounter++}`;
