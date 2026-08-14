@@ -511,16 +511,16 @@ export class QueryEditor {
     this.resultsErrorMessage.textContent = friendly;
     if (action?.kind === 'copy-select-url') {
       // Append a space + inline link + period to the friendly
-      // sentence. Clicking the link calls the existing Copy URL
-      // handler on QueryResults so the user gets the same toast
-      // and the same JSON-format URL we offer from the toolbar.
+      // sentence. Clicking the link calls the Copy Query handler
+      // on QueryResults so the user gets the same toast and the
+      // same JSON-format URL we offer from the toolbar.
       this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
       const link = document.createElement('a');
       link.href = '#';
       link.textContent = action.label;
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        this.queryResults?.onCopyUrl();
+        this.queryResults?.onShare('query-link');
       });
       this.resultsErrorMessage.appendChild(link);
       this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
