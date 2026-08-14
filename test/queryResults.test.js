@@ -127,3 +127,45 @@ test('_renderCell does not make a javascript: URI clickable', () => {
   // protocol so they never match — rendered as plain text.
   assert.equal(node.nodeType, 3);
 });
+
+// ── _buildCurlCommand ──────────────────────────────────────────────
+//
+// The generated command is pasted directly into a shell. A SPARQL query
+// containing a literal single quote (e.g. FILTER(?name = 'John')) survives
+// encodeURIComponent unescaped, since encodeURIComponent does not encode
+// `'`. Left as-is inside the curl command's single-quoted -d argument, it
+// would prematurely close the shell string and corrupt or break the
+// command — these tests pin the %27 escaping that prevents that.
+
+test('_buildCurlCommand includes the endpoint, method, and headers', () => {
+  const cmd = QueryResults._buildCurlCommand('https://example.com/sparql', 'query=x');
+  assert.match(cmd, /^curl -X POST 'https:\/\/example\.com\/sparql'/);
+  assert.match(cmd, /-H 'Content-Type: application\/x-www-form-urlencoded'/);
+  assert.match(cmd, /-H 'Accept: application\/sparql-results\+json'/);
+  assert.match(cmd, /-d 'query=x'/);
+});
+
+test('_buildCurlCommand escapes a literal single quote in the body to %27', () => {
+  // encodeURIComponent leaves ' unescaped, so a SPARQL string literal like
+  // FILTER(?name = 'John') would flow through as a bare quote here.
+  const bodyWithQuote = "query=FILTER(?name%20=%20'John')";
+  const cmd = QueryResults._buildCurlCommand('https://example.com/sparql', bodyWithQuote);
+  assert.doesNotMatch(cmd, /'John'/, 'a literal quote must not survive into the shell argument');
+  assert.match(cmd, /%27John%27/);
+});
+
+test('_buildCurlCommand leaves a body with no single quotes unchanged', () => {
+  const body = 'query=SELECT%20%2A%20WHERE%20%7B%20%3Fs%20%3Fp%20%3Fo%20%7D&format=application%2Fsparql-results%2Bjson';
+  const cmd = QueryResults._buildCurlCommand('https://example.com/sparql', body);
+  assert.match(cmd, new RegExp(`-d '${body}'`));
+});
+
+test('_buildCurlCommand produces a single-quoted -d argument with no unescaped quote inside it', () => {
+  const bodyWithQuote = "query=a'b'c";
+  const cmd = QueryResults._buildCurlCommand('https://example.com/sparql', bodyWithQuote);
+  // Extract the -d argument's quoted content and confirm it contains no
+  // raw single quote (i.e. the shell would see exactly one quoted string).
+  const match = cmd.match(/-d '([^\n]*)'$/);
+  assert.ok(match, 'the -d argument should be present and single-quoted');
+  assert.doesNotMatch(match[1], /'/, 'the body inside the quotes must not contain a raw single quote');
+});
