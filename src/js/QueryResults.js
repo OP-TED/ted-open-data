@@ -41,7 +41,6 @@ export class QueryResults {
     this.queryEditor = queryEditor;
     this.originalSparqlEndpoint = originalSparqlEndpoint;
     this.resultsDiv = document.getElementById("results");
-    this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.chartView = new ChartView();
@@ -51,13 +50,20 @@ export class QueryResults {
 
   /**
    * Initialize event listeners.
-   * Wires the Copy URL button and every dropdown item in the
+   * Wires the Copy Query dropdown items and every dropdown item in the
    * "Download as…" menu. Each download item carries a
    * data-download-format attribute with the MIME type to request.
    */
   initEventListeners() {
-    this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
+    // Copy Query dropdown items
+    document.querySelectorAll('#copy-url-alert [data-share-type]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.onShare(item.dataset.shareType);
+      });
+    });
 
+    // Download as… dropdown items
     document.querySelectorAll('#copy-url-alert [data-download-format]').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -85,7 +91,7 @@ export class QueryResults {
 
   /**
    * Show or hide the slim results toolbar (the strip above the table
-   * that holds the hint, the Copy endpoint URL button and the
+   * that holds the hint, the Copy Query dropdown and the
    * Download as… menu). Centralised here so every lane that needs to
    * toggle it (displayJsonResults, displayTextResults, the SELECT
    * submit paths in QueryEditor) goes through one place.
@@ -206,6 +212,24 @@ export class QueryResults {
   }
 
   /**
+   * Build a ready-to-paste cURL command that reproduces a SPARQL POST
+   * request. The body is a URL-encoded `application/x-www-form-urlencoded`
+   * string (from `buildSparqlBody`); it is wrapped in single quotes for
+   * the shell, so any literal single quote inside it (e.g. from a SPARQL
+   * string literal like `FILTER(?name = 'John')`) is percent-encoded to
+   * %27 first — otherwise it would prematurely close the shell's quoted
+   * argument and corrupt or break the command.
+   *
+   * @param {string} endpoint - The SPARQL endpoint URL.
+   * @param {string} body - The url-encoded POST body (from buildSparqlBody).
+   * @returns {string} - The full curl command, ready to paste into a terminal.
+   */
+  static _buildCurlCommand(endpoint, body) {
+    const safeBody = body.replace(/'/g, '%27');
+    return `curl -X POST '${endpoint}' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -H 'Accept: application/sparql-results+json' \\\n  -d '${safeBody}'`;
+  }
+
+  /**
    * Display text results.
    * @param {string} content - The text content.
    * @param {string} type - The content type (e.g., 'xml', 'csv', 'text').
@@ -234,28 +258,54 @@ export class QueryResults {
   }
 
   /**
-   * Handle copy URL button click event.
-   * Generates a URL for the current query and copies it to the
-   * clipboard. Uses the shared `copyToClipboard` helper so insecure
-   * contexts (non-HTTPS, older browsers) get the execCommand
-   * fallback instead of a synchronous throw, and a real failure
-   * surfaces via the shared toast instead of a silent
-   * console.error.
+   * Handle share dropdown item click.
+   * Copies the appropriate content to the clipboard based on the
+   * selected share type.
+   * @param {string} type - The share type: 'query-link', 'sparql-query', or 'curl-command'.
    */
-  async onCopyUrl() {
-    const url = this.generateUrl();
-    const copied = await copyToClipboard(url);
+  async onShare(type) {
+    const query = this.queryEditor.getQuery();
+    if (!query || !query.trim()) {
+      showToast('Nothing to copy', 'Write a query first, then try again.', { variant: 'warning' });
+      return;
+    }
+
+    let textToCopy;
+    let toastTitle;
+    let toastBody;
+
+    switch (type) {
+      case 'query-link': {
+        textToCopy = this.generateUrl();
+        toastTitle = 'Query link copied';
+        toastBody = 'Open this link in a browser or any HTTP client to re-run the query and get JSON results.';
+        break;
+      }
+      case 'sparql-query': {
+        textToCopy = query;
+        toastTitle = 'SPARQL query copied';
+        toastBody = 'Paste this into any SPARQL editor to run the same query.';
+        break;
+      }
+      case 'curl-command': {
+        const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
+        const body = buildSparqlBody(minifiedQuery);
+        textToCopy = QueryResults._buildCurlCommand(this.originalSparqlEndpoint, body);
+        toastTitle = 'cURL command copied';
+        toastBody = 'Paste into a terminal to execute the query via command line.';
+        break;
+      }
+      default:
+        return;
+    }
+
+    const copied = await copyToClipboard(textToCopy);
     if (copied) {
-      // SELECT-lane specific success copy: the URL is a JSON
-      // endpoint, consumable by Excel / Power BI / any HTTP client.
-      showToast(
-        'Query URL copied',
-        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.',
-      );
+      showToast(toastTitle, toastBody);
     } else {
       showToast(
         'Copy failed',
-        'Could not copy the URL to the clipboard. Please copy it manually from the address bar after clicking Run Query.',
+        'Could not copy to the clipboard. Please try again.',
         { variant: 'danger' },
       );
     }

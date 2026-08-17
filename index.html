@@ -253,7 +253,7 @@
                                 When you find what you need, take it home. Look for the
                                 <strong style="white-space: nowrap;"><i class="bi bi-download"></i>&nbsp;Download</strong>
                                 button to get the results in the format that fits your work. Look for the
-                                <strong style="white-space: nowrap;"><i class="bi bi-rocket-takeoff"></i>&nbsp;Copy endpoint URL</strong>
+                                <strong style="white-space: nowrap;"><i class="bi bi-clipboard"></i>&nbsp;Copy Query</strong>
                                 button to call the same query from your own application and keep it up
                                 to date with live data all the time.
                             </p>
@@ -469,7 +469,17 @@
                     <p class="small text-muted mb-0" id="query-execution-time" style="display: none;">Execution time: <span id="query-execution-time-value"></span></p>
                 </div>
                 <div class="results-toolbar-actions">
-                    <button type="button" id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
+                    <div class="dropdown d-inline-block me-2">
+                        <button id="copy-url-button" class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-clipboard"></i> Copy Query
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="copy-url-button">
+                            <li><a class="dropdown-item" href="#" data-share-type="query-link"><i class="bi bi-link-45deg me-2"></i>Query link</a></li>
+                            <li><a class="dropdown-item" href="#" data-share-type="sparql-query"><i class="bi bi-code-slash me-2"></i>SPARQL query</a></li>
+                            <li><a class="dropdown-item" href="#" data-share-type="curl-command"><i class="bi bi-terminal me-2"></i>cURL command</a></li>
+                        </ul>
+                    </div>
                     <div class="dropdown d-inline-block">
                         <button id="download-as-button" class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -728,6 +738,7 @@
                                             <li><b>Copy property path:</b> Hover any nested node in the tree view to reveal a clipboard icon. Clicking it copies a ready-to-use SPARQL triple pattern snippet.</li>
                                             <li><b>Ontology-aligned badge labels:</b> Tree view badges now show ePO ontology class names (e.g. "Contract") instead of mapping-specific names (e.g. "SettledContract").</li>
                                             <li><b>Date validation:</b> Invalid dates in the SPARQL editor are flagged with red underline and the Run button is disabled. The form validates date ranges (start ≤ end).</li>
+                                            <li><b>Copy Query menu:</b> The results toolbar now offers a dropdown to copy the query as a link (for Excel/Power BI), raw SPARQL text, or a cURL command.</li>
                                         </ul>
                                     </div>
                                 </div>

@@ -47,11 +47,10 @@ export function startReuseSelectTour() {
   steps.push(
     {
       element: '#copy-url-button',
-      title: 'Copy endpoint URL',
+      title: 'Copy Query',
       content:
-        'Copies a URL that returns exactly these results as JSON. Paste it into Excel, ' +
-        'Power BI or any other application that can load JSON from a URL, and you will always ' +
-        'see the latest data without having to re-run the query by hand.',
+        'Copy the query as a link, raw SPARQL text, or a cURL command. The query link returns ' +
+        'these results as JSON — paste it into Excel, Power BI or any HTTP client for live data.',
       placement: 'bottom',
     },
     {
