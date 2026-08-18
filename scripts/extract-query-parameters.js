@@ -2,7 +2,7 @@
  * Extract query parameters from the remote SPARQL query library and generate
  * templates with {{placeholder}} syntax for unambiguous value injection.
  *
- * Downloads each .sparql file referenced in index.yaml, scans for xsd:date
+ * Downloads each .sparql file referenced in web-library.yaml, scans for xsd:date
  * typed literals, replaces them with named placeholders, and outputs
  * src/assets/query-parameters.json containing:
  *   - template: the query text with {{placeholders}} instead of literal dates
@@ -21,11 +21,11 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
-const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
+const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-open-data-examples/main/';
 const OUTPUT_PATH = 'src/assets/query-parameters.json';
 
 /**
- * Minimal YAML parser for the index.yaml structure.
+ * Minimal YAML parser for the web-library.yaml structure.
  */
 function parseIndexYaml(text) {
   const queries = [];
@@ -176,10 +176,10 @@ function humanizePlaceholder(name) {
 }
 
 async function main() {
-  console.log('Fetching index.yaml...');
-  const indexResponse = await fetch(`${REMOTE_QUERIES_URL}index.yaml`);
+  console.log('Fetching web-library.yaml...');
+  const indexResponse = await fetch(`${REMOTE_QUERIES_URL}web-library.yaml`);
   if (!indexResponse.ok) {
-    throw new Error(`Failed to fetch index.yaml: HTTP ${indexResponse.status}`);
+    throw new Error(`Failed to fetch web-library.yaml: HTTP ${indexResponse.status}`);
   }
   const indexText = await indexResponse.text();
   const data = parseIndexYaml(indexText);
@@ -195,7 +195,7 @@ async function main() {
   let skippedCount = 0;
 
   for (const query of data.queries) {
-    const filename = query.sparql;
+    const filename = query.sparql.split('/').pop();
 
     // Skip if already declared
     if (existing[filename]) {
@@ -203,8 +203,8 @@ async function main() {
       continue;
     }
 
-    // Fetch the .sparql file
-    const url = `${REMOTE_QUERIES_URL}${filename}`;
+    // Fetch the .sparql file (use full path from manifest for the URL)
+    const url = `${REMOTE_QUERIES_URL}${query.sparql}`;
     const response = await fetch(url);
     if (!response.ok) {
       console.warn(`  WARNING: Failed to fetch ${filename}: HTTP ${response.status}`);

@@ -30,7 +30,7 @@ import { SearchPanel } from './SearchPanel.js';
 import { setController } from './TermRenderer.js';
 
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
-const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-rdf-docs/main/docs/antora/modules/samples/queries/';
+const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-open-data-examples/main/';
 
 // Reset scroll on page load (browsers may restore previous scroll position).
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
