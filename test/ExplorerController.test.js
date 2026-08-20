@@ -746,3 +746,29 @@ test('ePO 3 fallback: not attempted for a non-notice (query) facet even when emp
 function resetShimsExceptLocation() {
   globalThis.sessionStorage.clear();
 }
+
+// ── route metadata on live navigation ───────────────────────────────
+//
+// Tree clicks attach viaPath / viaRoot / viaRootPattern to the facet so the
+// SPARQL reference card can rebuild the property path. validateFacet strips
+// those at the URL and sessionStorage boundaries, because anything arriving
+// over one is forged — this checks that the stripping did not also cut the
+// legitimate path, which does not go through that validator.
+
+test('explore preserves the route metadata a tree click attaches', async () => {
+  const controller = new ExplorerController();
+  await controller.search(createPublicationNumberFacet('00100333-2025')).catch(() => {});
+
+  await controller.explore({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    viaPath: ['http://data.europa.eu/a4g/ontology#announcesRole'],
+    viaRoot: 'http://data.europa.eu/a4g/resource/id_x_Notice',
+    viaRootPattern: '?notice a epo:Notice',
+  }).catch(() => {});
+
+  const current = controller.currentFacet;
+  assert.deepEqual(current.viaPath, ['http://data.europa.eu/a4g/ontology#announcesRole']);
+  assert.equal(current.viaRoot, 'http://data.europa.eu/a4g/resource/id_x_Notice');
+  assert.equal(current.viaRootPattern, '?notice a epo:Notice');
+});

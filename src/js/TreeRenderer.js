@@ -28,6 +28,17 @@ import { copyToClipboard } from './utils/clipboardCopy.js';
 
 const RDF_TYPE = ns.rdf + 'type';
 
+// The characters SPARQL's IRIREF grammar excludes: everything up to and
+// including space, plus <, >, ", {, }, |, ^, backtick and backslash. A URI
+// carrying one of these cannot be written between angle brackets at all.
+const IRIREF_FORBIDDEN = /[\u0000-\u0020<>"{}|^`\\]/g;
+
+// A conservative subset of SPARQL's PN_LOCAL: starts with a letter, digit or
+// underscore, may carry dots or hyphens inside, and never ends in a dot.
+// Anything outside it keeps its full bracketed IRI — over-bracketing costs
+// only verbosity, while a malformed prefixed name costs correctness.
+const SAFE_LOCAL_NAME = /^[A-Za-z0-9_](?:[A-Za-z0-9_.-]*[A-Za-z0-9_-])?$/;
+
 export class TreeRenderer {
   constructor(container) {
     this.container = container;
@@ -37,7 +48,13 @@ export class TreeRenderer {
     this._searchIndex = [];     // flat array of { label, subjectValue, kind }
   }
 
-  render(quads, { subjectUri } = {}) {
+  render(quads, { subjectUri, pathFromRoot = [], rootPattern = null } = {}) {
+    // How the user reached this tree: the predicate chain walked from the
+    // first breadcrumb entry, and the pattern binding that entry. Both come
+    // from DataView, which owns the breadcrumb. Empty when we are at the root.
+    this._pathFromRoot = pathFromRoot;
+    this._rootPattern = rootPattern;
+    this._navigatedSubject = subjectUri;
     this._dismissPopover();
     this.container.innerHTML = '';
     this._toggles.clear();
@@ -70,10 +87,15 @@ export class TreeRenderer {
 
     // `ancestors` is per-branch, not global: the same subject can appear
     // under multiple parents but a real A → B → A cycle is guarded against.
-    // Each root computes its own type context for the copy-path snippet.
     for (const subj of roots) {
-      const rootContext = this._buildRootContext(subj);
-      const node = this._renderSubjectTree(subj, new Set(), null, [], rootContext);
+      // Each root anchors its own chain. A graph can surface several, and a
+      // chain walked beneath one of them says nothing about the others.
+      const pathCtx = {
+        root: subj,
+        anchor: this._buildAnchorPattern(subj, this.subjectIndex.get(subj)),
+        chain: [],
+      };
+      const node = this._renderSubjectTree(subj, new Set(), null, pathCtx);
       this.container.appendChild(node);
     }
   }
@@ -190,9 +212,15 @@ export class TreeRenderer {
 
   _buildIndex(quads) {
     const index = new Map();
+    // The index is keyed by subject value, which loses the distinction
+    // between an IRI and a blank node. That matters when building query
+    // patterns: a blank node's label is local to the parse and cannot be
+    // written as an IRI, so remember which subjects are blank.
+    this._blankSubjects = new Set();
     for (const quad of quads) {
       const subj = quad.subject.value;
       const pred = quad.predicate.value;
+      if (quad.subject.termType === 'BlankNode') this._blankSubjects.add(subj);
       if (!index.has(subj)) index.set(subj, new Map());
       const predicates = index.get(subj);
       if (!predicates.has(pred)) predicates.set(pred, []);
@@ -219,15 +247,15 @@ export class TreeRenderer {
 
   // Render one subject as a card. Nested cards are lazily built on first
   // toggle-expand to keep the initial DOM small.
-  // `predicatePath` is the chain of predicate URIs from the root to this
-  // card (empty for the root). It drives the "copy path" affordance.
-  _renderSubjectTree(subjectValue, ancestors, incomingPredicate, predicatePath = [], rootContext = null) {
+  _renderSubjectTree(subjectValue, ancestors, incomingPredicate, pathCtx = null) {
     const fragment = document.createDocumentFragment();
     const predicates = this.subjectIndex.get(subjectValue);
     if (!predicates) return fragment;
 
     if (ancestors.has(subjectValue)) {
-      fragment.appendChild(this._renderCycleMarker(subjectValue));
+      // The marker stands where the nested card would have been, so it is
+      // reached by the same route and has to report the same context.
+      fragment.appendChild(this._renderCycleMarker(subjectValue, pathCtx));
       return fragment;
     }
 
@@ -237,14 +265,14 @@ export class TreeRenderer {
     const card = document.createElement('div');
     card.className = 'tree-card';
     card.dataset.subject = subjectValue;
-    card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate, predicatePath, rootContext));
+    card.appendChild(this._buildCardHeader(subjectValue, predicates, incomingPredicate, pathCtx));
 
     // Root cards render their body eagerly so the tree is
     // immediately visible. Nested cards defer body creation until
     // first expand (lazy render).
     const startExpanded = !incomingPredicate;
     const toggle = card.querySelector('.tree-toggle');
-    const buildBody = () => this._buildCardBody(predicates, branchAncestors, predicatePath, rootContext);
+    const buildBody = () => this._buildCardBody(predicates, branchAncestors, pathCtx);
     let body = null;
 
     if (startExpanded) {
@@ -300,15 +328,15 @@ export class TreeRenderer {
     return fragment;
   }
 
-  _renderCycleMarker(subjectValue) {
+  _renderCycleMarker(subjectValue, pathCtx = null) {
     const el = document.createElement('div');
     el.className = 'tree-node';
-    el.appendChild(renderTerm({ termType: 'NamedNode', value: subjectValue }));
+    el.appendChild(renderTerm({ termType: 'NamedNode', value: subjectValue }, this._navigationContext(pathCtx)));
     el.appendChild(document.createTextNode(' (circular ref)'));
     return el;
   }
 
-  _buildCardHeader(subjectValue, predicates, incomingPredicate, predicatePath = [], rootContext = null) {
+  _buildCardHeader(subjectValue, predicates, incomingPredicate, pathCtx = null) {
     const header = document.createElement('div');
     header.className = 'tree-card-header';
 
@@ -322,23 +350,21 @@ export class TreeRenderer {
     header.appendChild(document.createTextNode(' '));
 
     if (incomingPredicate) {
+      // Deliberately carries no navigation context. Clicking a predicate jumps
+      // to its definition in the ontology, which is not somewhere the walked
+      // route leads — reporting the chain here would claim the notice reaches
+      // the term epo:announcesRole by following epo:announcesRole.
       const pred = renderTerm({ termType: 'NamedNode', value: incomingPredicate });
       pred.classList.add('predicate');
       header.appendChild(pred);
       header.appendChild(document.createTextNode(' → '));
     }
 
-    header.appendChild(renderSubjectBadge(subjectValue));
+    header.appendChild(renderSubjectBadge(subjectValue, this._navigationContext(pathCtx)));
 
     // Add info icon for root-level cards (no incoming predicate)
     if (!incomingPredicate) {
       header.appendChild(this._buildInfoButton(subjectValue, predicates));
-    }
-
-    // "Copy path" affordance for nested cards — the property path from the
-    // root to this resource. Hidden until the header is hovered (see CSS).
-    if (predicatePath.length > 0) {
-      header.appendChild(this._buildCopyPathButton(predicatePath, rootContext));
     }
 
     return header;
@@ -356,6 +382,79 @@ export class TreeRenderer {
     }
   }
 
+  // The body of the SPARQL reference card, as HTML. Split out from
+  // _buildInfoButton so the content can be asserted on without standing up a
+  // Bootstrap popover.
+  _buildInfoRows(subjectValue, predicates) {
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const copyIcon = (value, label) =>
+      `<button class="tree-info-copy-inline" data-copy="${esc(value)}" title="${label}"><i class="bi bi-clipboard"></i></button>`;
+    const row = (label, copyValue, display, copyLabel) =>
+      `<div class="tree-info-row"><span class="tree-info-label">${label}</span>${copyIcon(copyValue, copyLabel)}<code class="tree-info-value">${esc(display)}</code></div>`;
+
+    // Work out everything the card will show before deciding what to declare.
+    // The prefixes needed depend on the finished text — the Path in particular
+    // carries predicates from the whole walked route, not just this resource's
+    // type — so guessing them from the terms that went in gets it wrong.
+    const isVocabularyTerm = Boolean(resolvePrefix(subjectValue));
+    const types = this._typeUris(predicates).map(uri => this._shrinkOrBracket(uri));
+
+    let name = null;
+    let nameCopy = null;
+    let path = null;
+    let iri = null;
+
+    if (isVocabularyTerm) {
+      // The subject is itself an ontology term, so it names a class or
+      // property rather than describing an instance.
+      name = nameCopy = this._shrinkOrBracket(subjectValue);
+    } else {
+      if (types.length) {
+        // What is copied is what is shown, and it matches what the Path binds
+        // — a resource is all of its types, and picking one would depend on
+        // the order the endpoint happened to return them in.
+        name = nameCopy = types.join(', ');
+      }
+      // Null when the resource cannot be named in a query at all — an untyped
+      // blank node. An unusable pattern would be worse than none.
+      path = this._buildPathPattern(subjectValue, predicates);
+      // A blank node has no IRI. Its label is local to this parse, so wrapping
+      // it in angle brackets would offer <b0_b0> — a relative reference to
+      // something else entirely — as though it identified this resource.
+      if (!this._isBlankSubject(subjectValue)) iri = this._asIriRef(subjectValue);
+    }
+
+    const rows = [`<p class="tree-info-intro">Use the following in your SPARQL query</p>`];
+
+    // One declaration per prefix the rows below actually use, so the whole
+    // card can be pasted into an empty query and still parse.
+    for (const prefix of this._prefixesUsedIn([name, path])) {
+      const decl = `PREFIX ${prefix}: <${ns[prefix]}>`;
+      rows.push(row('Prefix', decl, decl, 'Copy prefix declaration'));
+    }
+
+    if (name) rows.push(row('Name', nameCopy, name, 'Copy name'));
+    if (path) rows.push(row('Path', path, path, 'Copy path'));
+    if (iri) rows.push(row('IRI', iri, iri, 'Copy IRI'));
+
+    return [`<div class="tree-info-popover">`, ...rows, `</div>`].join('\n');
+  }
+
+  // The prefixes appearing in the given patterns, in namespace-table order.
+  //
+  // Read back off the finished text rather than tracked while building it,
+  // because the Path's anchor may have been composed during an earlier render
+  // and carried here on the breadcrumb — by then only the string survives.
+  // Every prefix is matched literally against the known table, so an unrelated
+  // colon cannot invent one; at worst a colon inside a bracketed IRI declares
+  // a prefix nothing uses, which is redundant but still valid SPARQL.
+  _prefixesUsedIn(patterns) {
+    const text = patterns.filter(Boolean).join('\n');
+    return Object.keys(ns).filter(prefix =>
+      new RegExp(`(^|[^A-Za-z0-9_-])${prefix}:`).test(text),
+    );
+  }
+
   _buildInfoButton(subjectValue, predicates) {
     const btn = document.createElement('button');
     btn.className = 'tree-info-btn';
@@ -364,40 +463,8 @@ export class TreeRenderer {
     btn.innerHTML = '<i class="bi bi-code-square"></i>';
     const tooltip = new bootstrap.Tooltip(btn, { placement: 'top' });
 
-    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-    const resolved = resolvePrefix(subjectValue);
-    const types = (predicates.get(RDF_TYPE) || []).map(t => shrink(t.value));
     const title = `<span>SPARQL reference card</span><button class="btn-close tree-info-close" aria-label="Close"></button>`;
-
-    const copyIcon = (value, label) =>
-      `<button class="tree-info-copy-inline" data-copy="${esc(value)}" title="${label}"><i class="bi bi-clipboard"></i></button>`;
-
-    const rows = [
-      `<p class="tree-info-intro">Use the following in your SPARQL query</p>`,
-    ];
-
-    if (resolved) {
-      // Ontology/vocabulary term — PREFIX, Name
-      const prefixDecl = `PREFIX ${resolved.prefix}: <${ns[resolved.prefix]}>`;
-      const prefixedName = `${resolved.prefix}:${resolved.localName}`;
-      rows.push(`<div class="tree-info-row"><span class="tree-info-label">Prefix</span>${copyIcon(prefixDecl, 'Copy prefix declaration')}<code class="tree-info-value">${esc(prefixDecl)}</code></div>`);
-      rows.push(`<div class="tree-info-row"><span class="tree-info-label">Name</span>${copyIcon(prefixedName, 'Copy name')}<code class="tree-info-value">${esc(prefixedName)}</code></div>`);
-    } else {
-      // Data resource — PREFIX (from type), Name (type), IRI
-      if (types.length) {
-        const typeResolved = resolvePrefix((predicates.get(RDF_TYPE) || [])[0]?.value);
-        if (typeResolved) {
-          const typePrefixDecl = `PREFIX ${typeResolved.prefix}: <${ns[typeResolved.prefix]}>`;
-          rows.push(`<div class="tree-info-row"><span class="tree-info-label">Prefix</span>${copyIcon(typePrefixDecl, 'Copy prefix declaration')}<code class="tree-info-value">${esc(typePrefixDecl)}</code></div>`);
-        }
-        rows.push(`<div class="tree-info-row"><span class="tree-info-label">Name</span>${copyIcon(types[0], 'Copy name')}<code class="tree-info-value">${esc(types.join(', '))}</code></div>`);
-      }
-      const iri = `<${subjectValue}>`;
-      rows.push(`<div class="tree-info-row"><span class="tree-info-label">IRI</span>${copyIcon(iri, 'Copy IRI')}<code class="tree-info-value">${esc(iri)}</code></div>`);
-    }
-
-    const lines = [`<div class="tree-info-popover">`, ...rows, `</div>`].join('\n');
+    const lines = this._buildInfoRows(subjectValue, predicates);
 
     const popover = new bootstrap.Popover(btn, {
       title,
@@ -467,19 +534,171 @@ export class TreeRenderer {
     return btn;
   }
 
-  _buildCardBody(predicates, branchAncestors, predicatePath = [], rootContext = null) {
+  // The triple pattern that reaches this resource in a query.
+  //
+  // When the user navigated in from somewhere — say a notice, then a Reviewer
+  // — the breadcrumb knows both the pattern that binds the starting point and
+  // the predicate chain walked since, and the two combine into a property
+  // path: "?notice a epo:Notice ; epo:announcesRole ?reviewer ." That chain is
+  // what makes the resource findable from a query, and it is the thing the
+  // tree alone cannot know (issue #73).
+  //
+  // At the start of an exploration there is no chain, so the best available
+  // binding is the resource's own type — falling back to its IRI when it has
+  // no type. Returns null when neither is available and the resource simply
+  // cannot be referred to in a query.
+  _buildPathPattern(subjectValue, predicates) {
+    // A graph can surface several root cards; the walked chain belongs only
+    // to the subject actually navigated to, not to its siblings.
+    const chain = subjectValue === this._navigatedSubject ? (this._pathFromRoot || []) : [];
+    const anchor = this._rootPattern;
+
+    if (chain.length > 0 && anchor) {
+      const targetVar = this._targetVariable(predicates, anchor);
+      // "?notice a epo:Notice" already states a predicate, so the chain
+      // continues it with ";". An IRI anchor states none, and a leading ";"
+      // there would be a syntax error.
+      const join = anchor.startsWith('?') ? ' ;' : '';
+      return `${anchor}${join} ${this._formatPropertyPath(chain)} ?${targetVar} .`;
+    }
+
+    // No chain: the best available binding is the resource's own type.
+    // Null means the resource cannot be expressed in a query at all.
+    const pattern = this._buildAnchorPattern(subjectValue, predicates);
+    if (!pattern) return null;
+    return pattern.startsWith('?') ? `${pattern} .` : `${pattern} ?predicate ?value .`;
+  }
+
+  // What a click on this element should record about how it was reached: the
+  // predicates walked, which root the walk started from, and the pattern that
+  // binds that root. DataView needs all three to tell a continuous route from
+  // a chain that silently jumped to a different part of the graph.
+  _navigationContext(pathCtx) {
+    if (!pathCtx) return {};
+    return {
+      viaPath: pathCtx.chain,
+      viaRoot: pathCtx.root,
+      viaRootPattern: pathCtx.anchor,
+    };
+  }
+
+  // The pattern that binds a resource to a variable by its type, e.g.
+  // "?notice a epo:Notice". A typed blank node works the same way, since the
+  // pattern matches on the class rather than on identity.
+  //
+  // Every declared type is bound, not one of them. A notice typically carries
+  // several — epo:Notice alongside epo:CompetitionNotice and a mapping-version
+  // class like epo:Notice16 — and the endpoint returns them in no particular
+  // order, so singling one out would both discard what the resource is and
+  // make the pattern depend on the order the triples arrived in.
+  //
+  // Untyped resources have no class to match on. An IRI can still be named
+  // directly; a blank node cannot — its label belongs to this parse alone and
+  // means nothing in a query, so there is no pattern to offer and we say so.
+  _buildAnchorPattern(subjectValue, predicates) {
+    const typeUris = this._typeUris(predicates);
+    if (typeUris.length) {
+      const classes = typeUris.map(uri => this._shrinkOrBracket(uri)).join(', ');
+      return `?${this._variableNameFrom(typeUris)} a ${classes}`;
+    }
+    return this._isBlankSubject(subjectValue) ? null : this._asIriRef(subjectValue);
+  }
+
+  _typeUris(predicates) {
+    return (predicates?.get(RDF_TYPE) || []).map(t => t.value).filter(Boolean);
+  }
+
+  // Blank-node subjects are tracked while indexing, because the subject index
+  // is keyed by bare value and `_:b0` arrives from the parser as "b0_b0" —
+  // indistinguishable from a relative IRI once the term type is dropped.
+  _isBlankSubject(subjectValue) {
+    return this._blankSubjects?.has(subjectValue) ?? false;
+  }
+
+  // The variable the walked chain lands on, named after the resource's type so
+  // the pattern says what it binds — ?contractTerm rather than a bare ?value.
+  // Navigating from a notice to another notice would otherwise bind the same
+  // variable at both ends: "?notice a epo:Notice ; … ?notice ."
+  _targetVariable(predicates, anchor) {
+    const varName = this._variableNameFrom(this._typeUris(predicates));
+    return anchor.startsWith(`?${varName} `) ? `${varName}2` : varName;
+  }
+
+  // A readable variable name for a resource with these types.
+  //
+  // Where several types are present the shortest local name wins, which for
+  // ePO tends to be the general class — ?notice over ?notice16. That is a
+  // legibility preference and nothing more: a SPARQL variable name carries no
+  // meaning, and every type is bound in the pattern regardless, so the choice
+  // cannot change what the query matches.
+  //
+  // A name may only contain letters, digits and underscores, so a local name
+  // carrying a hyphen or a dot would otherwise produce something unparseable.
+  _variableNameFrom(typeUris) {
+    const locals = [].concat(typeUris ?? [])
+      .filter(Boolean)
+      .map(uri => uri.split(/[#/]/).pop())
+      .sort((a, b) => a.length - b.length || a.localeCompare(b));
+
+    const local = (locals[0] || '').replace(/[^A-Za-z0-9_]/g, '_');
+    if (!local || !/^[A-Za-z_]/.test(local)) return 'value';
+    return local.charAt(0).toLowerCase() + local.slice(1);
+  }
+
+  // A URI as it can safely appear in a query — prefixed where that is legal,
+  // bracketed otherwise.
+  //
+  // shrink() matches on namespace and slices the rest off blindly, so a known
+  // namespace is no guarantee of a valid prefixed name: it turns
+  // http://schema.org/foo/bar into "schema:foo/bar". Inside a property path
+  // that reads as a sequence operator, so the pattern parses and quietly means
+  // something other than what it names. A local part outside SAFE_LOCAL_NAME
+  // therefore keeps the full IRI, as does a URI in no known namespace.
+  _shrinkOrBracket(uri) {
+    const shortened = shrink(uri);
+    if (shortened === uri) return this._asIriRef(uri);
+
+    const localPart = shortened.slice(shortened.indexOf(':') + 1);
+    return SAFE_LOCAL_NAME.test(localPart) ? shortened : this._asIriRef(uri);
+  }
+
+  // A URI written as a SPARQL IRIREF.
+  //
+  // Angle brackets alone do not make an arbitrary string usable: IRIREF
+  // excludes <, >, ", {, }, |, ^, `, \ and everything up to and including
+  // space, so <http://purl.org/dc/terms/a b> is a parse error. Those
+  // characters are not legal in an IRI to begin with — data carrying one is
+  // already malformed — so percent-encoding is how the value gets written
+  // down, not a change to what it refers to.
+  _asIriRef(uri) {
+    const encoded = String(uri).replace(
+      IRIREF_FORBIDDEN,
+      c => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`,
+    );
+    return `<${encoded}>`;
+  }
+
+  // Format a chain of predicate URIs as a SPARQL property path, e.g.
+  // ["…#announcesRole", "…#playedBy"] → "epo:announcesRole / epo:playedBy".
+  _formatPropertyPath(chain) {
+    return chain.map(uri => this._shrinkOrBracket(uri)).join(' / ');
+  }
+
+  _buildCardBody(predicates, branchAncestors, pathCtx = null) {
     const body = document.createElement('div');
     body.className = 'tree-card-body';
 
     for (const [predValue, objects] of predicates) {
       const [nestable, nonNestable] = this._partitionObjects(objects, branchAncestors);
-      const childPath = [...predicatePath, predValue];
+      const childCtx = pathCtx
+        ? { ...pathCtx, chain: [...pathCtx.chain, predValue] }
+        : null;
 
       for (const obj of nonNestable) {
-        body.appendChild(this._renderPredicateObject(predValue, obj, childPath, rootContext));
+        body.appendChild(this._renderPredicateObject(predValue, obj, childCtx));
       }
       for (const obj of nestable) {
-        body.appendChild(this._renderSubjectTree(obj.value, branchAncestors, predValue, childPath, rootContext));
+        body.appendChild(this._renderSubjectTree(obj.value, branchAncestors, predValue, childCtx));
       }
     }
 
@@ -501,94 +720,22 @@ export class TreeRenderer {
     return [nestable, nonNestable];
   }
 
-  _renderPredicateObject(predValue, object, predicatePath = [], rootContext = null) {
+  _renderPredicateObject(predValue, object, pathCtx = null) {
     const row = document.createElement('div');
     row.className = 'tree-node';
     row.dataset.predicate = predValue;
     row.dataset.objectValue = object.value;
 
+    // No navigation context, for the same reason as the card header: this
+    // links to the predicate's own definition, not to a step on the route.
     const pred = renderTerm({ termType: 'NamedNode', value: predValue });
     pred.classList.add('predicate');
     row.appendChild(pred);
 
     row.appendChild(document.createTextNode(' → '));
-    row.appendChild(renderTerm(object));
-
-    // "Copy path" affordance — the property path from the root to this
-    // leaf value. Hidden until the row is hovered (see CSS).
-    // Skip rdf:type rows — they are classification metadata, not useful query paths.
-    if (predicatePath.length > 0 && predValue !== RDF_TYPE) {
-      row.appendChild(this._buildCopyPathButton(predicatePath, rootContext));
-    }
+    row.appendChild(renderTerm(object, this._navigationContext(pathCtx)));
 
     return row;
-  }
-
-  // Format a predicate-URI chain as a SPARQL property path string,
-  // e.g. ["...#refersToLot", "...#hasPurpose"] →
-  // "epo:refersToLot / epo:hasPurpose". Each URI is shrunk to its
-  // prefixed form when a known namespace matches, else its local name.
-  _formatPropertyPath(predicatePath) {
-    return predicatePath
-      .map(uri => {
-        const shortened = shrink(uri);
-        // shrink() returns the URI unchanged when no known namespace
-        // matches. In that case wrap it in angle brackets so the path
-        // stays valid SPARQL (a bare local name would not be).
-        return shortened !== uri ? shortened : `<${uri}>`;
-      })
-      .join(' / ');
-  }
-
-  // Build a root context object for a given root subject — its shrunk type
-  // and a variable name derived from the type's local name.
-  _buildRootContext(subjectValue) {
-    const predicates = this.subjectIndex.get(subjectValue);
-    const types = predicates?.get(RDF_TYPE) || [];
-    if (types.length > 0) {
-      // Prefer the type with the shortest local name — this picks the most
-      // general/canonical class (e.g. "Notice" over "Notice29" or "ResultNotice").
-      const typeUri = types
-        .map(t => t.value)
-        .sort((a, b) => a.split(/[#/]/).pop().length - b.split(/[#/]/).pop().length)[0];
-      const typeShrunk = shrink(typeUri);
-      const rootType = typeShrunk !== typeUri ? typeShrunk : `<${typeUri}>`;
-      const localName = typeUri.split(/[#/]/).pop();
-      const rootVarName = localName.charAt(0).toLowerCase() + localName.slice(1);
-      return { rootType, rootVarName };
-    }
-    return { rootType: null, rootVarName: 'subject' };
-  }
-
-  // Build a small button that copies a SPARQL triple pattern snippet from
-  // the root to the current node, e.g.:
-  // "?notice a epo:Notice ; epo:refersToLot / epo:hasPurpose / epo:hasMainClassification ?value ."
-  _buildCopyPathButton(predicatePath, rootContext = null) {
-    const path = this._formatPropertyPath(predicatePath);
-    const varName = rootContext?.rootVarName || 'subject';
-    const rootType = rootContext?.rootType || '';
-
-    let snippet;
-    if (rootType) {
-      snippet = `?${varName} a ${rootType} ; ${path} ?value .`;
-    } else {
-      snippet = `?${varName} ${path} ?value .`;
-    }
-
-    const btn = document.createElement('button');
-    btn.className = 'tree-path-copy';
-    btn.setAttribute('aria-label', 'Copy property path');
-    btn.title = snippet;
-    btn.innerHTML = '<i class="bi bi-clipboard"></i>';
-
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const ok = await copyToClipboard(snippet);
-      btn.innerHTML = ok ? '<i class="bi bi-check"></i>' : '<i class="bi bi-x"></i>';
-      setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
-    });
-
-    return btn;
   }
 }
 
