@@ -1169,17 +1169,6 @@ main {
 
 /* ── Tree info popover ── */
 
-.tree-info-btn {
-  background: none;
-  border: none;
-  color: #d63384;
-  cursor: pointer;
-  padding: 0 4px;
-  font-size: 0.85rem;
-  vertical-align: middle;
-  margin-left: 12px;
-}
-
 .tree-info-popover {
   font-family: inherit;
   font-size: 0.8rem;
@@ -1324,16 +1313,83 @@ main {
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.85rem;
 }
-.tree-node { padding: 1px 0; }
+/* The reference-card button sits at the right edge of its row, so the buttons
+   form one column down the card rather than landing wherever the row's text
+   happens to end. Taken out of the flow rather than pushed there by flex:
+   flex would make each part of the row a separate item and drop the spaces
+   around the "→", which belong to the row's inline text. */
+.tree-node,
+.tree-card-header {
+  position: relative;
+}
+
+.tree-node > .tree-actions,
+.tree-card-header > .tree-actions {
+  position: absolute;
+  right: 2px;
+  /* Centred on the row rather than pinned to its top: rows vary in height,
+     and being out of the flow there is no baseline left to sit on. Stretched
+     between top and bottom and centred by flex, not shifted by a transform —
+     a transform would create a stacking context, trapping the open menu's
+     z-index inside this element so the rows below painted over it. */
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* One of these on every row, so it stays quiet until pointed at. */
+.tree-actions-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ted-text-muted);
+  opacity: 0.45;
+}
+
+/* Green on hover, as the tour trigger does — the primary colour is what this
+   application uses to say "this responds to you". */
+.tree-actions-btn:hover,
+.tree-actions-btn:focus-visible,
+.tree-actions-btn[aria-expanded="true"] {
+  color: var(--ted-primary, #2c862d);
+  opacity: 1;
+}
+
+.tree-actions-menu {
+  font-size: 0.85rem;
+}
+
+/* Menu icons take the same muted grey as the tour trigger. */
+.tree-actions-menu .dropdown-item i {
+  color: #9aa0a6;
+  margin-right: 4px;
+}
+
+/* Except the reference card's, which keeps the red the application uses for
+   code — the same red as the values inside the card it opens. */
+.tree-actions-menu .dropdown-item .bi-code-square {
+  color: #d63384;
+}
+
+.tree-node { padding: 1px 26px 1px 0; }
 .tree-card {
   border: 1px solid #dee2e6;
   border-radius: 5px;
   margin: 4px 0;
-  overflow: hidden;
+  /* Not `overflow: hidden`: it clipped the actions menu at the card's edge.
+     The header rounds its own top corners instead, which is all the clipping
+     was doing. */
 }
 .tree-card-header {
   background: #f8f9fa;
-  padding: 4px 8px;
+  border-radius: 4px 4px 0 0;
+  /* Right padding leaves the column the actions menu sits in. */
+  padding: 4px 26px 4px 8px;
   border-bottom: 1px solid #dee2e6;
   font-weight: 500;
 }
@@ -1759,4 +1815,19 @@ main {
 /* Toast header — eu-blue-5 background */
 .toast-header {
   background: var(--ted-blue-5, #F3F6FC);
+}
+
+/* Bootstrap makes a toast 85% opaque by default. A toast lands over the tree,
+   whose rows then read through it. */
+.toast {
+  --bs-toast-bg: #fff;
+}
+
+/* The value a toast is about, set apart from the sentence introducing it. A
+   URI wraps anywhere, having no spaces to break at. */
+.toast-detail {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--ted-color-literal);
+  overflow-wrap: anywhere;
 }

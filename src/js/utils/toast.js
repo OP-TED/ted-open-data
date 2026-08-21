@@ -46,7 +46,7 @@ let lastVariantClasses = [];
  *     to `'success'`, which leaves the toast in its base (plain)
  *     styling.
  */
-export function showToast(title, body, { variant = 'success' } = {}) {
+export function showToast(title, body, { variant = 'success', detail = null } = {}) {
   const toastEl = document.getElementById(TOAST_ID);
   const titleEl = document.getElementById(TOAST_TITLE_ID);
   const bodyEl = document.getElementById(TOAST_BODY_ID);
@@ -65,6 +65,17 @@ export function showToast(title, body, { variant = 'success' } = {}) {
 
   titleEl.textContent = title;
   bodyEl.textContent = body;
+
+  // A value the message is about — a copied URI, an identifier — set on its
+  // own element rather than interpolated into the prose, where it reads as
+  // part of the sentence and a long URI runs the two together. Still
+  // textContent: this is data, and the toast renders no markup.
+  if (detail) {
+    const detailEl = document.createElement('code');
+    detailEl.className = 'toast-detail';
+    detailEl.textContent = detail;
+    bodyEl.appendChild(detailEl);
+  }
 
   // Strip any variant classes left over from a previous call before
   // applying the new ones.

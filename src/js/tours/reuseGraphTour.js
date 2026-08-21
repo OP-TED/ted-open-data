@@ -64,8 +64,9 @@ export function startReuseGraphTour() {
         // an orange play button instead of the plain triangle used in the tree.
         'Use the <span style="color:#000000; font-size:13.6px;">&#9654;&#65038;</span> arrows to expand or collapse nested nodes. ' +
         'The breadcrumb at the top tracks your path — click any step to go back. ' +
-        'The <i class="bi bi-code-square" style="color:#d63384;"></i> button gives you ' +
-        'SPARQL reference info you can copy into your query.' +
+        'The <i class="bi bi-three-dots-vertical"></i> menu on each card and each row ' +
+        'offers a <i class="bi bi-code-square" style="color:#d63384;"></i> SPARQL reference card ' +
+        'you can copy into your query — on a row it tells you how to reach that particular value.' +
         '<br><br><b>Color coding:</b><br>' +
         '<span style="color:#b56217; font-weight:500; text-decoration:underline;">link or property name</span><span style="font-weight:500;"> → </span><br>' +
         '<span style="color:#2a00ff;">"property value"</span>' +
