@@ -1760,3 +1760,9 @@ main {
 .toast-header {
   background: var(--ted-blue-5, #F3F6FC);
 }
+
+/* Breadcrumb steps show the type alone; the tooltip carries the identifier
+   as well, which does not fit Bootstrap's default 200px. */
+.breadcrumb-tooltip .tooltip-inner {
+  max-width: 300px;
+}

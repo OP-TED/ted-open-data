@@ -106,3 +106,71 @@ test('a badge rendered without a chain reports an empty one, never undefined', (
 
   assert.deepEqual(seen.facet.viaPath, []);
 });
+
+// ── the split pill, named and unnamed ───────────────────────────────
+//
+// The class segment of a resource URI ("Reviewer" in RES) is the RML
+// mapping's name for the class, not the ontology's. It is never shown
+// (issue #74): the badge says what the data declares, or says nothing.
+
+const typeText = (badge) => badge.querySelector('.split-badge-type')?.textContent ?? null;
+const idText   = (badge) => badge.querySelector('.split-badge-id')?.textContent ?? null;
+
+test('a named resource shows its declared class beside the identifier', () => {
+  const badge = renderSubjectBadge(RES, { typeName: 'Reviewer' });
+
+  assert.equal(typeText(badge), 'Reviewer');
+  assert.equal(idText(badge), '3qDoBaQsAXVe5Ci2dDBD6C');
+});
+
+test('a resource with no declared class shows the identifier alone', () => {
+  const badge = renderSubjectBadge(RES);
+
+  assert.equal(typeText(badge), null, 'no class half rather than the URI segment');
+  assert.equal(idText(badge), '3qDoBaQsAXVe5Ci2dDBD6C');
+});
+
+test('both keep the URI as their title', () => {
+  assert.equal(renderSubjectBadge(RES, { typeName: 'Reviewer' }).title, RES);
+  assert.equal(renderSubjectBadge(RES).title, RES);
+});
+
+test('terms rendered inline follow the same rule as subject badges', () => {
+  // renderTerm builds the pill separately from renderSubjectBadge; both must
+  // reach the same answer, or leaf rows and card headers disagree.
+  const term = { termType: 'NamedNode', value: RES };
+
+  assert.equal(typeText(renderTerm(term, { typeName: 'Reviewer' })), 'Reviewer');
+  assert.equal(typeText(renderTerm(term)), null);
+});
+
+// A notice's URI ends at the class name, because the source data gives a
+// notice no identifier of its own.
+const NOTICE_RES = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_Notice';
+
+test('a resource with no identifier is named by its type alone', () => {
+  const badge = renderSubjectBadge(NOTICE_RES, { typeName: 'Notice16' });
+
+  assert.equal(typeText(badge), 'Notice16');
+  assert.equal(idText(badge), null, 'no identifier half, and no uuid standing in for one');
+});
+
+test('with neither a type nor an identifier, the badge shows the uuid', () => {
+  // Something has to identify the thing on screen; the uuid is the only part
+  // of the URI that does, and it claims nothing about what the resource is.
+  const badge = renderSubjectBadge(NOTICE_RES);
+
+  assert.equal(typeText(badge), null);
+  assert.equal(idText(badge), '6497924e-6920-4348-8ecb-71530f802aef');
+});
+
+test('a URI of any other shape does not become a split badge', () => {
+  // Vocabulary and ontology URIs keep the plain badge, whose text the label
+  // service replaces with a human label when one resolves. The URI here sits
+  // outside every namespace that service knows, so it asks for nothing.
+  const badge = renderSubjectBadge('http://example.org/vocabulary/Thing');
+
+  assert.equal(typeText(badge), null, 'no split halves');
+  assert.equal(idText(badge), null);
+  assert.equal(badge.textContent, 'http://example.org/vocabulary/Thing');
+});

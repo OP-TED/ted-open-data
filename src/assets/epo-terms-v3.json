@@ -6,7 +6,6 @@
     "AccessTerm",
     "AcquiringCentralPurchasingBody",
     "AcquiringParty",
-    "Agent",
     "AgentInRole",
     "AuxiliaryParty",
     "AwardCriterion",
@@ -14,34 +13,64 @@
     "AwardEvaluationTerm",
     "Awarder",
     "AwardingCentralPurchasingBody",
+    "Batch",
+    "Beneficiary",
+    "Brand",
     "BudgetProvider",
     "Business",
     "Buyer",
+    "CANDefence-D81",
+    "CANSocial-D25",
     "CANSocialNotice",
+    "CANSocialNotice-D25",
+    "CANStandard-D24",
     "CANStandardNotice",
+    "CNDefence-D81",
+    "CNSocial-D25",
     "CNSocialNotice",
+    "CNSocialNotice-D25",
+    "CNStandard-D24",
     "CNStandardNotice",
+    "Carrier",
+    "Catalogue",
+    "CatalogueDocument",
+    "CatalogueFragment",
+    "CatalogueLine",
     "CatalogueProvider",
     "CatalogueReceiver",
+    "CatalogueUpdateDocument",
     "CentralPurchasingBody",
+    "CertificationLabel",
+    "Certifier",
+    "ChargeInformation",
     "CompetitionNotice",
     "CompletionNotice",
+    "ConcessionAwardNotice-D23",
     "ConcessionContract",
     "ConcessionEstimate",
+    "ConcessionNotice-D23",
+    "Consignee",
     "ContextSpecificDescription",
     "ContextualProjection",
     "Contract",
+    "ContractInformation",
     "ContractLotCompletionInformation",
     "ContractModification",
     "ContractModificationNotice",
     "ContractSpecificTerm",
     "ContractTerm",
     "Contractor",
+    "DeliveryInformation",
+    "DesignContest-D24",
+    "DesignContest-D25",
     "DesignContestNotice",
     "DesignContestRegimeTerm",
+    "DesignContestResult-D24",
+    "DesignContestResult-D25",
     "DesignContestResultNotice",
     "DirectAwardPrenotificationNotice",
     "DirectAwardTerm",
+    "DiscountInformation",
     "Document",
     "Duration",
     "DynamicPurchaseSystemTechniqueUsage",
@@ -65,14 +94,29 @@
     "Identifier",
     "IndefiniteDuration",
     "InnovativeProcurement",
+    "Invoicee",
+    "Invoicer",
+    "Item",
+    "ItemAccessoryRelation",
+    "ItemCertificate",
+    "ItemComplementaryRelation",
+    "ItemComposition",
+    "ItemDescription",
+    "ItemModel",
+    "ItemRelation",
+    "ItemReplacement",
+    "ItemRequirement",
     "LeadBuyer",
-    "Location",
     "Lot",
     "LotAwardOutcome",
     "LotGroup",
     "LotGroupAwardInformation",
     "LotSpecificTerm",
+    "Manufacturer",
     "Mediator",
+    "Modification-D23",
+    "Modification-D24",
+    "Modification-D25",
     "MonetaryValue",
     "MultipleStageProcedureTerm",
     "Notice",
@@ -122,10 +166,27 @@
     "OfferingParty",
     "OfflineAccessProvider",
     "OpeningTerm",
+    "Order",
+    "OrderLine",
+    "Ordering",
     "OrganisationGroup",
-    "Organization",
+    "Originator",
+    "OriginatorInformation",
     "OtherEntity",
+    "PIN-CFCSocial-D25",
+    "PIN-CFCSocialNotice",
+    "PIN-CFCSocialNotice-D25",
+    "PIN-CFCStandard-D24",
+    "PIN-CFCStandardNotice",
+    "PIN-RTL-D24",
+    "PIN-RTL-D25",
+    "PINDefence-D81",
+    "PINOnly-D24",
+    "PINOnly-D25",
     "PINOnlyNotice",
+    "PINProfile-D24",
+    "PINProfile-D25",
+    "PINProfile-D81",
     "PINProfileNotice",
     "PINTimeLimitNotice",
     "PMCNotice",
@@ -134,9 +195,10 @@
     "ParticipationRequestTerm",
     "PaymentExecutor",
     "Period",
-    "Person",
     "PlannedProcurementPart",
     "PlanningNotice",
+    "Price",
+    "PriceModifierInformation",
     "Prize",
     "Procedure",
     "ProcedureSpecificTerm",
@@ -149,10 +211,13 @@
     "ProcurementProcedureInformationProvider",
     "ProcurementProcessInformation",
     "ProcurementServiceProvider",
+    "ProductSpecification",
     "PublicationProvision",
     "PurchaseContract",
     "Purpose",
+    "QS-D25",
     "QSNotice",
+    "QSNotice-D25",
     "Quantity",
     "RequestForClarification",
     "RequestForParticipation",
@@ -169,11 +234,15 @@
     "SecurityClearanceTerm",
     "SelectionCriterion",
     "SelectionEvaluationTerm",
+    "Seller",
+    "SocialAndOtherSpecificServices-D23",
+    "SocialAndOtherSpecificServices-D24",
     "SocialProcurement",
     "SpecificDuration",
     "StandardFormsNotice",
     "StatisticalInformation",
     "StrategicProcurement",
+    "Subcontract-D81",
     "SubcontractNotice",
     "SubcontractTerm",
     "SubcontractingEstimate",
@@ -190,13 +259,18 @@
     "TenderReceiver",
     "Tenderer",
     "Term",
-    "Thing",
+    "VEAT-D23",
+    "VEAT-D24",
+    "VEAT-D25",
+    "VEAT-D81",
+    "VoluntaryEx-AnteTransparencyNotice",
     "Winner"
   ],
   "objectProperties": [
     "actsOnBehalfOf",
     "address",
     "addressID",
+    "announcesCatalogueFragment",
     "announcesContract",
     "announcesLot",
     "announcesLotAwardOutcome",
@@ -209,13 +283,19 @@
     "announcesRole",
     "announcesTender",
     "associatedWith",
+    "attestedByLabel",
     "bindsBuyer",
     "bindsContractor",
+    "comprisesCatalogueLine",
     "comprisesLotAwardOutcome",
+    "comprisesOrderLine",
     "comprisesTender",
     "comprisesTenderAwardOutcome",
+    "concernsBeneficiary",
+    "concernsConsignee",
     "concernsContract",
     "concernsLot",
+    "concernsOriginator",
     "concernsPlaceOfDelivery",
     "concernsPlaceOfStorage",
     "concernsProcedure",
@@ -250,6 +330,7 @@
     "dependsOnReviewer",
     "dependsOnServiceProvider",
     "dependsOnTenderer",
+    "describesItem",
     "describesLot",
     "describesLotCompletion",
     "describesLotGroup",
@@ -265,6 +346,8 @@
     "fulfillsStrategicProcurement",
     "geographicIdentifier",
     "geometry",
+    "hasAccessoryItem",
+    "hasActivityCode",
     "hasAdditionalClassification",
     "hasAdditionalContractNature",
     "hasAllegedIrregularityType",
@@ -275,13 +358,19 @@
     "hasBargainPrice",
     "hasBaseQuantity",
     "hasBeneficialOwner",
+    "hasBrand",
     "hasBroadPlaceOfPerformance",
     "hasBusinessSize",
     "hasBuyerItemID",
     "hasBuyerLegalType",
     "hasCatalogueItemID",
     "hasCatalogueLineValidity",
+    "hasCertification",
     "hasChangeJustification",
+    "hasChargeCategory",
+    "hasChargeCategoryModifier",
+    "hasChargeInformation",
+    "hasComplementaryItem",
     "hasConfirmedIrregularityType",
     "hasConstraint",
     "hasContactPointInRole",
@@ -291,11 +380,13 @@
     "hasCountryOfOrigin",
     "hasCurrency",
     "hasDPSScope",
+    "hasDeliveryClassification",
     "hasDeliveryGateway",
     "hasDeliveryLocation",
     "hasDeliveryPeriod",
     "hasDirectAwardJustification",
     "hasDocumentRestrictionJustification",
+    "hasDocumentType",
     "hasECataloguePermission",
     "hasESubmissionPermission",
     "hasElementChange",
@@ -315,12 +406,15 @@
     "hasFrameworkAgreementMaximumValue",
     "hasFrameworkAgreementType",
     "hasGroupFrameworkAgreementAwardedValue",
+    "hasHazardousItemUNDGCode",
     "hasHighestReceivedTenderValue",
     "hasID",
     "hasImplementingRegulation",
     "hasIrregularityType",
+    "hasItemClassification",
     "hasItemCountryOfOrigin",
     "hasItemStandardID",
+    "hasLabelType",
     "hasLanguage",
     "hasLateSubmissionPermission",
     "hasLegalBasis",
@@ -328,12 +422,14 @@
     "hasLowestReceivedTenderValue",
     "hasMainActivity",
     "hasMainClassification",
+    "hasManufacturer",
     "hasManufacturerID",
     "hasManufacturerItemID",
     "hasMaximumFrameworkAgreementAwardedValue",
     "hasMaximumOrderQuantity",
     "hasMember",
     "hasMinimumQuantityGuaranteedForDelivery",
+    "hasModel",
     "hasModficationJustification",
     "hasNationality",
     "hasNetMonetaryValue",
@@ -347,12 +443,16 @@
     "hasOfficialLanguage",
     "hasOrderQuantity",
     "hasOrderabableUnitFactorRate",
+    "hasOrderableUnit",
     "hasOverallMaximumValue",
+    "hasPart",
     "hasPaymentValue",
     "hasPenaltyValue",
     "hasPerformingStaffQualificationInformation",
     "hasPlannedDuration",
     "hasPlannedPeriod",
+    "hasPrice",
+    "hasPriceType",
     "hasPriceValidity",
     "hasPrimaryContactPoint",
     "hasPrizeValue",
@@ -363,6 +463,7 @@
     "hasPurpose",
     "hasQualificationSystemDuration",
     "hasQualificationSystemPeriod",
+    "hasQualifiedItemRelation",
     "hasQualifiedValue",
     "hasQuantityThreshold",
     "hasReceivedSubmissionType",
@@ -376,6 +477,8 @@
     "hasReviewIrregularitySummary",
     "hasSelectionCriteriaUsage",
     "hasSelectionCriterionType",
+    "hasSpecification",
+    "hasStandardisedUnitPrice",
     "hasSubcontractingEstimatedValue",
     "hasSubcontractingObligation",
     "hasTenderSubcontractingInformation",
@@ -384,10 +487,12 @@
     "hasTotalAwardedValue",
     "hasTotalQuantity",
     "hasTotalValue",
+    "hasTransactionConditionsCode",
     "hasUUID",
     "hasUnitCode",
     "hasUnofficialLanguage",
     "hasUsage",
+    "hasVATCategoryCode",
     "hasValidityPeriod",
     "hasVariantPermission",
     "hasWeightValueType",
@@ -395,6 +500,8 @@
     "includesLot",
     "includesTender",
     "indicatesAwardOfLotToWinner",
+    "instantiatesCatalogue",
+    "invoicedToInvoicee",
     "involvesBuyer",
     "involvesProcurementDocument",
     "isAdoptedByBuyer",
@@ -404,9 +511,13 @@
     "isFundedBy",
     "isIntendedForBuyer",
     "isOwnedByAgent",
+    "isProductionOf",
     "isProvidedByCatalogueProvider",
     "isReceivedByCatalogueReceiver",
+    "isRelatedToItem",
+    "isReplaceBy",
     "isResponsibilityOfBuyer",
+    "isSpecificToOrderLine",
     "isSubjectToGrouping",
     "isSubjectToLotSpecificTerm",
     "isSubjectToProcedureSpecificTerm",
@@ -415,7 +526,9 @@
     "isSubmittedByBuyer",
     "isSubmittedForLot",
     "isSubmittedForLotGroup",
+    "isSubmittedToSeller",
     "isSubordinatedToContract",
+    "issuedByCertifier",
     "leadBy",
     "ownsSystem",
     "paidReviewRequestFee",
@@ -424,6 +537,8 @@
     "playedBy",
     "playedByBusiness",
     "providesRulingOnRemedy",
+    "refersToCatalogue",
+    "refersToCatalogueLine",
     "refersToContract",
     "refersToContractToBeModified",
     "refersToLot",
@@ -441,30 +556,38 @@
     "refersToReviewTerm",
     "refersToRole",
     "registeredAddress",
+    "replaces",
     "requestsRemedyType",
+    "requires",
     "resolvesReviewRequest",
     "resultsFromLotAwardOutcome",
     "setsGroupingContextForLot",
     "signedByBuyer",
     "signedByContractor",
     "specifiesAwardCriterion",
+    "specifiesChargeInformation",
+    "specifiesContractInformation",
+    "specifiesDeliveryInformation",
+    "specifiesDiscountInformation",
     "specifiesExclusionGround",
+    "specifiesItem",
+    "specifiesOriginatorInformation",
     "specifiesSelectionCriteria",
     "specifiesSelectionCriterion",
+    "specifiesSeller",
     "specifiesSubcontractors",
     "substantiatesExclusionGround",
     "summarisesInformationForLotAwardOutcome",
+    "supersedesOrder",
     "supportsConcept",
     "supportsRequirement",
     "type",
     "unitType",
+    "updatesCatalogue",
     "usesChannel",
     "usesTechnique"
   ],
   "datatypeProperties": [
-    "alternative",
-    "familyName",
-    "givenName",
     "hasAbnormallyLowTenders",
     "hasAcceleratedProcedureJustification",
     "hasAccessURL",
@@ -475,18 +598,22 @@
     "hasAdditionalNonAwardJustification",
     "hasAlias",
     "hasAmountValue",
+    "hasAttributeType",
     "hasAwardCriteriaEvaluationFormula",
     "hasAwardCriteriaOrderJustification",
     "hasAwardDateScheduled",
     "hasAwardDecisionDate",
     "hasAwardRank",
     "hasBeginning",
+    "hasBestBeforeDate",
     "hasBuyerCategoryDescription",
     "hasBuyerLegalTypeDescription",
     "hasBuyerProfile",
     "hasCalculationMethod",
+    "hasCertificationNumber",
     "hasChangeDescription",
     "hasChangeReasonDescription",
+    "hasClassificationScheme",
     "hasCleanVehicles",
     "hasConfidentialityJustification",
     "hasContactName",
@@ -500,6 +627,7 @@
     "hasDeadline",
     "hasDecisionDate",
     "hasDescription",
+    "hasDimensionDescription",
     "hasDispatchDate",
     "hasDurationExtensionJustification",
     "hasEAuctionURL",
@@ -520,6 +648,9 @@
     "hasEstimatedPercentage",
     "hasEstimatedTenderInvitationDate",
     "hasEstimatedTotalSubcontracts",
+    "hasExpiryDate",
+    "hasExternalSpecification",
+    "hasFactor",
     "hasFax",
     "hasFixedValue",
     "hasFollowupContract",
@@ -528,15 +659,18 @@
     "hasGroupLotEvaluationMethod",
     "hasGroupType",
     "hasGuaranteeDescription",
+    "hasHazardousClass",
     "hasIdentifierValue",
     "hasInadmissibleTenders",
     "hasInstanceReference",
     "hasInternetAddress",
     "hasJuryDecisionBinding",
     "hasJustification",
+    "hasKeyword",
     "hasLateSubmissionInformationDescription",
     "hasLegalFormType",
     "hasLegalName",
+    "hasLiteralValue",
     "hasLotAwardCombination",
     "hasLotAwardLimit",
     "hasMainActivityDescription",
@@ -567,6 +701,8 @@
     "hasOpeningURL",
     "hasOptions",
     "hasOptionsDescription",
+    "hasOrderableQuantityIncrement",
+    "hasOrderableUnitFactorRate",
     "hasOrganisationUnit",
     "hasOverallCostAwardCriteriaPonderation",
     "hasOverallPriceAwardCriteriaPonderation",
@@ -577,6 +713,7 @@
     "hasPlaceOfPerformanceAdditionalInformation",
     "hasPreferredPublicationDate",
     "hasPreviousVersionOfElementReference",
+    "hasPricePercentage",
     "hasPrizeRank",
     "hasProcurementDocumentChangeDate",
     "hasPropertyReference",
@@ -595,6 +732,7 @@
     "hasReceivedTenders",
     "hasReceptionDate",
     "hasRecurrenceDescription",
+    "hasReferenceURI",
     "hasRenewalDescription",
     "hasRequestDate",
     "hasRestrictedAccessURL",
@@ -610,20 +748,27 @@
     "hasSchemeName",
     "hasSchemeURI",
     "hasSchemeVersionID",
+    "hasShippingMark",
+    "hasSourceCatalogueVersion",
+    "hasSpecificPaymentArrangement",
     "hasStrategicProcurementDescription",
     "hasSubcontractingInvolved",
     "hasSubcontractorsProposedAboveObligation",
     "hasSubjectMatter",
     "hasSubmissionURL",
     "hasSuccessiveReduction",
+    "hasTargetCatalogueVersion",
     "hasThresholdValue",
     "hasTitle",
     "hasTotalNumberOfComplainants",
     "hasTotalVehicles",
+    "hasTransactionConditions",
     "hasURL",
     "hasUnitDescription",
     "hasUnverifiedTenders",
+    "hasVATRate",
     "hasVersion",
+    "hasWarrantyInformation",
     "hasWithdrawalDate",
     "hasWithdrawalReason",
     "hasZeroEmissionVehicles",
@@ -632,15 +777,18 @@
     "isAdvancedElectronicSignatureRequired",
     "isAwardedByCPB",
     "isCompetitionTerminated",
+    "isContractedItem",
     "isContractingEntity",
     "isCoveredByGPA",
     "isDPSTerminated",
     "isDesignContest",
     "isGuaranteeRequired",
+    "isInStock",
     "isJointProcurement",
     "isListedCompany",
     "isMultipleTenderSubmissionAllowed",
     "isOneLotOnlyAllowed",
+    "isOrderable",
     "isProcurementDocumentChanged",
     "isProcurementDocumentRestricted",
     "isRecurrent",
@@ -652,9 +800,709 @@
     "isUsingEUFunds",
     "isVariant",
     "isWithdrawn",
-    "isWithinFrameworkAgreement",
-    "name"
+    "isWithinFrameworkAgreement"
   ],
+  "subClassOf": {
+    "http://data.europa.eu/a4g/ontology#AccessTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm",
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#AcquiringCentralPurchasingBody": [
+      "http://data.europa.eu/a4g/ontology#CentralPurchasingBody"
+    ],
+    "http://data.europa.eu/a4g/ontology#AcquiringParty": [
+      "http://data.europa.eu/a4g/ontology#AgentInRole"
+    ],
+    "http://data.europa.eu/a4g/ontology#AuxiliaryParty": [
+      "http://data.europa.eu/a4g/ontology#AgentInRole"
+    ],
+    "http://data.europa.eu/a4g/ontology#AwardCriterion": [
+      "http://data.europa.eu/a4g/ontology#ProcurementCriterion"
+    ],
+    "http://data.europa.eu/a4g/ontology#AwardDecision": [
+      "http://data.europa.eu/a4g/ontology#ProcurementElement"
+    ],
+    "http://data.europa.eu/a4g/ontology#Awarder": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#AwardEvaluationTerm": [
+      "http://data.europa.eu/a4g/ontology#EvaluationTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#AwardingCentralPurchasingBody": [
+      "http://data.europa.eu/a4g/ontology#CentralPurchasingBody"
+    ],
+    "http://data.europa.eu/a4g/ontology#BudgetProvider": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#Business": [
+      "http://www.w3.org/ns/org#Organization"
+    ],
+    "http://data.europa.eu/a4g/ontology#Buyer": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANDefence-D81": [
+      "http://data.europa.eu/a4g/ontology#ResultNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANSocial-D25": [
+      "http://data.europa.eu/a4g/ontology#CANSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANSocialNotice": [
+      "http://data.europa.eu/a4g/ontology#ResultNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANSocialNotice-D25": [
+      "http://data.europa.eu/a4g/ontology#CANSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANStandard-D24": [
+      "http://data.europa.eu/a4g/ontology#CANStandardNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CANStandardNotice": [
+      "http://data.europa.eu/a4g/ontology#ResultNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CatalogueFragment": [
+      "http://data.europa.eu/a4g/ontology#Catalogue"
+    ],
+    "http://data.europa.eu/a4g/ontology#CatalogueProvider": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#CatalogueReceiver": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#CentralPurchasingBody": [
+      "http://data.europa.eu/a4g/ontology#Buyer"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNDefence-D81": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNSocial-D25": [
+      "http://data.europa.eu/a4g/ontology#CNSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNSocialNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNSocialNotice-D25": [
+      "http://data.europa.eu/a4g/ontology#CNSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNStandard-D24": [
+      "http://data.europa.eu/a4g/ontology#CNStandardNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#CNStandardNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#ConcessionAwardNotice-D23": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#ConcessionContract": [
+      "http://data.europa.eu/a4g/ontology#Contract"
+    ],
+    "http://data.europa.eu/a4g/ontology#ConcessionEstimate": [
+      "http://data.europa.eu/a4g/ontology#Estimate"
+    ],
+    "http://data.europa.eu/a4g/ontology#ConcessionNotice-D23": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Contract": [
+      "http://data.europa.eu/a4g/ontology#ProcurementElement"
+    ],
+    "http://data.europa.eu/a4g/ontology#ContractLotCompletionInformation": [
+      "http://data.europa.eu/a4g/ontology#ContextualProjection"
+    ],
+    "http://data.europa.eu/a4g/ontology#ContractModification": [
+      "http://data.europa.eu/a4g/ontology#NoticeDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#Contractor": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ContractSpecificTerm": [
+      "http://data.europa.eu/a4g/ontology#Term"
+    ],
+    "http://data.europa.eu/a4g/ontology#ContractTerm": [
+      "http://data.europa.eu/a4g/ontology#ContractSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContest-D24": [
+      "http://data.europa.eu/a4g/ontology#DesignContestNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContest-D25": [
+      "http://data.europa.eu/a4g/ontology#DesignContestNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContestNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContestRegimeTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContestResult-D24": [
+      "http://data.europa.eu/a4g/ontology#DesignContestResultNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContestResult-D25": [
+      "http://data.europa.eu/a4g/ontology#DesignContestResultNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DesignContestResultNotice": [
+      "http://data.europa.eu/a4g/ontology#ResultNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#DirectAwardTerm": [
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#DiscountInformation": [
+      "http://data.europa.eu/a4g/ontology#PriceModifierInformation"
+    ],
+    "http://data.europa.eu/a4g/ontology#DynamicPurchaseSystemTechniqueUsage": [
+      "http://data.europa.eu/a4g/ontology#TechniqueUsage"
+    ],
+    "http://data.europa.eu/a4g/ontology#EAuctionTechniqueUsage": [
+      "http://data.europa.eu/a4g/ontology#TechniqueUsage"
+    ],
+    "http://data.europa.eu/a4g/ontology#ElementChangeDescription": [
+      "http://data.europa.eu/a4g/ontology#ElementDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#ElementConfidentialityDescription": [
+      "http://data.europa.eu/a4g/ontology#ElementDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#ElementModificationDescription": [
+      "http://data.europa.eu/a4g/ontology#ElementDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#EmploymentInformationProvider": [
+      "http://data.europa.eu/a4g/ontology#AuxiliaryParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#EnvironmentalProtectionInformationProvider": [
+      "http://data.europa.eu/a4g/ontology#AuxiliaryParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#EvaluationTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#ExclusionGround": [
+      "http://data.europa.eu/a4g/ontology#ProcurementCriterion"
+    ],
+    "http://data.europa.eu/a4g/ontology#ExpressionOfInterest": [
+      "http://data.europa.eu/a4g/ontology#Document"
+    ],
+    "http://data.europa.eu/a4g/ontology#FrameworkAgreement": [
+      "http://data.europa.eu/a4g/ontology#Contract"
+    ],
+    "http://data.europa.eu/a4g/ontology#FrameworkAgreementTechniqueUsage": [
+      "http://data.europa.eu/a4g/ontology#TechniqueUsage"
+    ],
+    "http://data.europa.eu/a4g/ontology#FrameworkAgreementTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm",
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#GreenProcurement": [
+      "http://data.europa.eu/a4g/ontology#StrategicProcurement"
+    ],
+    "http://data.europa.eu/a4g/ontology#IndefiniteDuration": [
+      "http://data.europa.eu/a4g/ontology#Duration"
+    ],
+    "http://data.europa.eu/a4g/ontology#InnovativeProcurement": [
+      "http://data.europa.eu/a4g/ontology#StrategicProcurement"
+    ],
+    "http://data.europa.eu/a4g/ontology#ItemAccessoryRelation": [
+      "http://data.europa.eu/a4g/ontology#ItemRelation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ItemComplementaryRelation": [
+      "http://data.europa.eu/a4g/ontology#ItemRelation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ItemComposition": [
+      "http://data.europa.eu/a4g/ontology#ItemRelation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ItemReplacement": [
+      "http://data.europa.eu/a4g/ontology#ItemRelation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ItemRequirement": [
+      "http://data.europa.eu/a4g/ontology#ItemRelation"
+    ],
+    "http://data.europa.eu/a4g/ontology#LeadBuyer": [
+      "http://data.europa.eu/a4g/ontology#Buyer"
+    ],
+    "http://data.europa.eu/a4g/ontology#Lot": [
+      "http://data.europa.eu/a4g/ontology#ProcurementObject"
+    ],
+    "http://data.europa.eu/a4g/ontology#LotAwardOutcome": [
+      "http://data.europa.eu/a4g/ontology#ContextualProjection"
+    ],
+    "http://data.europa.eu/a4g/ontology#LotGroupAwardInformation": [
+      "http://data.europa.eu/a4g/ontology#ContextualProjection"
+    ],
+    "http://data.europa.eu/a4g/ontology#LotSpecificTerm": [
+      "http://data.europa.eu/a4g/ontology#Term"
+    ],
+    "http://data.europa.eu/a4g/ontology#Mediator": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#Modification-D23": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Modification-D24": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Modification-D25": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#MultipleStageProcedureTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice": [
+      "http://data.europa.eu/a4g/ontology#Document"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice1": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice10": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PIN-CFCStandardNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice11": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PIN-CFCStandardNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice12": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice13": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice14": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice15": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#QSNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice16": [
+      "http://data.europa.eu/a4g/ontology#CNStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice17": [
+      "http://data.europa.eu/a4g/ontology#CNStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice18": [
+      "http://data.europa.eu/a4g/ontology#CNStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice19": [
+      "http://data.europa.eu/a4g/ontology#CNStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice2": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice20": [
+      "http://data.europa.eu/a4g/ontology#CNSocialNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice21": [
+      "http://data.europa.eu/a4g/ontology#CNSocialNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice22": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#SubcontractNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice23": [
+      "http://data.europa.eu/a4g/ontology#DesignContestNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice24": [
+      "http://data.europa.eu/a4g/ontology#DesignContestNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice25": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice26": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice27": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice28": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice29": [
+      "http://data.europa.eu/a4g/ontology#CANStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice3": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice30": [
+      "http://data.europa.eu/a4g/ontology#CANStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice31": [
+      "http://data.europa.eu/a4g/ontology#CANStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice32": [
+      "http://data.europa.eu/a4g/ontology#CANStandardNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice33": [
+      "http://data.europa.eu/a4g/ontology#CANSocialNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice34": [
+      "http://data.europa.eu/a4g/ontology#CANSocialNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice35": [
+      "http://data.europa.eu/a4g/ontology#CANSocialNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice36": [
+      "http://data.europa.eu/a4g/ontology#DesignContestResultNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice37": [
+      "http://data.europa.eu/a4g/ontology#DesignContestResultNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice38": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice39": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice4": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINOnlyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice40": [
+      "http://data.europa.eu/a4g/ontology#ContractModificationNotice",
+      "http://data.europa.eu/a4g/ontology#EFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice5": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINOnlyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice6": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINOnlyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice7": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice8": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Notice9": [
+      "http://data.europa.eu/a4g/ontology#EFormsNotice",
+      "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#NoticeAwardInformation": [
+      "http://data.europa.eu/a4g/ontology#ContextSpecificDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#NoticeChange": [
+      "http://data.europa.eu/a4g/ontology#NoticeDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#OfferingParty": [
+      "http://data.europa.eu/a4g/ontology#AgentInRole"
+    ],
+    "http://data.europa.eu/a4g/ontology#OfflineAccessProvider": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#OpeningTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#OrganisationGroup": [
+      "http://www.w3.org/ns/org#Organization"
+    ],
+    "http://data.europa.eu/a4g/ontology#OtherEntity": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ParticipationRequestProcessor": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ParticipationRequestReceiver": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ParticipationRequestTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#PaymentExecutor": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-CFCSocial-D25": [
+      "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice-D25": [
+      "http://data.europa.eu/a4g/ontology#PIN-CFCSocialNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-CFCStandard-D24": [
+      "http://data.europa.eu/a4g/ontology#PIN-CFCStandardNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-CFCStandardNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-RTL-D24": [
+      "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PIN-RTL-D25": [
+      "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINDefence-D81": [
+      "http://data.europa.eu/a4g/ontology#PlanningNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINOnly-D24": [
+      "http://data.europa.eu/a4g/ontology#PINOnlyNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINOnly-D25": [
+      "http://data.europa.eu/a4g/ontology#PINOnlyNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINOnlyNotice": [
+      "http://data.europa.eu/a4g/ontology#PlanningNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINProfile-D24": [
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINProfile-D25": [
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINProfile-D81": [
+      "http://data.europa.eu/a4g/ontology#PINProfileNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINProfileNotice": [
+      "http://data.europa.eu/a4g/ontology#PlanningNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PINTimeLimitNotice": [
+      "http://data.europa.eu/a4g/ontology#PlanningNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#PlannedProcurementPart": [
+      "http://data.europa.eu/a4g/ontology#ProcurementObject"
+    ],
+    "http://data.europa.eu/a4g/ontology#PMCNotice": [
+      "http://data.europa.eu/a4g/ontology#PlanningNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Procedure": [
+      "http://data.europa.eu/a4g/ontology#ProcurementObject"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm": [
+      "http://data.europa.eu/a4g/ontology#Term"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcedureTerm": [
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcessPlanningTerm": [
+      "http://data.europa.eu/a4g/ontology#Term"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementCriterion": [
+      "http://data.europa.eu/m8g/Criterion"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementDocument": [
+      "http://data.europa.eu/a4g/ontology#Document"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementObject": [
+      "http://data.europa.eu/a4g/ontology#ProcurementElement"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementProcedureInformationProvider": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementProcessInformation": [
+      "http://data.europa.eu/a4g/ontology#ContextSpecificDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#ProcurementServiceProvider": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#PublicationProvision": [
+      "http://data.europa.eu/a4g/ontology#NoticeDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#PurchaseContract": [
+      "http://data.europa.eu/a4g/ontology#Contract"
+    ],
+    "http://data.europa.eu/a4g/ontology#QS-D25": [
+      "http://data.europa.eu/a4g/ontology#QSNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#QSNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#QSNotice-D25": [
+      "http://data.europa.eu/a4g/ontology#QSNotice",
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#RequestForClarification": [
+      "http://data.europa.eu/a4g/ontology#Document"
+    ],
+    "http://data.europa.eu/a4g/ontology#RequestForParticipation": [
+      "http://data.europa.eu/a4g/ontology#Document"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewDecision": [
+      "http://data.europa.eu/a4g/ontology#ReviewObject"
+    ],
+    "http://data.europa.eu/a4g/ontology#Reviewer": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewIrregularitySummary": [
+      "http://data.europa.eu/a4g/ontology#StatisticalInformation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewObject": [
+      "http://data.europa.eu/a4g/ontology#ProcurementElement"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewProcedureInformationProvider": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewRequest": [
+      "http://data.europa.eu/a4g/ontology#ReviewObject"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewRequester": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewRequestSummary": [
+      "http://data.europa.eu/a4g/ontology#StatisticalInformation"
+    ],
+    "http://data.europa.eu/a4g/ontology#ReviewTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm",
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#SecurityClearanceTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#SelectionCriterion": [
+      "http://data.europa.eu/a4g/ontology#ProcurementCriterion"
+    ],
+    "http://data.europa.eu/a4g/ontology#SelectionEvaluationTerm": [
+      "http://data.europa.eu/a4g/ontology#EvaluationTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#SocialAndOtherSpecificServices-D23": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#SocialAndOtherSpecificServices-D24": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#SocialProcurement": [
+      "http://data.europa.eu/a4g/ontology#StrategicProcurement"
+    ],
+    "http://data.europa.eu/a4g/ontology#SpecificDuration": [
+      "http://data.europa.eu/a4g/ontology#Duration"
+    ],
+    "http://data.europa.eu/a4g/ontology#StatisticalInformation": [
+      "http://data.europa.eu/a4g/ontology#ContextSpecificDescription"
+    ],
+    "http://data.europa.eu/a4g/ontology#Subcontract-D81": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice",
+      "http://data.europa.eu/a4g/ontology#SubcontractNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#SubcontractingEstimate": [
+      "http://data.europa.eu/a4g/ontology#Estimate"
+    ],
+    "http://data.europa.eu/a4g/ontology#SubcontractNotice": [
+      "http://data.europa.eu/a4g/ontology#CompetitionNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Subcontractor": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#SubcontractTerm": [
+      "http://data.europa.eu/a4g/ontology#ContractSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#SubmissionStatisticalInformation": [
+      "http://data.europa.eu/a4g/ontology#StatisticalInformation"
+    ],
+    "http://data.europa.eu/a4g/ontology#SubmissionTerm": [
+      "http://data.europa.eu/a4g/ontology#LotSpecificTerm",
+      "http://data.europa.eu/a4g/ontology#ProcedureSpecificTerm"
+    ],
+    "http://data.europa.eu/a4g/ontology#System": [
+      "http://xmlns.com/foaf/0.1/Agent"
+    ],
+    "http://data.europa.eu/a4g/ontology#TaxInformationProvider": [
+      "http://data.europa.eu/a4g/ontology#AuxiliaryParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#Tender": [
+      "http://data.europa.eu/a4g/ontology#ProcurementElement"
+    ],
+    "http://data.europa.eu/a4g/ontology#TenderAwardOutcome": [
+      "http://data.europa.eu/a4g/ontology#ContextualProjection"
+    ],
+    "http://data.europa.eu/a4g/ontology#Tenderer": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#TenderProcessor": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#TenderReceiver": [
+      "http://data.europa.eu/a4g/ontology#AcquiringParty"
+    ],
+    "http://data.europa.eu/a4g/ontology#VEAT-D23": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#VEAT-D24": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#VEAT-D25": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#VEAT-D81": [
+      "http://data.europa.eu/a4g/ontology#StandardFormsNotice",
+      "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#VoluntaryEx-AnteTransparencyNotice": [
+      "http://data.europa.eu/a4g/ontology#DirectAwardPrenotificationNotice"
+    ],
+    "http://data.europa.eu/a4g/ontology#Winner": [
+      "http://data.europa.eu/a4g/ontology#OfferingParty"
+    ],
+    "http://data.europa.eu/m8g/Constraint": [
+      "http://data.europa.eu/m8g/Requirement"
+    ],
+    "http://data.europa.eu/m8g/Criterion": [
+      "http://data.europa.eu/m8g/Requirement"
+    ],
+    "http://data.europa.eu/m8g/Person": [
+      "http://xmlns.com/foaf/0.1/Person"
+    ],
+    "http://data.europa.eu/m8g/PublicOrganisation": [
+      "http://www.w3.org/ns/org#Organization"
+    ],
+    "http://www.w3.org/ns/org#Organization": [
+      "http://xmlns.com/foaf/0.1/Agent"
+    ],
+    "http://xmlns.com/foaf/0.1/Person": [
+      "http://xmlns.com/foaf/0.1/Agent"
+    ]
+  },
   "prefixes": {
     "epo": "http://data.europa.eu/a4g/ontology#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
