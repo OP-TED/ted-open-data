@@ -933,6 +933,9 @@ test('every link in a rendered tree either carries its route or is a predicate',
   const walk = (el) => {
     for (const child of el._children || []) {
       if (child.nodeType !== 1) continue;
+      // The actions menu is not a link into the graph — its items open a card
+      // and copy to the clipboard. This is about what navigates.
+      if (String(child.className).includes('tree-actions')) continue;
       const handlers = child._listeners?.get('click') || [];
       const navigates = handlers.length && !String(child.className).includes('tree-toggle');
       if (navigates) {
@@ -1010,4 +1013,370 @@ test('inherited types survive the re-render that follows the ontology load', () 
   r.render(...r._lastRender);
 
   assert.equal(r._typeName(REVIEWER), 'Reviewer');
+});
+
+// ── the reference card is reachable from every row ──────────────────
+//
+// Anoop's review of #110: a path was only available on a card you had
+// navigated to, so collecting several meant walking the tree once per value,
+// and a literal — never a card — had none at all.
+
+const EPO_HAS_LEGAL_NAME = 'http://data.europa.eu/a4g/ontology#hasLegalName';
+
+function renderedNotice() {
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS)),
+    quad(NOTICE, EPO_ANNOUNCES_ROLE, namedNode(REVIEWER)),
+    quad(REVIEWER, RDF_TYPE, namedNode(EPO_REVIEWER_CLASS)),
+    quad(REVIEWER, EPO_HAS_LEGAL_NAME, literal('ANAC')),
+  ], { subjectUri: NOTICE, rootPattern: '?notice a epo:Notice' });
+  return { r, container };
+}
+
+// Everything under an element, in document order, the shim having no
+// querySelectorAll that takes a class.
+function descendants(el, found = []) {
+  for (const child of el?._children || []) {
+    found.push(child);
+    descendants(child, found);
+  }
+  return found;
+}
+
+function actionMenus(el, found = []) {
+  if (String(el.className || '').includes('tree-actions ')) found.push(el);
+  (el._children || []).forEach(c => actionMenus(c, found));
+  return found;
+}
+
+// The kebab and the items behind it.
+const kebabOf = (menu) => menu._children.find(c => c.className === 'tree-actions-btn');
+const itemsOf = (menu) => menu._children
+  .find(c => String(c.className).includes('dropdown-menu'))
+  ._children.map(li => li._children[0])
+  .filter(el => String(el.className).includes('dropdown-item'));
+const labelsOf = (menu) => itemsOf(menu).map(b => b.innerHTML.replace(/<[^>]*>/g, '').trim());
+const itemNamed = (menu, label) => itemsOf(menu)[labelsOf(menu).indexOf(label)];
+const cardItemOf = (menu) => itemNamed(menu, 'SPARQL reference card');
+
+test('every row carries a menu, alongside the one on the card', () => {
+  const { container } = renderedNotice();
+
+  // The root card's own menu, and one on each of its two rows — `type →
+  // epo:Notice` and the nested Reviewer's header. The Reviewer's body is
+  // lazy, so its own rows are not built yet.
+  assert.equal(actionMenus(container).length, 3);
+});
+
+test('the type row is a row like any other', () => {
+  // No exception carved out for it: it states a triple, so it answers for one.
+  const r = makeRenderer();
+  const path = r._buildRowPathPattern(RDF_TYPE, null, {
+    root: NOTICE,
+    anchor: '?notice a epo:Notice',
+    chain: [RDF_TYPE],
+  });
+
+  assert.equal(path, '?notice a epo:Notice ; rdf:type ?type .');
+});
+
+test('the menu holds the reference card behind one item', () => {
+  // A menu rather than a bare button, because a row is where further actions
+  // on a single statement will go.
+  const { container } = renderedNotice();
+  const menu = actionMenus(container)[0];
+
+  assert.equal(kebabOf(menu).getAttribute('data-bs-toggle'), 'dropdown');
+  assert.match(cardItemOf(menu).innerHTML, /SPARQL reference card/);
+});
+
+test('no popover is built until the reference card is asked for', () => {
+  // A notice puts hundreds of these on screen and almost none is opened, so
+  // constructing them at render would be paid for every time and used rarely.
+  const Real = bootstrap.Popover;
+  let built = 0;
+  bootstrap.Popover = class extends Real { constructor(...args) { super(...args); built++; } };
+  try {
+    const { container } = renderedNotice();
+    assert.equal(built, 0, 'nothing constructed at render');
+
+    const item = cardItemOf(actionMenus(container)[1]);
+    item._listeners.get('click')[0]({ stopPropagation() {} });
+    assert.equal(built, 1, 'constructed when the item is chosen');
+
+    item._listeners.get('click')[0]({ stopPropagation() {} });
+    assert.equal(built, 1, 'and only once');
+  } finally {
+    bootstrap.Popover = Real;
+  }
+});
+
+test('opening the menu on a card header does not expand the card', () => {
+  // The menu sits inside the header, and clicking the header toggles the
+  // card. Without an exception, reaching for the menu expands what is under it.
+  const { container } = renderedNotice();
+  const nestedCard = descendants(container)
+    .filter(el => String(el.className) === 'tree-card')
+    .at(-1);
+  const header = descendants(nestedCard)
+    .find(el => String(el.className).includes('tree-card-header'));
+  const kebab = kebabOf(actionMenus(header)[0]);
+  const bodies = () => descendants(nestedCard)
+    .filter(el => String(el.className) === 'tree-card-body').length;
+
+  // A nested card builds its body only when expanded, so expansion shows up
+  // as the body coming into existence.
+  assert.equal(bodies(), 0, 'collapsed to begin with');
+  header._listeners.get('click').forEach(fn => fn({ target: kebab }));
+  assert.equal(bodies(), 0, 'and still collapsed after reaching for the menu');
+
+  // The same click anywhere else on the header does expand it, so the test
+  // above is about the exception and not about clicks being inert.
+  header._listeners.get('click').forEach(fn => fn({ target: header }));
+  assert.equal(bodies(), 1, 'a click on the header itself still expands');
+});
+
+test('the card hangs off what it describes, not off the kebab', () => {
+  // Anchored on the property that names the statement, so the card appears
+  // beside the row it answers for rather than at the right edge.
+  const Real = bootstrap.Popover;
+  const anchors = [];
+  bootstrap.Popover = class extends Real {
+    constructor(el, opts) { super(el, opts); anchors.push(el); }
+  };
+  try {
+    const { container } = renderedNotice();
+    const menu = actionMenus(container)[1];
+    cardItemOf(menu)._listeners.get('click')[0]({ stopPropagation() {} });
+
+    assert.equal(anchors.length, 1);
+    assert.ok(anchors[0].classList.contains('predicate'),
+      `expected the predicate, got ${anchors[0].className}`);
+  } finally {
+    bootstrap.Popover = Real;
+  }
+});
+
+test('a root card hangs off its badge', () => {
+  const Real = bootstrap.Popover;
+  const anchors = [];
+  bootstrap.Popover = class extends Real {
+    constructor(el, opts) { super(el, opts); anchors.push(el); }
+  };
+  try {
+    const { container } = renderedNotice();
+    cardItemOf(actionMenus(container)[0])._listeners.get('click')[0]({ stopPropagation() {} });
+
+    // Identity, not class names: a subject badge renders as a split pill or a
+    // solid one depending on the URI, and either is the badge.
+    const header = descendants(container)
+      .find(el => String(el.className).includes('tree-card-header'));
+    const badge = header._children.find(c => c === anchors[0]);
+    assert.ok(badge, `expected the header's badge, got ${anchors[0].className}`);
+  } finally {
+    bootstrap.Popover = Real;
+  }
+});
+
+// ── copying from the menu ───────────────────────────────────────────
+
+test('a row offers the path first, then the value, then the card', () => {
+  // People reading a notice this closely are mostly learning SPARQL and ePO.
+  const { container } = renderedNotice();
+
+  assert.deepEqual(labelsOf(actionMenus(container)[1]),
+    ['Copy path', 'Copy value', 'SPARQL reference card']);
+});
+
+test('what is copied is the value itself, not the short form on screen', () => {
+  // The screen shows "epo:Notice"; a query, a spreadsheet or a colleague's
+  // message needs the URI.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS))], { subjectUri: NOTICE });
+
+  assert.equal(itemNamed(actionMenus(container)[1], 'Copy value').getAttribute('data-copy'),
+    EPO_NOTICE_CLASS);
+});
+
+test('a resource row copies its IRI, a literal row its text', () => {
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS)),
+    quad(NOTICE, 'http://example.org/label', literal('ANAC AUTORITA')),
+  ], { subjectUri: NOTICE });
+
+  const copied = actionMenus(container).slice(1)
+    .map(m => itemNamed(m, 'Copy value').getAttribute('data-copy'));
+
+  assert.deepEqual(copied, [EPO_NOTICE_CLASS, 'ANAC AUTORITA']);
+});
+
+test('a root card copies its IRI, having no single value of its own', () => {
+  // Its menu answers for the resource as a whole rather than for one
+  // statement, so there is an identifier to copy but no "value".
+  const { container } = renderedNotice();
+
+  assert.deepEqual(labelsOf(actionMenus(container)[0]),
+    ['Copy path', 'Copy IRI', 'SPARQL reference card']);
+});
+
+test('a nested card header offers the resource it points at', () => {
+  const { container } = renderedNotice();
+  const headerMenu = actionMenus(container)[2];
+
+  assert.deepEqual(labelsOf(headerMenu), ['Copy path', 'Copy value', 'SPARQL reference card']);
+  assert.equal(itemNamed(headerMenu, 'Copy value').getAttribute('data-copy'), REVIEWER);
+});
+
+test('a blank node offers nothing to copy', () => {
+  // Its label belongs to this parse alone. Copying "b0_b0" hands someone a
+  // string that identifies nothing outside this page.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS)),
+    quad(NOTICE, EPO_ANNOUNCES_ROLE, blankNode('b0')),
+    { subject: blankNode('b0'), predicate: namedNode(RDF_TYPE), object: namedNode(EPO_REVIEWER_CLASS) },
+  ], { subjectUri: NOTICE });
+
+  const headerMenu = actionMenus(container)
+    .find(m => !labelsOf(m).includes('Copy value') && !labelsOf(m).includes('Copy IRI'));
+
+  assert.ok(headerMenu, 'the blank node card carries a menu');
+  assert.deepEqual(labelsOf(headerMenu), ['Copy path', 'SPARQL reference card'],
+    'a path still reaches it; nothing identifies it outside this page');
+});
+
+test('the toast distinguishes an IRI from a plain value', () => {
+  // A resource's value is a long URI; "copied" alone leaves the reader unsure
+  // which of the two things on the row they are now holding.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS)),
+    quad(NOTICE, 'http://example.org/label', literal('ANAC AUTORITA')),
+  ], { subjectUri: NOTICE });
+
+  const [resourceRow, literalRow] = actionMenus(container).slice(1);
+
+  assert.equal(itemNamed(resourceRow, 'Copy value').getAttribute('data-copy'), EPO_NOTICE_CLASS);
+  assert.equal(itemNamed(literalRow, 'Copy value').getAttribute('data-copy'), 'ANAC AUTORITA');
+});
+
+test('Copy path puts the row pattern on the clipboard', () => {
+  // Naming the variable after what the Reviewer is, exactly as the card's own
+  // Path row does — the two are the same call and must not drift apart.
+  const { container } = renderedNotice();
+  const rowMenu = actionMenus(container)[2];
+
+  assert.equal(
+    itemNamed(rowMenu, 'Copy path').getAttribute('data-copy'),
+    '?notice a epo:Notice ; epo:announcesRole ?reviewer .',
+  );
+});
+
+test('a row with no path to offer shows no Copy path', () => {
+  // An untyped blank node at the root cannot be named in a query, so nothing
+  // below it can be reached from one either.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    { subject: blankNode('b0'), predicate: namedNode('http://example.org/p'), object: literal('x') },
+  ], {});
+
+  const rowMenu = actionMenus(container).at(-1);
+  assert.ok(!labelsOf(rowMenu).includes('Copy path'), labelsOf(rowMenu).join(', '));
+});
+
+const dividersIn = (menu) => menu._children
+  .find(c => String(c.className).includes('dropdown-menu'))
+  ._children.filter(li => String(li._children[0]?.className).includes('dropdown-divider'))
+  .length;
+
+test('a rule separates acting on the row from reading about it', () => {
+  const { container } = renderedNotice();
+  assert.equal(dividersIn(actionMenus(container)[1]), 1);
+});
+
+test('no rule where there is nothing above it', () => {
+  // An untyped blank node has neither a path nor an identifier to copy, so
+  // the card is the only item and a divider would sit at the very top.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    { subject: blankNode('b0'), predicate: namedNode('http://example.org/p'), object: literal('x') },
+  ], {});
+
+  const rootMenu = actionMenus(container)[0];
+  assert.deepEqual(labelsOf(rootMenu), ['SPARQL reference card']);
+  assert.equal(dividersIn(rootMenu), 0);
+});
+
+// ── what the menu must not offer ────────────────────────────────────
+
+test('an ontology term offers its usage, never a path', () => {
+  // "?datatypeProperty a owl:DatatypeProperty ." matches every datatype
+  // property in the ontology, not the one on screen. The card already draws
+  // this distinction; the menu has to draw the same one.
+  const OWL_DATATYPE_PROPERTY = 'http://www.w3.org/2002/07/owl#DatatypeProperty';
+  const RDFS = 'http://www.w3.org/2000/01/rdf-schema#';
+  const TERM = 'http://data.europa.eu/a4g/ontology#hasPublicationDate';
+
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(TERM, RDF_TYPE, namedNode(OWL_DATATYPE_PROPERTY)),
+    quad(TERM, `${RDFS}domain`, namedNode('http://data.europa.eu/a4g/ontology#Document')),
+    quad(TERM, `${RDFS}range`, namedNode('http://www.w3.org/2001/XMLSchema#date')),
+  ], { subjectUri: TERM });
+
+  const menu = actionMenus(container)[0];
+  assert.ok(!labelsOf(menu).includes('Copy path'), labelsOf(menu).join(', '));
+  assert.equal(itemNamed(menu, 'Copy usage').getAttribute('data-copy'),
+    '?document epo:hasPublicationDate ?date .');
+});
+
+test('a row pointing back at its own anchor binds a second variable', () => {
+  // "?notice a epo:Notice ; epo:refersToPrevious ?notice ." matches only the
+  // notices that refer to themselves.
+  const r = makeRenderer();
+  const path = r._buildRowPathPattern(
+    'http://data.europa.eu/a4g/ontology#refersToPrevious',
+    new Map([[RDF_TYPE, [namedNode(EPO_NOTICE_CLASS)]]]),
+    {
+      root: NOTICE,
+      anchor: '?notice a epo:Notice',
+      chain: ['http://data.europa.eu/a4g/ontology#refersToPrevious'],
+    },
+  );
+
+  assert.equal(path, '?notice a epo:Notice ; epo:refersToPrevious ?notice2 .');
+});
+
+test('a blank-node value offers nothing to copy', () => {
+  // "b0" is a label this parse invented; it identifies nothing anywhere else.
+  const r = makeRenderer();
+  const container = { innerHTML: '', _children: [], appendChild(c) { this._children.push(c); } };
+  r.container = container;
+  r.render([
+    quad(NOTICE, RDF_TYPE, namedNode(EPO_NOTICE_CLASS)),
+    // Not a subject anywhere, so it stays a leaf row rather than nesting.
+    quad(NOTICE, EPO_ANNOUNCES_ROLE, blankNode('b0')),
+  ], { subjectUri: NOTICE });
+
+  const rowMenu = actionMenus(container).at(-1);
+  assert.ok(!labelsOf(rowMenu).includes('Copy value'), labelsOf(rowMenu).join(', '));
+  assert.ok(labelsOf(rowMenu).includes('Copy path'), 'the path to it is still real');
 });

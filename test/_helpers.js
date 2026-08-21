@@ -107,6 +107,7 @@ class StubElement {
     this.classList = new StubClassList();
     this._children = [];
     this._listeners = new Map();
+    this._attributes = new Map();
     this._innerHTML = '';
     this.textContent = '';
     this.disabled = false;
@@ -184,8 +185,12 @@ class StubElement {
     if (!this._listeners.has(event)) this._listeners.set(event, []);
     this._listeners.get(event).push(handler);
   }
-  removeAttribute() {}
-  setAttribute() {}
+  // Attributes are stored rather than discarded: some behaviour is carried by
+  // them alone — a Bootstrap data API hook, an aria state — and a test cannot
+  // see it if setting one is a no-op.
+  removeAttribute(name) { this._attributes.delete(name); }
+  setAttribute(name, value) { this._attributes.set(name, String(value)); }
+  getAttribute(name) { return this._attributes.has(name) ? this._attributes.get(name) : null; }
   click() {}
   get parentElement() { return this._parent ?? null; }
   get offsetParent() { return this; }

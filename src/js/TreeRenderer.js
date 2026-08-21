@@ -27,6 +27,7 @@ import { renderSubjectBadge, renderTerm } from './TermRenderer.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
 import { mostSpecificTypes, resourceTypeName } from './utils/resourceType.js';
 import { ensureOntologyData, getClassHierarchy, getOntologyData } from './services/ontologyData.js';
+import { showToast } from './utils/toast.js';
 
 const RDF_TYPE = ns.rdf + 'type';
 
@@ -40,6 +41,55 @@ const IRIREF_FORBIDDEN = /[\u0000-\u0020<>"{}|^`\\]/g;
 // Anything outside it keeps its full bracketed IRI — over-bracketing costs
 // only verbosity, while a malformed prefixed name costs correctness.
 const SAFE_LOCAL_NAME = /^[A-Za-z0-9_](?:[A-Za-z0-9_.-]*[A-Za-z0-9_-])?$/;
+
+// The kinds of term that make a statement of their own, so that a usage
+// pattern can be written for them.
+//
+// The characteristics below are property classes in their own right —
+// owl:FunctionalProperty is a subclass of rdf:Property, the rest of
+// owl:ObjectProperty — so declaring one says what the subject is, not merely
+// how it behaves. A property may carry only a characteristic and nothing else.
+const PROPERTY_TYPES = [
+  `${ns.owl}ObjectProperty`,
+  `${ns.owl}DatatypeProperty`,
+  `${ns.owl}AnnotationProperty`,
+  `${ns.rdf}Property`,
+  `${ns.owl}FunctionalProperty`,
+  `${ns.owl}InverseFunctionalProperty`,
+  `${ns.owl}TransitiveProperty`,
+  `${ns.owl}SymmetricProperty`,
+  `${ns.owl}AsymmetricProperty`,
+  `${ns.owl}ReflexiveProperty`,
+  `${ns.owl}IrreflexiveProperty`,
+];
+
+// Declaring any of these makes a subject part of a vocabulary rather than
+// something the data describes — whichever namespace it happens to live in.
+// The list cannot be complete: OWL and RDFS keep company with metatypes
+// nobody thinks of, which is why it never stands alone.
+const TERM_TYPES = [
+  `${ns.owl}Class`,
+  `${ns.rdfs}Class`,
+  `${ns.rdfs}Datatype`,
+  `${ns.owl}Ontology`,
+  ...PROPERTY_TYPES,
+];
+
+// The reference card is built as HTML rather than elements, so everything
+// placed in it is escaped. Both the card for a resource and the card for a
+// row are laid out the same way, and share these.
+const esc = (s) => String(s)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;');
+
+const copyIcon = (value, label) =>
+  `<button class="tree-info-copy-inline" data-copy="${esc(value)}" title="${esc(label)}"><i class="bi bi-clipboard"></i></button>`;
+
+const infoRow = (label, copyValue, display, copyLabel) =>
+  `<div class="tree-info-row"><span class="tree-info-label">${label}</span>`
+  + `${copyIcon(copyValue, copyLabel)}<code class="tree-info-value">${esc(display)}</code></div>`;
 
 export class TreeRenderer {
   constructor(container) {
@@ -340,8 +390,11 @@ export class TreeRenderer {
     const header = card.querySelector('.tree-card-header');
     header.style.cursor = 'pointer';
     header.addEventListener('click', (e) => {
-      const target = e.target.closest('a, .split-badge, .tree-toggle');
-      if (target && target !== toggle) return; // let links/badges handle it
+      // Let links, badges and the actions menu handle their own clicks. The
+      // menu lives inside the header, so without this opening it would also
+      // expand the card underneath.
+      const target = e.target.closest('a, .split-badge, .tree-toggle, .tree-actions');
+      if (target && target !== toggle) return;
       toggleBody();
     });
 
@@ -373,25 +426,71 @@ export class TreeRenderer {
     header.appendChild(toggle);
     header.appendChild(document.createTextNode(' '));
 
+    let pred = null;
     if (incomingPredicate) {
       // Deliberately carries no navigation context. Clicking a predicate jumps
       // to its definition in the ontology, which is not somewhere the walked
       // route leads — reporting the chain here would claim the notice reaches
       // the term epo:announcesRole by following epo:announcesRole.
-      const pred = renderTerm({ termType: 'NamedNode', value: incomingPredicate });
+      pred = renderTerm({ termType: 'NamedNode', value: incomingPredicate });
       pred.classList.add('predicate');
       header.appendChild(pred);
       header.appendChild(document.createTextNode(' → '));
     }
 
-    header.appendChild(renderSubjectBadge(subjectValue, {
+    const badge = renderSubjectBadge(subjectValue, {
       ...this._navigationContext(pathCtx),
       typeName: this._typeName(subjectValue),
-    }));
+    });
+    header.appendChild(badge);
 
-    // Add info icon for root-level cards (no incoming predicate)
-    if (!incomingPredicate) {
-      header.appendChild(this._buildInfoButton(subjectValue, predicates));
+    if (incomingPredicate) {
+      // A nested card's header is a row like any other: it states one triple,
+      // and its card answers for that statement rather than for the resource
+      // in isolation.
+      // A blank node is passed as none: its label belongs to this parse alone,
+      // so there is neither an IRI to offer nor anything worth copying.
+      const object = this._isBlankSubject(subjectValue)
+        ? null
+        : { termType: 'NamedNode', value: subjectValue };
+      header.appendChild(
+        this._buildRowInfoButton(incomingPredicate, predicates, pathCtx, object, pred));
+    } else {
+      // A root card's menu answers for the resource, so its card hangs off
+      // the badge that names it.
+      // An ontology term is not a place in anyone's data, so there is no path
+      // to it — the same distinction the card makes by showing Usage instead.
+      // Offering one here would copy "?datatypeProperty a owl:DatatypeProperty",
+      // which matches every datatype property rather than this one.
+      const isTerm = this._isOntologyTerm(subjectValue, predicates);
+      header.appendChild(this._buildActionsMenu({
+        label: 'Actions for this element',
+        anchor: badge,
+        copies: [
+          {
+            icon: 'bi-clipboard',
+            item: 'Copy path',
+            value: isTerm ? null : this._buildPathPattern(subjectValue, predicates),
+            title: 'Path copied',
+            body: 'The pattern that reaches this resource in a query:',
+          },
+          {
+            icon: 'bi-clipboard',
+            item: 'Copy usage',
+            value: isTerm ? this._buildUsagePattern(subjectValue, predicates) : null,
+            title: 'Usage copied',
+            body: 'The shape of the statement this property makes:',
+          },
+          {
+            icon: 'bi-clipboard',
+            item: 'Copy IRI',
+            value: this._isBlankSubject(subjectValue) ? null : subjectValue,
+            title: 'IRI copied',
+            body: 'The identifier of this resource is now on your clipboard:',
+          },
+        ],
+        buildContent: () => this._buildInfoRows(subjectValue, predicates),
+      }));
     }
 
     return header;
@@ -410,31 +509,31 @@ export class TreeRenderer {
   }
 
   // The body of the SPARQL reference card, as HTML. Split out from
-  // _buildInfoButton so the content can be asserted on without standing up a
+  // _buildActionsMenu so the content can be asserted on without standing up a
   // Bootstrap popover.
   _buildInfoRows(subjectValue, predicates) {
-    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const copyIcon = (value, label) =>
-      `<button class="tree-info-copy-inline" data-copy="${esc(value)}" title="${label}"><i class="bi bi-clipboard"></i></button>`;
-    const row = (label, copyValue, display, copyLabel) =>
-      `<div class="tree-info-row"><span class="tree-info-label">${label}</span>${copyIcon(copyValue, copyLabel)}<code class="tree-info-value">${esc(display)}</code></div>`;
-
     // Work out everything the card will show before deciding what to declare.
     // The prefixes needed depend on the finished text — the Path in particular
     // carries predicates from the whole walked route, not just this resource's
     // type — so guessing them from the terms that went in gets it wrong.
-    const isVocabularyTerm = Boolean(resolvePrefix(subjectValue));
+    const isVocabularyTerm = this._isOntologyTerm(subjectValue, predicates);
     const types = this._typeUris(predicates).map(uri => this._shrinkOrBracket(uri));
 
     let name = null;
     let nameCopy = null;
     let path = null;
+    let usage = null;
     let iri = null;
 
     if (isVocabularyTerm) {
       // The subject is itself an ontology term, so it names a class or
       // property rather than describing an instance.
       name = nameCopy = this._shrinkOrBracket(subjectValue);
+      // No Path: a term is not somewhere the data leads. The same property is
+      // reached by countless routes, and the one the reader happened to
+      // arrive by is a fact about that notice, not about the term. What can
+      // be said is how the term is used, which the ontology states.
+      usage = this._buildUsagePattern(subjectValue, predicates);
     } else {
       if (types.length) {
         // What is copied is what is shown, and it matches what the Path binds
@@ -457,14 +556,64 @@ export class TreeRenderer {
     // card can be pasted into an empty query and still parse.
     for (const prefix of this._prefixesUsedIn([name, path])) {
       const decl = `PREFIX ${prefix}: <${ns[prefix]}>`;
-      rows.push(row('Prefix', decl, decl, 'Copy prefix declaration'));
+      rows.push(infoRow('Prefix', decl, decl, 'Copy prefix declaration'));
     }
 
-    if (name) rows.push(row('Name', nameCopy, name, 'Copy name'));
-    if (path) rows.push(row('Path', path, path, 'Copy path'));
-    if (iri) rows.push(row('IRI', iri, iri, 'Copy IRI'));
+    if (name) rows.push(infoRow('Name', nameCopy, name, 'Copy name'));
+    if (path) rows.push(infoRow('Path', path, path, 'Copy path'));
+    if (usage) rows.push(infoRow('Usage', usage, usage, 'Copy usage'));
+    if (iri) rows.push(infoRow('IRI', iri, iri, 'Copy IRI'));
 
     return [`<div class="tree-info-popover">`, ...rows, `</div>`].join('\n');
+  }
+
+  // Whether the subject is a term of some vocabulary — a class or a property
+  // — rather than a resource described by the data.
+  //
+  // Two signals, either of which is enough.
+  //
+  // What it declares itself to be holds for a vocabulary this application has
+  // never heard of. Where it lives holds for terms whose declared type is not
+  // one this code lists — `xsd:date a rdfs:Datatype`, a property declared only
+  // `owl:FunctionalProperty` — and for terms with no triples loaded at all.
+  // Neither covers the other, so both are asked.
+  _isOntologyTerm(subjectValue, predicates) {
+    const declared = new Set(this._typeUris(predicates));
+    return TERM_TYPES.some(type => declared.has(type)) || Boolean(resolvePrefix(subjectValue));
+  }
+
+  // How a property is used, from what the ontology says it connects:
+  // "?document epo:hasPublicationDate ?date ." from rdfs:domain Document and
+  // rdfs:range xsd:date.
+  //
+  // This is what the term's own page can honestly offer in place of a Path. A
+  // path is a route through one notice's data; a property has no position, it
+  // has a shape, and the shape holds wherever it is used.
+  //
+  // Null for anything that is not a property — a class is named, not used in
+  // this sense — and the variables fall back to neutral names where the
+  // ontology states no domain or range.
+  _buildUsagePattern(subjectValue, predicates) {
+    const declared = new Set(this._typeUris(predicates));
+    if (!PROPERTY_TYPES.some(type => declared.has(type))) return null;
+
+    const first = (predicateUri) => (predicates?.get(predicateUri) || [])
+      .map(term => term.value)
+      .filter(Boolean)[0] ?? null;
+
+    const domain = first(`${ns.rdfs}domain`);
+    const range = first(`${ns.rdfs}range`);
+    const subject = domain ? this._variableNameFrom([domain]) : 'subject';
+    const object = range ? this._variableNameFrom([range]) : 'value';
+
+    // Domain and range appear only as variable names, never as terms, so a
+    // usage pattern introduces no prefix beyond the property's own — which is
+    // why it is not consulted when working out the declarations.
+    //
+    // A property whose domain and range are the same class would bind one
+    // variable at both ends, matching only self-references.
+    const objectVar = subject === object ? `${object}2` : object;
+    return `?${subject} ${this._shrinkOrBracket(subjectValue)} ?${objectVar} .`;
   }
 
   // The prefixes appearing in the given patterns, in namespace-table order.
@@ -482,52 +631,104 @@ export class TreeRenderer {
     );
   }
 
-  _buildInfoButton(subjectValue, predicates) {
+  // The actions menu carried by a card header and by every row.
+  //
+  // A row states a triple, and "how do I reach this in a query" is asked of a
+  // value at least as often as of the resource holding it — so the menu sits
+  // on both. It holds one item today; a menu rather than a bare button
+  // because a row is where further actions on a single statement belong, and
+  // because one repeated on every row should be quiet until it is wanted.
+  //
+  // `buildContent` is called the first time the card is opened rather than at
+  // render: a notice puts hundreds of these on screen and almost none of them
+  // is opened.
+  _buildActionsMenu({ label, buildContent, anchor = null, copies = [] }) {
+    const wrap = document.createElement('span');
+    wrap.className = 'tree-actions dropdown';
+
     const btn = document.createElement('button');
-    btn.className = 'tree-info-btn';
-    btn.setAttribute('aria-label', 'SPARQL reference card');
-    btn.setAttribute('title', 'Click here for referencing this element in your SPARQL query');
-    btn.innerHTML = '<i class="bi bi-code-square"></i>';
-    const tooltip = new bootstrap.Tooltip(btn, { placement: 'top' });
+    btn.className = 'tree-actions-btn';
+    btn.type = 'button';
+    btn.setAttribute('data-bs-toggle', 'dropdown');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', label);
+    btn.innerHTML = '<i class="bi bi-three-dots-vertical"></i>';
 
-    const title = `<span>SPARQL reference card</span><button class="btn-close tree-info-close" aria-label="Close"></button>`;
-    const lines = this._buildInfoRows(subjectValue, predicates);
+    const menu = document.createElement('ul');
+    menu.className = 'dropdown-menu dropdown-menu-end tree-actions-menu';
 
-    const popover = new bootstrap.Popover(btn, {
-      title,
-      content: lines,
+    const addItem = (icon, text) => {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'dropdown-item';
+      button.innerHTML = `<i class="bi ${icon}"></i> ${text}`;
+      li.appendChild(button);
+      menu.appendChild(li);
+      return button;
+    };
+
+    // The path comes first. People reading a notice this closely are mostly
+    // learning SPARQL and ePO, and the path is what they came for; the value
+    // is the everyday task, and the card the longer answer.
+    let copied = 0;
+    for (const copy of copies) {
+      if (!copy.value) continue;
+      this._wireCopyItem(addItem(copy.icon, copy.item), copy);
+      copied++;
+    }
+    // Separated because it is a different kind of thing: the items above act
+    // and close, this one opens something to read. No rule where there is
+    // nothing above it to divide from.
+    if (copied) {
+      const li = document.createElement('li');
+      const hr = document.createElement('hr');
+      hr.className = 'dropdown-divider';
+      li.appendChild(hr);
+      menu.appendChild(li);
+    }
+    const action = addItem('bi-code-square', 'SPARQL reference card');
+
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+
+    // The card is anchored to what it describes — the property on a row, the
+    // badge on a card header — rather than to the kebab at the right edge,
+    // which says nothing about which row was asked about.
+    const anchorEl = anchor || btn;
+
+    let popover = null;
+    const getPopover = () => (popover ??= new bootstrap.Popover(anchorEl, {
+      title: `<span>SPARQL reference card</span><button class="btn-close tree-info-close" aria-label="Close"></button>`,
+      content: buildContent(),
       html: true,
       sanitize: false,
       placement: 'bottom',
       trigger: 'manual',
       container: 'body',
       customClass: 'tree-info-popover-container',
-    });
+    }));
 
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      tooltip.hide();
-      tooltip.disable();
+    // The kebab itself is Bootstrap's — it opens and closes the menu through
+    // the data API, so nothing here intercepts its click. The card opens from
+    // the item, once the menu has closed itself.
+    action.addEventListener('click', () => {
+      getPopover();
       if (this._activePopover === popover) {
         popover.hide();
         this._activePopover = null;
-        tooltip.enable();
-      } else {
-        this._dismissPopover();
-        popover.show();
-        this._activePopover = popover;
+        return;
       }
+      this._dismissPopover();
+      popover.show();
+      this._activePopover = popover;
     });
 
-    btn.addEventListener('hidden.bs.popover', () => {
-      tooltip.enable();
-    });
-
-    btn.addEventListener('shown.bs.popover', () => {
+    anchorEl.addEventListener('shown.bs.popover', () => {
       const tip = popover.tip;
       if (!tip) return;
       const onOutsideClick = (e) => {
-        if (!tip.contains(e.target) && !btn.contains(e.target)) {
+        if (!tip.contains(e.target) && !wrap.contains(e.target)) {
           popover.hide();
           this._activePopover = null;
           document.removeEventListener('click', onOutsideClick, true);
@@ -538,7 +739,7 @@ export class TreeRenderer {
         document.removeEventListener('click', onOutsideClick, true);
       };
       this._activePopoverCleanup = cleanup;
-      btn.addEventListener('hidden.bs.popover', () => {
+      anchorEl.addEventListener('hidden.bs.popover', () => {
         cleanup();
         if (this._activePopoverCleanup === cleanup) this._activePopoverCleanup = null;
       }, { once: true });
@@ -558,7 +759,115 @@ export class TreeRenderer {
       });
     });
 
-    return btn;
+    return wrap;
+  }
+
+  _buildRowInfoButton(predicateUri, objectPredicates, pathCtx, object = null, anchor = null) {
+    const isResource = object?.termType === 'NamedNode';
+    return this._buildActionsMenu({
+      label: 'Actions for this value',
+      anchor,
+      copies: [
+        {
+          icon: 'bi-clipboard',
+          item: 'Copy path',
+          value: this._buildRowPathPattern(predicateUri, objectPredicates, pathCtx),
+          title: 'Path copied',
+          body: 'The pattern that reaches this value from the notice:',
+        },
+        {
+          icon: 'bi-clipboard',
+          item: 'Copy value',
+          // What the row shows: the text of a literal, the IRI of a resource.
+          // Not the shortened form on screen — what is copied is meant to be
+          // pasted somewhere else, where the short form means nothing.
+          //
+          // A blank node has nothing to offer for the same reason: "b0" is a
+          // label this parse invented, and it identifies nothing anywhere
+          // else. Nested blank-node headers already withhold it.
+          value: object && object.termType !== 'BlankNode' ? object.value : null,
+          title: isResource ? 'IRI copied' : 'Value copied',
+          body: isResource
+            ? 'The identifier of this resource is now on your clipboard:'
+            : 'This value is now on your clipboard:',
+        },
+      ],
+      buildContent: () => this._buildRowInfoRows(predicateUri, objectPredicates, pathCtx, object),
+    });
+  }
+
+  // Copy to the clipboard, reporting through a toast.
+  //
+  // Not by changing the item: the menu closes on the click, so a tick shown
+  // there is gone before it can be read. The toast names what was copied,
+  // because a resource's value is a long URI and "copied" alone leaves the
+  // user unsure which of the two things on the row they now hold.
+  _wireCopyItem(item, { value, title, body }) {
+    // Carried on the element, as the card's own copy buttons do, so what
+    // would land on the clipboard can be read off the DOM.
+    item.setAttribute('data-copy', value);
+    item.addEventListener('click', async () => {
+      if (await copyToClipboard(value)) {
+        showToast(title, body, { detail: value });
+      } else {
+        showToast('Nothing copied', 'The browser refused access to the clipboard.',
+          { variant: 'warning' });
+      }
+    });
+  }
+
+  // The body of a row's reference card.
+  //
+  // A row is a statement, so the card describes the statement: the property
+  // that makes it, and the route from the notice to the value it points at.
+  // Where that value is a resource its IRI is offered too; a literal has none.
+  _buildRowInfoRows(predicateUri, objectPredicates, pathCtx, object) {
+    const name = this._shrinkOrBracket(predicateUri);
+    const path = this._buildRowPathPattern(predicateUri, objectPredicates, pathCtx);
+    const iri = object && object.termType === 'NamedNode' ? this._asIriRef(object.value) : null;
+
+    const rows = [`<p class="tree-info-intro">Use the following in your SPARQL query</p>`];
+    for (const prefix of this._prefixesUsedIn([name, path])) {
+      const decl = `PREFIX ${prefix}: <${ns[prefix]}>`;
+      rows.push(infoRow('Prefix', decl, decl, 'Copy prefix declaration'));
+    }
+    rows.push(infoRow('Name', name, name, 'Copy name'));
+    if (path) rows.push(infoRow('Path', path, path, 'Copy path'));
+    if (iri) rows.push(infoRow('IRI', iri, iri, 'Copy IRI'));
+
+    return [`<div class="tree-info-popover">`, ...rows, `</div>`].join('\n');
+  }
+
+  // The pattern reaching a row's value, as one property path from wherever
+  // the walk started — the same route _buildPathPattern gives for the card
+  // this row sits in, carried one predicate further.
+  //
+  // Null when the walk has no binding to start from: an untyped blank node at
+  // the root of the tree can be reached in the display but not in a query.
+  _buildRowPathPattern(predicateUri, objectPredicates, pathCtx) {
+    if (!pathCtx) return null;
+    const fromNavigation = pathCtx.root === this._navigatedSubject && this._rootPattern;
+    const anchor = fromNavigation ? this._rootPattern : pathCtx.anchor;
+    if (!anchor) return null;
+    const chain = fromNavigation
+      ? [...(this._pathFromRoot || []), ...pathCtx.chain]
+      : pathCtx.chain;
+    if (!chain.length) return null;
+
+    // Named after what the value is where the data says so, and after the
+    // property that reaches it where it does not — a literal has no type.
+    //
+    // Renamed when it collides with the anchor's variable, as _targetVariable
+    // does for a card: a notice pointing at another notice would otherwise
+    // read "?notice a epo:Notice ; epo:refersToPrevious ?notice .", which
+    // matches only the notices that refer to themselves.
+    const typeUris = this._typeUris(objectPredicates);
+    const name = this._variableNameFrom(typeUris.length ? typeUris : [predicateUri]);
+    const variable = anchor.startsWith(`?${name} `) ? `${name}2` : name;
+    // "?notice a epo:Notice" already states a predicate, so the chain
+    // continues it with ";". An IRI anchor states none.
+    const join = anchor.startsWith('?') ? ' ;' : '';
+    return `${anchor}${join} ${this._formatPropertyPath(chain)} ?${variable} .`;
   }
 
   // The triple pattern that reaches this resource in a query.
@@ -773,6 +1082,9 @@ export class TreeRenderer {
       ...this._navigationContext(pathCtx),
       typeName: this._typeName(object.value),
     }));
+    // Anchored on the property: it is what the card names, and it sits at the
+    // start of the row where the eye already is.
+    row.appendChild(this._buildRowInfoButton(predValue, null, pathCtx, object, pred));
 
     return row;
   }
