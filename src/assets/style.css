@@ -1161,7 +1161,7 @@ main {
    action buttons (both lanes). */
 #data-share-btn i.bi,
 #data-download-btn i.bi,
-#copy-url-button i.bi,
+#connect-button i.bi,
 #download-as-button i.bi {
   margin-right: 0.3rem;
 }
