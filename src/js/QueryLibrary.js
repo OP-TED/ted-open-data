@@ -156,7 +156,7 @@ export class QueryLibrary {
         categoryItem.className = 'accordion-item';
 
         const header = document.createElement('h2');
-        header.className = 'query-library-accordion-header';
+        header.className = 'ted-accordion-header';
         header.id = `${categoryId}-header`;
 
         const isFirst = categoryCounter === 1;
