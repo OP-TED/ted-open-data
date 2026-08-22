@@ -1,0 +1,28 @@
+# Runs the test suite on every pull request and on the branches releases are
+# cut from, so a change cannot reach either with the suite failing.
+#
+# `npm ci` rather than `npm install`: it installs exactly what
+# package-lock.json records, so a run here tests the dependency versions the
+# lock file pins rather than whatever resolves today.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: node --test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
