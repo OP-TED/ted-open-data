@@ -1,0 +1,44 @@
+# `main` is what production serves, and it is reached one of two ways: a
+# release cut from `develop`, or a hotfix. Anything else — a feature branch, a
+# chore, `develop` itself — belongs in `develop` first, so that what ships is
+# what was tested together.
+#
+# GitHub has no setting for "only these branches may open a pull request into
+# this one", so this stands in for it: a check that fails when the source
+# branch is not one of the two, made required on `main`.
+#
+# No path filter, and no condition on the job: a required check that does not
+# run cannot be satisfied, and the pull request would wait for a status that
+# never arrives.
+name: guard main
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  source-branch:
+    name: source branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only a release or a hotfix may merge into main
+        env:
+          SOURCE: ${{ github.head_ref }}
+        run: |
+          # Named for the version they carry, so that every commit on main
+          # belongs to a release that can be pointed at. A hotfix raises the
+          # patch number, so its last component is never zero.
+          if printf '%s' "$SOURCE" | grep -Eq '^release/[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Release branch '$SOURCE' may merge into main."
+          elif printf '%s' "$SOURCE" | grep -Eq '^hotfix/[0-9]+\.[0-9]+\.[1-9][0-9]*$'; then
+            echo "Hotfix branch '$SOURCE' may merge into main."
+          else
+            echo "::error::'$SOURCE' cannot merge into main."
+            echo
+            echo "Only these may:"
+            echo "  release/x.y.z   a release cut from develop"
+            echo "  hotfix/x.y.z    a fix on top of main, with z of 1 or more"
+            echo
+            echo "Anything else belongs in develop, and reaches main through a release."
+            exit 1
+          fi
