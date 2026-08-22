@@ -253,7 +253,7 @@
                                 When you find what you need, take it home. Look for the
                                 <strong style="white-space: nowrap;"><i class="bi bi-download"></i>&nbsp;Download</strong>
                                 button to get the results in the format that fits your work. Look for the
-                                <strong style="white-space: nowrap;"><i class="bi bi-clipboard"></i>&nbsp;Copy Query</strong>
+                                <strong style="white-space: nowrap;"><i class="bi bi-plug"></i>&nbsp;Connect your app</strong>
                                 button to call the same query from your own application and keep it up
                                 to date with live data all the time.
                             </p>
@@ -440,7 +440,7 @@
 
         <!-- Query Results (SELECT lane) -->
         <div class="tab-pane w-100 fade" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
-            <!-- Slim results toolbar — hint on the left, Copy URL +
+            <!-- Slim results toolbar — hint on the left, Connect your app +
                  Download as… on the right. Mirrors the visual weight
                  of the breadcrumb bar on the graph lane: flat, a
                  single thin bottom border, no fill. Toggled via
@@ -459,17 +459,10 @@
                     <p class="small text-muted mb-0" id="query-execution-time" style="display: none;">Execution time: <span id="query-execution-time-value"></span></p>
                 </div>
                 <div class="results-toolbar-actions">
-                    <div class="dropdown d-inline-block me-2">
-                        <button id="copy-url-button" class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-clipboard"></i> Copy Query
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="copy-url-button">
-                            <li><a class="dropdown-item" href="#" data-share-type="query-link"><i class="bi bi-link-45deg me-2"></i>Query link</a></li>
-                            <li><a class="dropdown-item" href="#" data-share-type="sparql-query"><i class="bi bi-code-slash me-2"></i>SPARQL query</a></li>
-                            <li><a class="dropdown-item" href="#" data-share-type="curl-command"><i class="bi bi-terminal me-2"></i>cURL command</a></li>
-                        </ul>
-                    </div>
+                    <button id="connect-button" class="btn btn-sm btn-primary" type="button"
+                            aria-expanded="false" aria-haspopup="dialog">
+                        <i class="bi bi-plug"></i> Connect your app
+                    </button>
                     <div class="dropdown d-inline-block">
                         <button id="download-as-button" class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -483,7 +476,11 @@
                             <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+xml">XML</a></li>
                         </ul>
                     </div>
-                    <div id="results-view-toggle" class="d-none d-flex align-items-center ms-2">
+                    <!-- Taking the data away, and looking at it here, are two
+                         different jobs; the rule says so. Hidden with the
+                         toggle, which only appears for chartable results. -->
+                    <div id="results-view-toggle" class="d-none d-flex align-items-center">
+                        <div class="vr button-row-divider"></div>
                         <div class="btn-group btn-group-sm" role="group" aria-label="Switch between table and chart view">
                             <input type="radio" class="btn-check" name="results-view" id="results-view-table" value="table" checked>
                             <label class="btn btn-outline-secondary px-4" for="results-view-table">
@@ -767,7 +764,7 @@
                             <li>To test your query use the <b>Run Query</b> button.</li>
                             <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table — or as an interactive chart (bar, line, pie, scatter) via the <b>Table / Chart</b> toggle when the results are chartable.</li>
                             <li>CONSTRUCT and DESCRIBE results are displayed in the <b>Query Results</b> tab as an RDF graph (the same tree/turtle/backlinks view used by notice lookup).</li>
-                            <li>For SELECT queries you can get a URL that runs the query directly by clicking on the <b>Copy URL</b> button.<br/>
+                            <li>For SELECT queries, the <b>Connect your app</b> button gives you the link, and the commands, to run the same query from your own tools.<br/>
                                 You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
                             <li>To download a copy of the data retrieved by a SELECT query, use the <b>Download</b> button.</li>
                         </ul>
@@ -989,6 +986,82 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Connect dialog — how to run this query from outside the site.
+         The format chosen at the top governs every snippet below it, so
+         what you copy always matches what you picked. Filled at open time
+         by QueryResults; the lists of formats differ per lane. -->
+    <div id="connect-panel">
+                <div class="connect-body">
+                    <div class="connect-primary">
+                        <p>
+                            Paste this link into Excel, Power BI, or any tool that reads data from
+                            the web. It re-runs your query and returns fresh data every time.
+                        </p>
+                        <!-- A split button: copy on the left, the format it will
+                             return on the right. One click for the act, and the
+                             choice visible without opening anything. -->
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary connect-copy" type="button" data-connect-copy="link">
+                                <i class="bi bi-clipboard"></i> Copy link
+                            </button>
+                            <button class="btn btn-sm btn-primary dropdown-toggle connect-format-toggle" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                    aria-label="Choose the format the link returns">
+                                <span data-connect-format-name="link">JSON</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" data-connect-format-menu="link"></ul>
+                        </div>
+                    </div>
+
+                    <hr class="connect-rule">
+
+                    <div class="connect-secondary">
+                        <p class="mb-2">
+                            If you want to run this in a terminal, or in an app that speaks
+                            SPARQL, use one of the buttons below.
+                        </p>
+                        <div class="connect-commands">
+                            <!-- A menu of formats, each of which copies. The
+                                 format is part of the act rather than a setting
+                                 carried on the button. -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a cURL command — macOS, Linux">
+                                    <i class="bi bi-clipboard"></i> cURL
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="curl"></ul>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a wget command — Linux">
+                                    <i class="bi bi-clipboard"></i> wget
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="wget"></ul>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a PowerShell command — Windows">
+                                    <i class="bi bi-clipboard"></i> PowerShell
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="powershell"></ul>
+                            </div>
+                            <!-- The commands end here. What follows is the query
+                                 itself, which is not one — and has no format:
+                                 the text is the same whatever the endpoint is
+                                 asked to return. -->
+                            <div class="vr button-row-divider"></div>
+                            <button class="btn btn-sm btn-outline-secondary connect-copy" type="button"
+                                    data-connect-copy="sparql" title="Copy the SPARQL query, to put into your own code">
+                                <i class="bi bi-clipboard"></i> SPARQL
+                            </button>
+                        </div>
+                    </div>
+                </div>
     </div>
 
     <!-- Toast Container — one shared toast reused by both Copy URL
