@@ -24,6 +24,7 @@ import assert from 'node:assert/strict';
 import { resetShims, setLocation } from './_helpers.js';
 import { ExplorerController } from '../src/js/ExplorerController.js';
 import { createPublicationNumberFacet } from '../src/js/facets.js';
+import { __setOntologyDataForTesting } from '../src/js/services/ontologyData.js';
 
 const PUB_A = '00172531-2026';
 const PUB_B = '00149228-2024';
@@ -38,6 +39,11 @@ function deferred() {
 
 beforeEach(() => {
   resetShims();
+  // Every query awaits the ontology. Supplying it — loaded, stating no
+  // subclasses — keeps the loader from reaching for a file over a
+  // browser-relative path that means nothing under Node. Tests that need a
+  // hierarchy set their own.
+  __setOntologyDataForTesting({ subClassOf: {} });
 });
 
 // ── The token race ────────────────────────────────────────────────
@@ -745,4 +751,305 @@ test('ePO 3 fallback: not attempted for a non-notice (query) facet even when emp
 
 function resetShimsExceptLocation() {
   globalThis.sessionStorage.clear();
+}
+
+// ── route metadata on live navigation ───────────────────────────────
+//
+// Tree clicks attach viaPath / viaRoot / viaRootPattern to the facet so the
+// SPARQL reference card can rebuild the property path. validateFacet strips
+// those at the URL and sessionStorage boundaries, because anything arriving
+// over one is forged — this checks that the stripping did not also cut the
+// legitimate path, which does not go through that validator.
+
+test('explore preserves the route metadata a tree click attaches', async () => {
+  const controller = new ExplorerController();
+  await controller.search(createPublicationNumberFacet('00100333-2025')).catch(() => {});
+
+  await controller.explore({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    viaPath: ['http://data.europa.eu/a4g/ontology#announcesRole'],
+    viaRoot: 'http://data.europa.eu/a4g/resource/id_x_Notice',
+    viaRootPattern: '?notice a epo:Notice',
+  }).catch(() => {});
+
+  const current = controller.currentFacet;
+  assert.deepEqual(current.viaPath, ['http://data.europa.eu/a4g/ontology#announcesRole']);
+  assert.equal(current.viaRoot, 'http://data.europa.eu/a4g/resource/id_x_Notice');
+  assert.equal(current.viaRootPattern, '?notice a epo:Notice');
+});
+
+// ── naming a resource from the triples it turns out to have ─────────
+//
+// The tree names a resource from the types it declares, but it can only do
+// that for resources it holds triples for. A reference to a resource
+// described in another notice therefore reaches the controller unnamed, and
+// the loaded triples are the first place its type appears.
+
+const CONTACT_POINT = 'http://data.europa.eu/a4g/resource/id_x_CompanyContactPoint_7iFD';
+const M8G_CONTACT_POINT = 'http://data.europa.eu/m8g/ContactPoint';
+const EPO = 'http://data.europa.eu/a4g/ontology#';
+
+function typeQuad(subject, type) {
+  return {
+    subject: { termType: 'NamedNode', value: subject },
+    predicate: { termType: 'NamedNode', value: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' },
+    object: { termType: 'NamedNode', value: type },
+  };
+}
+
+function resultOf(quads) {
+  return { quads, size: quads.length, rawTurtle: '' };
+}
+
+async function exploreWith(quads, term = CONTACT_POINT) {
+  const controller = new ExplorerController({ doSPARQL: async () => resultOf(quads) });
+  await controller.explore({ type: 'named-node', term: { termType: 'NamedNode', value: term } });
+  return controller.currentFacet;
+}
+
+test('a resource unnamed at the click is named once its own triples load', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const facet = await exploreWith([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]);
+  assert.equal(facet.typeName, 'ContactPoint');
+});
+
+test('the name comes from the resource itself, not from others in the same result', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const facet = await exploreWith([
+    typeQuad('http://data.europa.eu/a4g/resource/id_x_Organisation', `${EPO}Organisation`),
+    typeQuad(CONTACT_POINT, M8G_CONTACT_POINT),
+  ]);
+  assert.equal(facet.typeName, 'ContactPoint');
+});
+
+test('the ontology ranks the declared types here too', async () => {
+  __setOntologyDataForTesting({
+    subClassOf: { [`${EPO}Business`]: ['http://www.w3.org/ns/org#Organization'] },
+  });
+  const facet = await exploreWith([
+    typeQuad(CONTACT_POINT, 'http://www.w3.org/ns/org#Organization'),
+    typeQuad(CONTACT_POINT, `${EPO}Business`),
+  ]);
+  assert.equal(facet.typeName, 'Business');
+});
+
+test('a resource whose triples declare no type keeps the name it arrived with', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const controller = new ExplorerController({ doSPARQL: async () => resultOf([]) });
+  await controller.explore({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: CONTACT_POINT },
+    typeName: 'ContactPoint',
+  });
+  assert.equal(controller.currentFacet.typeName, 'ContactPoint');
+});
+
+// ── carrying the notice's type statements down the breadcrumb ───────
+//
+// Drilling into a resource re-queries for that resource alone, so its
+// references come back untyped even though the notice typed them a moment
+// earlier. The notice's statements are kept so those references stay named.
+
+const ORG = 'http://data.europa.eu/a4g/resource/id_x_Organisation_ORG-0003';
+
+test('the root notice fills the type map', async () => {
+  const controller = new ExplorerController({
+    doSPARQL: async () => resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]),
+  });
+
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  assert.deepEqual(controller.declaredTypes.get(CONTACT_POINT), [M8G_CONTACT_POINT]);
+});
+
+test('every type a resource declares is kept, not just the first', async () => {
+  const controller = new ExplorerController({
+    doSPARQL: async () => resultOf([
+      typeQuad(ORG, `${EPO}Business`),
+      typeQuad(ORG, 'http://www.w3.org/ns/org#Organization'),
+    ]),
+  });
+
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  assert.deepEqual(controller.declaredTypes.get(ORG), [
+    `${EPO}Business`,
+    'http://www.w3.org/ns/org#Organization',
+  ]);
+});
+
+test('drilling in keeps what the notice said, rather than the resource-only result', async () => {
+  const notice = resultOf([
+    typeQuad(ORG, `${EPO}Organisation`),
+    typeQuad(CONTACT_POINT, M8G_CONTACT_POINT),
+  ]);
+  // The drill-down query returns the organisation's own triples; nothing in
+  // them says what the contact point it points at is.
+  const organisationOnly = resultOf([typeQuad(ORG, `${EPO}Organisation`)]);
+
+  let response = notice;
+  const controller = new ExplorerController({ doSPARQL: async () => response });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  response = organisationOnly;
+  await controller.explore({ type: 'named-node', term: { termType: 'NamedNode', value: ORG } });
+
+  assert.deepEqual(controller.declaredTypes.get(CONTACT_POINT), [M8G_CONTACT_POINT]);
+});
+
+test('searching another notice drops the previous notice type map', async () => {
+  let response = resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]);
+  const controller = new ExplorerController({ doSPARQL: async () => response });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  response = resultOf([]);
+  await controller.search(createPublicationNumberFacet(PUB_B));
+
+  assert.equal(controller.declaredTypes.get(CONTACT_POINT), undefined);
+});
+
+test('a shared link straight to a resource inherits nothing', async () => {
+  // Nothing was explored, so there is no notice to have said anything.
+  const controller = new ExplorerController({ doSPARQL: async () => resultOf([]) });
+
+  await controller.explore({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: CONTACT_POINT },
+  });
+
+  assert.equal(controller.declaredTypes.size, 0);
+});
+
+test('a resource the drill-down query says nothing about is named from the notice', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  let response = resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]);
+  const controller = new ExplorerController({ doSPARQL: async () => response });
+  await controller.search(createPublicationNumberFacet(PUB_A));
+
+  response = resultOf([]);
+  await controller.explore({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: CONTACT_POINT },
+  });
+
+  assert.equal(controller.currentFacet.typeName, 'ContactPoint');
+});
+
+// ── the notice behind a shared link ─────────────────────────────────
+//
+// A shared link opens on a resource, so the notice it came from is never
+// navigated to and nothing loaded says what its references are. The link
+// carries the root, so the notice is fetched for its type statements alone.
+
+const RESOURCE = 'http://data.europa.eu/a4g/resource/id_x_Organisation_ORG-0003';
+
+function sharedLink(root, resource = RESOURCE) {
+  const facet = JSON.stringify({ type: 'named-node', term: { termType: 'NamedNode', value: resource } });
+  return `http://localhost:8080/?facet=${encodeURIComponent(facet)}&root=${root}`;
+}
+
+// Routes by query shape: the notice queries name the publication number, the
+// resource query names the resource.
+function linkDoSPARQL({ notice, resource, onNoticeQuery = () => {} }) {
+  return async (query) => {
+    if (query.includes(RESOURCE)) return resource;
+    onNoticeQuery(query);
+    return notice;
+  };
+}
+
+test('a shared link fetches the notice behind it for its type statements', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const controller = new ExplorerController({
+    doSPARQL: linkDoSPARQL({
+      notice: resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]),
+      resource: resultOf([]),
+    }),
+  });
+
+  setLocation(sharedLink(PUB_A));
+  controller.initFromUrlParams();
+  await tickUntil(() => controller.declaredTypes.size > 0);
+
+  assert.deepEqual(controller.declaredTypes.get(CONTACT_POINT), [M8G_CONTACT_POINT]);
+});
+
+test('a legacy notice falls back, as the main query path does', async () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const queries = [];
+  const controller = new ExplorerController({
+    doSPARQL: async (query) => {
+      if (query.includes(RESOURCE)) return resultOf([]);
+      queries.push(query);
+      return query.includes('hasIdentifierValue')
+        ? resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)])
+        : resultOf([]);
+    },
+  });
+
+  setLocation(sharedLink(PUB_A));
+  controller.initFromUrlParams();
+  await tickUntil(() => controller.declaredTypes.size > 0);
+
+  assert.equal(queries.length, 2, 'primary then fallback');
+  assert.deepEqual(controller.declaredTypes.get(CONTACT_POINT), [M8G_CONTACT_POINT]);
+});
+
+test('a link with no root fetches no notice', async () => {
+  // Nothing says which notice the resource was looked at in, so there is no
+  // second query to make and its references stay unnamed.
+  __setOntologyDataForTesting({ subClassOf: {} });
+  let noticeQueries = 0;
+  const controller = new ExplorerController({
+    doSPARQL: linkDoSPARQL({
+      notice: resultOf([]),
+      resource: resultOf([]),
+      onNoticeQuery: () => { noticeQueries++; },
+    }),
+  });
+
+  const facet = JSON.stringify({ type: 'named-node', term: { termType: 'NamedNode', value: RESOURCE } });
+  setLocation(`http://localhost:8080/?facet=${encodeURIComponent(facet)}`);
+  controller.initFromUrlParams();
+  await tickUntil(() => true);
+
+  assert.equal(noticeQueries, 0);
+  assert.equal(controller.declaredTypes.size, 0);
+});
+
+test('a search started meanwhile keeps its own types', async () => {
+  // The notice fetch is slow; by the time it lands the user has searched
+  // another notice, whose statements are the ones that apply.
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const slow = deferred();
+  const controller = new ExplorerController({
+    doSPARQL: async (query) => {
+      if (query.includes(RESOURCE)) return resultOf([]);
+      if (query.includes(PUB_A.replace(/^0+/, ''))) return slow.promise;
+      return resultOf([]);
+    },
+  });
+
+  setLocation(sharedLink(PUB_A));
+  controller.initFromUrlParams();
+  await tickUntil(() => true);
+
+  await controller.search(createPublicationNumberFacet(PUB_B));
+  slow.resolve(resultOf([typeQuad(CONTACT_POINT, M8G_CONTACT_POINT)]));
+  await tickUntil(() => true);
+
+  assert.equal(controller.declaredTypes.size, 0, "the abandoned notice's types are discarded");
+});
+
+// Let pending microtasks and timers run; the shared-link fetch is deliberately
+// not awaited by initFromUrlParams.
+async function tickUntil(condition, attempts = 20) {
+  for (let i = 0; i < attempts; i++) {
+    // Yield first: a condition that is already true still has continuations
+    // queued behind it, and checking before yielding would run the assertion
+    // ahead of the code it is about.
+    await new Promise(r => setTimeout(r, 0));
+    if (condition()) return;
+  }
 }

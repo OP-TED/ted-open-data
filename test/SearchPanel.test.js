@@ -26,11 +26,18 @@ import { resetShims } from './_helpers.js';
 import { ExplorerController } from '../src/js/ExplorerController.js';
 import { SearchPanel } from '../src/js/SearchPanel.js';
 import { createPublicationNumberFacet, getQuery } from '../src/js/facets.js';
+import { __setOntologyDataForTesting } from '../src/js/services/ontologyData.js';
 
 // An ePO 3 StandardForms notice from issue #76 (pub number 597014-2023).
 const PUB = '00597014-2023';
 
-beforeEach(() => resetShims());
+beforeEach(() => {
+  resetShims();
+  // Every query awaits the ontology; supplying it keeps the loader from
+  // reaching for a file over a browser-relative path that means nothing
+  // under Node. Nothing here depends on its contents.
+  __setOntologyDataForTesting({ subClassOf: {} });
+});
 
 // Route by query shape: the ePO 4 query carries hasNoticePublicationNumber,
 // the ePO 3 fallback carries hasIdentifierValue.

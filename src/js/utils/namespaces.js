@@ -96,10 +96,27 @@ function _shortenEpoResource(uuidAndRest) {
   return typeAndId.slice(0, firstUnderscore) + ' ' + typeAndId.slice(firstUnderscore + 1);
 }
 
-// Split an ePO resource URI into { type, id } — e.g.
-// ".../id_{uuid}_Lot_LOT-0008" → { type: "Lot", id: "LOT-0008" }.
-// Returns null for non-ePO URIs or URIs without both parts.
-function splitEpoResource(uri) {
+// An ePO resource URI reads ".../id_{uuid}_{Type}" or
+// ".../id_{uuid}_{Type}_{identifier}" — e.g. ".../id_{uuid}_Lot_LOT-0008".
+//
+// Neither reader below returns the {Type} segment. It is the class name the
+// RML mapping chose, which the ontology need not recognise, and it is never
+// what a resource is called (issue #74) — the types the data declares are.
+// Leaving it unread keeps it from creeping back into the UI.
+
+// The uuid an ePO resource URI is scoped by, or null if the URI is not one.
+// Every ePO resource URI has one, so this doubles as the test for the shape.
+function resourceUuid(uri) {
+  if (!uri.startsWith(EPO_RESOURCE_PREFIX)) return null;
+  const uuidAndRest = uri.slice(EPO_RESOURCE_PREFIX.length);
+  const uuidEnd = uuidAndRest.indexOf('_');
+  return uuidEnd === -1 ? null : uuidAndRest.slice(0, uuidEnd);
+}
+
+// The identifier an ePO resource URI ends with — "LOT-0008" above — or null.
+// Resources the source data gives no identifier of, notices among them, have
+// none: their URI ends at the class name.
+function resourceIdentifier(uri) {
   if (!uri.startsWith(EPO_RESOURCE_PREFIX)) return null;
   const uuidAndRest = uri.slice(EPO_RESOURCE_PREFIX.length);
   const uuidEnd = uuidAndRest.indexOf('_');
@@ -107,10 +124,7 @@ function splitEpoResource(uri) {
   const typeAndId = uuidAndRest.slice(uuidEnd + 1);
   const firstUnderscore = typeAndId.indexOf('_');
   if (firstUnderscore === -1) return null;
-  return {
-    type: typeAndId.slice(0, firstUnderscore),
-    id: typeAndId.slice(firstUnderscore + 1),
-  };
+  return typeAndId.slice(firstUnderscore + 1);
 }
 
-export { ns, resolvePrefix, shortLabel, shrink, splitEpoResource };
+export { ns, resolvePrefix, resourceIdentifier, resourceUuid, shortLabel, shrink };

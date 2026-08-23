@@ -40,6 +40,8 @@ import {
   turtle,
 } from '../vendor/codemirror-bundle.js';
 import { eclipseHighlightStyle, eclipseTheme } from './utils/cmTheme.js';
+import { navigationPath } from './utils/navigationPath.js';
+import { resourceIdentifier } from './utils/namespaces.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
 import { triggerBlobDownload } from './utils/download.js';
 import { classifyError } from './utils/errorMessages.js';
@@ -90,6 +92,8 @@ export class DataView {
 
     this.treeRenderer = new TreeRenderer(this.treeContainer);
     this.treeSearch = new TreeSearch(this.treeRenderer);
+    // Disposed and rebuilt whenever the breadcrumb is re-rendered.
+    this._breadcrumbTooltips = [];
 
     this._bindEvents();
     this._listen();
@@ -382,6 +386,10 @@ export class DataView {
       return;
     }
 
+    // Redraw the trail, not just the heading: the resource's own triples are
+    // what state its type, so until they arrive the last step has only an
+    // identifier to show.
+    this._renderBreadcrumb();
     this.titleEl.textContent = `${this._titleFor(currentFacet)} — ${results.size.toLocaleString()} triples`;
     this._setShareBtnVisible(true);
     this._renderView(results);
@@ -449,7 +457,13 @@ export class DataView {
     if (this.viewMode === 'tree') {
       const facet = this.controller.currentFacet;
       const subjectUri = facet?.type === 'named-node' ? facet.term?.value : null;
-      this.treeRenderer.render(results.quads, { subjectUri });
+      const { chain, anchor } = navigationPath(this.controller.breadcrumb, this.controller.breadcrumbIndex);
+      this.treeRenderer.render(results.quads, {
+        subjectUri,
+        pathFromRoot: chain,
+        rootPattern: anchor,
+        declaredTypes: this.controller.declaredTypes,
+      });
     } else if (this.viewMode === 'turtle') {
       this._renderTurtle(results.rawTurtle);
     }
@@ -520,6 +534,12 @@ export class DataView {
   }
 
   _renderBreadcrumb() {
+    // Tooltips hold a reference to their element and to listeners on it.
+    // Replacing the markup underneath them would leave those behind on every
+    // navigation, so they are disposed before the elements they belong to go.
+    this._breadcrumbTooltips.forEach(tooltip => tooltip.dispose());
+    this._breadcrumbTooltips = [];
+
     this.breadcrumbEl.innerHTML = '';
     const crumbs = this.controller.breadcrumb;
     const currentIdx = this.controller.breadcrumbIndex;
@@ -536,7 +556,14 @@ export class DataView {
     li.className = 'breadcrumb-item';
     if (isCurrent) li.classList.add('active');
 
+    // The breadcrumb shows the type alone. Its job is to say which step of the
+    // path this is, and the identifiers are mostly generated keys that make
+    // the trail hard to read. The identifier is on hover, which settles the
+    // one case the type cannot: two steps of the same type. A resource with no
+    // type to show falls back to its identifier — the same thing its badge
+    // shows — rather than to nothing at all.
     const label = getLabel(facet);
+    const stepLabel = facet?.typeName || label;
     const isHome = index === 0;
 
     const target = isCurrent ? li : document.createElement('a');
@@ -555,7 +582,19 @@ export class DataView {
       target.appendChild(icon);
       target.appendChild(document.createTextNode(' '));
     }
-    target.appendChild(document.createTextNode(label));
+    target.appendChild(document.createTextNode(stepLabel));
+
+    // The identifier alone: the type is already on the step, so repeating it
+    // here would say nothing the reader cannot see. A step showing its
+    // identifier because it has no type gets no tooltip either.
+    const identifier = facet?.typeName ? resourceIdentifier(facet.term?.value) : null;
+    if (identifier) {
+      li.setAttribute('title', identifier);
+      this._breadcrumbTooltips.push(new bootstrap.Tooltip(li, {
+        placement: 'bottom',
+        customClass: 'breadcrumb-tooltip',
+      }));
+    }
 
     return li;
   }

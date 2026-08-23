@@ -16,7 +16,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyColumns, isChartable, aggregateByX, chartLabel } from '../src/js/utils/chartUtils.js';
+import {
+  classifyColumns, isChartable, aggregateByX, chartLabel,
+  axisTooltipFormatter, itemTooltipFormatter,
+} from '../src/js/utils/chartUtils.js';
 
 // ── chartLabel ─────────────────────────────────────────────────────
 
@@ -38,10 +41,32 @@ test('chartLabel uses the fragment after a # for hash URIs', () => {
   assert.equal(chartLabel('http://data.europa.eu/a4g/ontology#Notice'), 'epo:Notice');
 });
 
-test('chartLabel shortens ePO resource URIs to "Type id" via shortLabel', () => {
+test('chartLabel labels an ePO resource by its identifier', () => {
+  // Not "Lot LOT-0001": the class name is the mapping's, and it is also the
+  // identical half of every label in a column of lots (issue #74).
   assert.equal(
     chartLabel('http://data.europa.eu/a4g/resource/id_abc_Lot_LOT-0001'),
-    'Lot LOT-0001',
+    'LOT-0001',
+  );
+});
+
+test('chartLabel never shows a class name the ontology does not have', () => {
+  // "ContractLocation" is invented by the mapping; the endpoint types these
+  // as dct:Location. Truncated to an axis width it also read the same on
+  // every bar, hiding the one part that told them apart.
+  assert.equal(
+    chartLabel('http://data.europa.eu/a4g/resource/id_abc_ContractLocation_3d8j29UsaRcxS2BiGuKwnE'),
+    '3d8j29UsaRcxS2BiGuKwnE',
+  );
+});
+
+test('chartLabel falls back to the uuid for a resource with no identifier', () => {
+  // A notice: the source data gives it no identifier, so its URI ends at the
+  // class name. Its uuid at least differs between notices, which the class
+  // name repeated down the axis never did.
+  assert.equal(
+    chartLabel('http://data.europa.eu/a4g/resource/id_0ad4e9e7-fafc_Notice'),
+    '0ad4e9e7-fafc',
   );
 });
 
@@ -156,4 +181,103 @@ test('aggregateByX treats non-numeric Y values as 0', () => {
   const { labels, values } = aggregateByX(bindings, 'name', 'val');
   assert.deepEqual(labels, ['A']);
   assert.deepEqual(values, [10]);
+});
+
+// ── tooltip text ────────────────────────────────────────────────────
+//
+// The axis truncates at 80px; hovering is where the whole label belongs. The
+// two go through the same function, so they cannot disagree.
+
+const CONTRACT_LOCATION =
+  'http://data.europa.eu/a4g/resource/id_abc_ContractLocation_UuomzHtPoyL8ffyDMgaUUK';
+
+test('an axis tooltip names the category in full', () => {
+  assert.equal(
+    axisTooltipFormatter([{ axisValue: CONTRACT_LOCATION, marker: '●', value: 4 }]),
+    'UuomzHtPoyL8ffyDMgaUUK<br/>●4',
+  );
+});
+
+test('an axis tooltip names each series when there is more than one', () => {
+  assert.equal(
+    axisTooltipFormatter([
+      { axisValue: CONTRACT_LOCATION, marker: '●', seriesName: 'ESP', value: 4 },
+      { axisValue: CONTRACT_LOCATION, marker: '○', seriesName: 'ITA', value: 7 },
+    ]),
+    'UuomzHtPoyL8ffyDMgaUUK<br/>●ESP: 4<br/>○ITA: 7',
+  );
+});
+
+test('an axis tooltip survives params ECharts hands over empty', () => {
+  assert.equal(axisTooltipFormatter([]), '');
+});
+
+test('a pie tooltip keeps the percentage', () => {
+  assert.equal(
+    itemTooltipFormatter({ name: CONTRACT_LOCATION, value: 4, percent: 12.5 }),
+    'UuomzHtPoyL8ffyDMgaUUK: 4 (12.5%)',
+  );
+});
+
+test('a scatter tooltip reads its label out of the point', () => {
+  assert.equal(
+    itemTooltipFormatter({ value: [CONTRACT_LOCATION, 4] }),
+    'UuomzHtPoyL8ffyDMgaUUK: 4',
+  );
+});
+
+test('a grouped point names its group, an ungrouped one does not', () => {
+  const point = { value: [CONTRACT_LOCATION, 4], seriesName: 'ESP' };
+
+  assert.equal(itemTooltipFormatter(point, { showSeriesName: true }),
+    'ESP<br/>UuomzHtPoyL8ffyDMgaUUK: 4');
+  // Unnamed series can arrive carrying a name ECharts invented, so the caller
+  // says whether there is a real group rather than the formatter guessing.
+  assert.equal(itemTooltipFormatter(point), 'UuomzHtPoyL8ffyDMgaUUK: 4');
+});
+
+// ── tooltips are HTML, and their contents are not ours ──────────────
+//
+// ECharts renders a formatter's return value as HTML. Everything in it comes
+// from a SPARQL result: the endpoint's data, or a query someone was sent in a
+// shared link. None of it may reach the DOM as markup.
+
+const XSS = '<img src=x onerror=alert(1)>';
+
+test('a hostile category cannot smuggle markup into an axis tooltip', () => {
+  const out = axisTooltipFormatter([{ axisValue: XSS, marker: '<span></span>', value: 1 }]);
+
+  assert.ok(!out.includes('<img'), out);
+  assert.ok(out.includes('&lt;img src=x onerror=alert(1)&gt;'), out);
+});
+
+test('a hostile group name and value cannot either', () => {
+  const out = axisTooltipFormatter([
+    { axisValue: 'ok', marker: '', seriesName: XSS, value: XSS },
+    { axisValue: 'ok', marker: '', seriesName: 'b', value: 2 },
+  ]);
+
+  assert.ok(!out.includes('<img'), out);
+});
+
+test('the same holds for a single point', () => {
+  assert.ok(!itemTooltipFormatter({ name: XSS, value: XSS }).includes('<img'));
+  assert.ok(!itemTooltipFormatter({ value: [XSS, XSS] }).includes('<img'));
+  assert.ok(
+    !itemTooltipFormatter({ value: [1, 2], seriesName: XSS }, { showSeriesName: true })
+      .includes('<img'),
+  );
+});
+
+test("ECharts' own marker is markup and stays markup", () => {
+  // It is the coloured dot, built by the library, not by the data.
+  const marker = '<span style="background-color:#2c862d"></span>';
+  assert.ok(axisTooltipFormatter([{ axisValue: 'ok', marker, value: 1 }]).includes(marker));
+});
+
+test('an ampersand in a label is escaped once, not twice', () => {
+  assert.equal(
+    axisTooltipFormatter([{ axisValue: 'Bread & Butter Ltd', marker: '', value: 1 }]),
+    'Bread &amp; Butter Ltd<br/>1',
+  );
 });

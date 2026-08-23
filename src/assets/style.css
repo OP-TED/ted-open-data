@@ -37,6 +37,17 @@
     --ted-text-muted: #666666;       /* muted text, badge type, type links */
     --ted-text-on-dark: #fff;        /* white text on coloured backgrounds */
 
+    /* Semantic — notifications. Each is an accent bar and the surface it
+       sits on; the pair is what carries the meaning. */
+    --ted-info: #006FB4;
+    --ted-info-surface: #EEF5FB;
+    --ted-success: #467A39;
+    --ted-success-surface: #F3FBEF;
+    --ted-warning: #F29527;
+    --ted-warning-surface: #FDF3E7;
+    --ted-error: #DA2131;
+    --ted-error-surface: #FCEAEC;
+
     /* Semantic — tree view */
     --ted-color-predicate: #b56217;  /* ecl-orange 700 */
     --ted-color-predicate-hover: #8b4c11; /* ecl-orange 800 */
@@ -289,11 +300,18 @@ main {
     font-weight: 500;
 }
 
-/* Third-Party Components Card */
+/* The reference cards in the Help tab's right column. Their headers take
+   eu-blue-10, the accent the accordion inside one of them already uses, so
+   the column reads in one colour rather than two. */
 #help .card .card-header {
-    background-color: var(--light-background-color);
-    color: var(--ted-primary);
+    background-color: var(--ted-blue-10);
     border-bottom: 1px solid var(--border-color);
+}
+
+/* The Help tab makes every heading green. A card title sits on a blue ground
+   here, so it is set apart from that rule rather than inheriting it. */
+#help .card .card-header .card-title {
+    color: var(--ted-text); /* gray-100 */
 }
 
 /* Explorer-port card headers should NOT inherit the global
@@ -312,16 +330,20 @@ main {
 }
 
 /* Buttons */
-.btn-primary {
-    background-color: var(--ted-primary);
-    border-color: var(--ted-primary);
-}
 
-.btn-primary:hover,
-.btn-primary:focus,
-.btn-primary:active {
-    background-color: var(--ted-green-dark); /* Darker shade of TED green */
-    border-color: var(--ted-green-dark);
+/* Set through Bootstrap's own variables rather than by overriding the
+   properties: 5.3 draws every state from --bs-btn-*, so a rule that sets
+   background-color reaches the resting and hover states but loses the
+   pressed one, which stayed Bootstrap blue. */
+.btn-primary {
+    --bs-btn-bg: var(--ted-primary);
+    --bs-btn-border-color: var(--ted-primary);
+    --bs-btn-hover-bg: var(--ted-green-dark);
+    --bs-btn-hover-border-color: var(--ted-green-dark);
+    --bs-btn-active-bg: var(--ted-green-dark);
+    --bs-btn-active-border-color: var(--ted-green-dark);
+    --bs-btn-disabled-bg: var(--ted-primary);
+    --bs-btn-disabled-border-color: var(--ted-primary);
 }
 
 /* Outline variant of the primary button — used by the carousel's
@@ -330,16 +352,12 @@ main {
    2-4; on hover it fills in with the same TED green as those CTAs
    for visual consistency at the moment of interaction. */
 .btn-outline-primary {
-    color: var(--ted-primary);
-    border-color: var(--ted-primary);
-}
-
-.btn-outline-primary:hover,
-.btn-outline-primary:focus,
-.btn-outline-primary:active {
-    background-color: var(--ted-primary);
-    border-color: var(--ted-primary);
-    color: #fff;
+    --bs-btn-color: var(--ted-primary);
+    --bs-btn-border-color: var(--ted-primary);
+    --bs-btn-hover-bg: var(--ted-primary);
+    --bs-btn-hover-border-color: var(--ted-primary);
+    --bs-btn-active-bg: var(--ted-primary);
+    --bs-btn-active-border-color: var(--ted-primary);
 }
 
 .btn-primary:disabled {
@@ -862,12 +880,49 @@ main {
     max-height: calc(100vh - var(--header-total-height, 251px) - 80px);
 }
 
-.query-library-accordion-header {
+/* Accordions in this application look alike wherever they appear: the query
+   library's categories and the release notes both use this. */
+.ted-accordion-header {
     margin-bottom: 0;
 }
-.query-library-accordion-header .accordion-button:not(.collapsed) {
-    background-color: var(--ted-blue-5); /* eu-blue-5 — selected category only */
+.ted-accordion-header .accordion-button:not(.collapsed) {
+    background-color: var(--ted-blue-5); /* eu-blue-5 — the open item only */
     box-shadow: none;
+}
+
+/* The release notes share the Help tab's right column with the third-party
+   components card, so they are sized to it rather than to the body text of
+   the column beside them. 0.875rem is the <small> that card is written in. */
+/* Set like the components card beneath: the name of the thing at body size in
+   body colour, what it does smaller and muted under it. */
+#release-notes-accordion .accordion-body {
+    font-size: 0.875rem;
+    color: var(--ted-text-muted);
+}
+
+/* Entries are set like the components card beneath: no bullets, and the name
+   of the thing on its own line above what it does. */
+#release-notes-accordion .accordion-body ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+#release-notes-accordion .accordion-body li + li {
+    margin-top: 0.75rem;
+}
+
+#release-notes-accordion .accordion-body b {
+    display: block;
+    font-size: 1rem;
+    color: var(--bs-body-color);
+}
+
+/* The two panels in this column group their contents the same way, so their
+   group headings are set alike — an h6 is 500 where an accordion button is
+   400, and that was the only difference. */
+#third-party-components .card-body h6 {
+    font-weight: 400;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -1080,9 +1135,13 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.results-toolbar-actions {
+/* One gap, applied by the container, so every item in the row — including
+   the rule — is spaced alike rather than by its own margin. */
+.results-toolbar-actions,
+#results-view-toggle {
   display: flex;
   flex-shrink: 0;
+  gap: 0.5rem;
 }
 /* A little vertical breathing room on the toolbar buttons — keep
    them noticeably slimmer than a default btn-sm (which is 31px tall
@@ -1090,6 +1149,15 @@ main {
    feel unhurried. */
 .results-toolbar .btn {
   padding: 0.35rem 1rem;
+}
+
+/* Shorter than the buttons it sits between, so it reads as a separator
+   rather than as another edge in the row. Used by both button rows that
+   hold two kinds of thing. */
+.button-row-divider {
+  align-self: center;
+  height: 1.5rem;
+  opacity: 0.25;
 }
 
 /* Graph-lane buttons get the same horizontal padding so both lanes
@@ -1104,7 +1172,7 @@ main {
    action buttons (both lanes). */
 #data-share-btn i.bi,
 #data-download-btn i.bi,
-#copy-url-button i.bi,
+#connect-button i.bi,
 #download-as-button i.bi {
   margin-right: 0.3rem;
 }
@@ -1168,17 +1236,6 @@ main {
 }
 
 /* ── Tree info popover ── */
-
-.tree-info-btn {
-  background: none;
-  border: none;
-  color: #d63384;
-  cursor: pointer;
-  padding: 0 4px;
-  font-size: 0.85rem;
-  vertical-align: middle;
-  margin-left: 12px;
-}
 
 .tree-info-popover {
   font-family: inherit;
@@ -1324,16 +1381,83 @@ main {
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.85rem;
 }
-.tree-node { padding: 1px 0; }
+/* The reference-card button sits at the right edge of its row, so the buttons
+   form one column down the card rather than landing wherever the row's text
+   happens to end. Taken out of the flow rather than pushed there by flex:
+   flex would make each part of the row a separate item and drop the spaces
+   around the "→", which belong to the row's inline text. */
+.tree-node,
+.tree-card-header {
+  position: relative;
+}
+
+.tree-node > .tree-actions,
+.tree-card-header > .tree-actions {
+  position: absolute;
+  right: 2px;
+  /* Centred on the row rather than pinned to its top: rows vary in height,
+     and being out of the flow there is no baseline left to sit on. Stretched
+     between top and bottom and centred by flex, not shifted by a transform —
+     a transform would create a stacking context, trapping the open menu's
+     z-index inside this element so the rows below painted over it. */
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* One of these on every row, so it stays quiet until pointed at. */
+.tree-actions-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ted-text-muted);
+  opacity: 0.45;
+}
+
+/* Green on hover, as the tour trigger does — the primary colour is what this
+   application uses to say "this responds to you". */
+.tree-actions-btn:hover,
+.tree-actions-btn:focus-visible,
+.tree-actions-btn[aria-expanded="true"] {
+  color: var(--ted-primary, #2c862d);
+  opacity: 1;
+}
+
+.tree-actions-menu {
+  font-size: 0.85rem;
+}
+
+/* Menu icons take the same muted grey as the tour trigger. */
+.tree-actions-menu .dropdown-item i {
+  color: #9aa0a6;
+  margin-right: 4px;
+}
+
+/* Except the reference card's, which keeps the red the application uses for
+   code — the same red as the values inside the card it opens. */
+.tree-actions-menu .dropdown-item .bi-code-square {
+  color: #d63384;
+}
+
+.tree-node { padding: 1px 26px 1px 0; }
 .tree-card {
   border: 1px solid #dee2e6;
   border-radius: 5px;
   margin: 4px 0;
-  overflow: hidden;
+  /* Not `overflow: hidden`: it clipped the actions menu at the card's edge.
+     The header rounds its own top corners instead, which is all the clipping
+     was doing. */
 }
 .tree-card-header {
   background: #f8f9fa;
-  padding: 4px 8px;
+  border-radius: 4px 4px 0 0;
+  /* Right padding leaves the column the actions menu sits in. */
+  padding: 4px 26px 4px 8px;
   border-bottom: 1px solid #dee2e6;
   font-weight: 500;
 }
@@ -1761,7 +1885,6 @@ main {
   background: var(--ted-blue-5, #F3F6FC);
 }
 
-
 /* ── Query Library: Parameter form ── */
 
 #query-parameters-form {
@@ -1794,4 +1917,146 @@ main {
 
 #query-parameters-fields input[type="text"] {
   min-width: 320px;
+}
+
+/* Bootstrap makes a toast 85% opaque by default. A toast lands over the tree,
+   whose rows then read through it. */
+.toast {
+  --bs-toast-bg: #fff;
+}
+
+/* The value a toast is about, set apart from the sentence introducing it. A
+   URI wraps anywhere, having no spaces to break at. */
+.toast-detail {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--ted-color-literal);
+  overflow-wrap: anywhere;
+}
+
+/* Notification toasts, per the style guide: the meaning is carried by an
+   accent bar and a tinted surface, never by the text colour alone. The
+   header shares the surface so the toast reads as one panel. */
+.toast-error,
+.toast-warning,
+.toast-info {
+  --bs-toast-color: var(--ted-text);
+  border-left: 4px solid;
+}
+
+.toast-error   { --bs-toast-bg: var(--ted-error-surface);   border-left-color: var(--ted-error); }
+.toast-warning { --bs-toast-bg: var(--ted-warning-surface); border-left-color: var(--ted-warning); }
+.toast-info    { --bs-toast-bg: var(--ted-info-surface);    border-left-color: var(--ted-info); }
+
+.toast-error .toast-header,
+.toast-warning .toast-header,
+.toast-info .toast-header {
+  background: transparent;
+  color: var(--ted-text);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Breadcrumb steps show the type alone; the tooltip carries the identifier
+   as well, which does not fit Bootstrap's default 200px. */
+.breadcrumb-tooltip .tooltip-inner {
+  max-width: 300px;
+}
+
+/* ── Connect panel ── */
+
+/* The panel's markup lives in the page and is handed to Bootstrap as the
+   popover's content, so between shows it sits wherever it was declared. It is
+   hidden by where it is rather than by a class the code has to remember to
+   toggle: visible only once the popover has taken it. */
+#connect-panel {
+  display: none;
+}
+
+.connect-popover #connect-panel {
+  display: block;
+}
+
+/* Bootstrap caps a popover at 276px, which is a column of wrapped words for
+   this content. Wide enough here for the sentence to read as a sentence. */
+.connect-popover {
+  --bs-popover-max-width: 540px;
+}
+
+/* Lifted off the results. A 1px border alone leaves the table rows behind it
+   reading almost as though they were inside it. */
+.connect-popover {
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.175);
+}
+
+.connect-popover .popover-body {
+  padding: 1.5rem;
+}
+
+/* Bootstrap fills an outline button in on hover and while its menu is open.
+   Beside a solid green Connect button, a filled green Download reads as a
+   second primary — so it never fills. A faint tint answers the pointer
+   instead, and the open menu below it says when it is open. */
+#download-as-button {
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-color: var(--ted-primary);
+  --bs-btn-hover-border-color: var(--ted-primary);
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-color: var(--ted-primary);
+  --bs-btn-active-border-color: var(--ted-primary);
+}
+
+/* Pressed while its own panel is open: the invitation has moved inside the
+   panel, so this recedes — but stays solid, or it would be indistinguishable
+   from the outlined Download button beside it. */
+#connect-button.connect-open {
+  --bs-btn-bg: var(--ted-green-dark);
+  --bs-btn-border-color: var(--ted-green-dark);
+  --bs-btn-hover-bg: var(--ted-green-dark);
+  --bs-btn-hover-border-color: var(--ted-green-dark);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* The act first, the explanation under it. Someone who already knows what
+   they came for should not have to read a paragraph to find the button. */
+.connect-primary {
+  text-align: left;
+}
+
+/* The same padding the toolbar gives its own buttons. Without it this one
+   takes Bootstrap's btn-sm default and looks pinched beside the button that
+   opened the panel. */
+.connect-primary .btn {
+  padding: 0.35rem 1rem;
+}
+
+.connect-primary p {
+  margin: 0 0 1rem;
+}
+
+/* The half of the split button that names the format. Separated by a hairline
+   so the two halves read as two things, not one long label. */
+.connect-format-toggle {
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* One thing above the rule — the answer — and, below it, conveniences that
+   are not what this dialog is for. Quiet: smaller, and asking for no
+   attention until somebody goes looking for them. */
+/* A wide gap above, a narrow one below: the button belongs to the paragraph
+   it answers, and the rule belongs to what follows it. Below the rule, the
+   same 0.5rem the paragraph there leaves above its own buttons. */
+.connect-rule {
+  margin: 3rem 0 0.5rem;
+}
+
+.connect-secondary {
+  font-size: 0.85rem;
+  color: var(--ted-text-muted);
+  text-align: left;
+}
+
+.connect-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }

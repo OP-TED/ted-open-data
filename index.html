@@ -253,7 +253,7 @@
                                 When you find what you need, take it home. Look for the
                                 <strong style="white-space: nowrap;"><i class="bi bi-download"></i>&nbsp;Download</strong>
                                 button to get the results in the format that fits your work. Look for the
-                                <strong style="white-space: nowrap;"><i class="bi bi-rocket-takeoff"></i>&nbsp;Copy endpoint URL</strong>
+                                <strong style="white-space: nowrap;"><i class="bi bi-plug"></i>&nbsp;Connect your app</strong>
                                 button to call the same query from your own application and keep it up
                                 to date with live data all the time.
                             </p>
@@ -356,7 +356,7 @@
                                title="Take a quick tour of this tab">
                                 <i class="bi bi-play-circle"></i>
                             </a>
-                            <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer"
+                            <a href="https://github.com/OP-TED/ted-open-data-examples/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer"
                                id="contribute-query-link"
                                class="ms-auto small text-muted text-decoration-none"
                                data-bs-toggle="tooltip" data-bs-placement="top"
@@ -450,7 +450,7 @@
 
         <!-- Query Results (SELECT lane) -->
         <div class="tab-pane w-100 fade" id="query-results" role="tabpanel" aria-labelledby="query-results-tab">
-            <!-- Slim results toolbar — hint on the left, Copy URL +
+            <!-- Slim results toolbar — hint on the left, Connect your app +
                  Download as… on the right. Mirrors the visual weight
                  of the breadcrumb bar on the graph lane: flat, a
                  single thin bottom border, no fill. Toggled via
@@ -469,7 +469,10 @@
                     <p class="small text-muted mb-0" id="query-execution-time" style="display: none;">Execution time: <span id="query-execution-time-value"></span></p>
                 </div>
                 <div class="results-toolbar-actions">
-                    <button type="button" id="copy-url-button" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-rocket-takeoff"></i> Copy endpoint URL</button>
+                    <button id="connect-button" class="btn btn-sm btn-primary" type="button"
+                            aria-expanded="false" aria-haspopup="dialog">
+                        <i class="bi bi-plug"></i> Connect your app
+                    </button>
                     <div class="dropdown d-inline-block">
                         <button id="download-as-button" class="btn btn-sm btn-outline-primary dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -483,7 +486,11 @@
                             <li><a class="dropdown-item" href="#" data-download-format="application/sparql-results+xml">XML</a></li>
                         </ul>
                     </div>
-                    <div id="results-view-toggle" class="d-none d-flex align-items-center ms-2">
+                    <!-- Taking the data away, and looking at it here, are two
+                         different jobs; the rule says so. Hidden with the
+                         toggle, which only appears for chartable results. -->
+                    <div id="results-view-toggle" class="d-none d-flex align-items-center">
+                        <div class="vr button-row-divider"></div>
                         <div class="btn-group btn-group-sm" role="group" aria-label="Switch between table and chart view">
                             <input type="radio" class="btn-check" name="results-view" id="results-view-table" value="table" checked>
                             <label class="btn btn-outline-secondary px-4" for="results-view-table">
@@ -767,7 +774,7 @@
                             <li>To test your query use the <b>Run Query</b> button.</li>
                             <li>SELECT and ASK results are displayed in the <b>Query Results</b> tab as a table — or as an interactive chart (bar, line, pie, scatter) via the <b>Table / Chart</b> toggle when the results are chartable.</li>
                             <li>CONSTRUCT and DESCRIBE results are displayed in the <b>Query Results</b> tab as an RDF graph (the same tree/turtle/backlinks view used by notice lookup).</li>
-                            <li>For SELECT queries you can get a URL that runs the query directly by clicking on the <b>Copy URL</b> button.<br/>
+                            <li>For SELECT queries, the <b>Connect your app</b> button gives you the link, and the commands, to run the same query from your own tools.<br/>
                                 You can use this URL to run your query and retrieve live results directly into <b>Excel</b>, <b>Power BI</b>, or any application that can get data from the web.</li>
                             <li>To download a copy of the data retrieved by a SELECT query, use the <b>Download</b> button.</li>
                         </ul>
@@ -798,7 +805,7 @@
                         <p>
                             The Query Library provides example SPARQL queries to help you get started.
                             If you'd like to contribute new queries, improve existing ones, or add comments to make them clearer,
-                            see the <a href="https://docs.ted.europa.eu/ODS/latest/samples/contributing.html" target="_blank" rel="noopener noreferrer">contributing guide</a>.
+                            see the <a href="https://github.com/OP-TED/ted-open-data-examples/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">contributing guide</a>.
                         </p>
 
                         <h3>Questions &amp; feedback</h3>
@@ -807,10 +814,132 @@
                         </p>
                     </div>
 
-                    <!-- Right Column - Components -->
+                    <!-- Right Column - release notes, then the components list.
+                         Both are reference material; neither competes with the
+                         help text beside them. -->
                     <div class="col-lg-4">
+                        <!-- Carried in a card, like the components list below
+                             it: the column holds two reference panels rather
+                             than a heading competing with the one beside it. -->
+                        <!-- overflow-hidden: the accordion inside runs to the
+                             card's edge, and its last item has square corners
+                             that would otherwise cover the card's rounded ones. -->
+                        <div class="card mb-4 overflow-hidden">
+                            <div class="card-header">
+                                <!-- An h2 set to look like an h5: the releases
+                                     below it are h3, and a parent heading must
+                                     not sit at a lower level than its children. -->
+                                <h2 class="card-title h5 mb-0">What's new</h2>
+                            </div>
+                            <div class="card-body p-0">
+                        <div class="accordion accordion-flush" id="release-notes-accordion">
+                            <!-- 2.4.0 — expanded by default -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header ted-accordion-header" id="release-2-4-0-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-4-0" aria-expanded="true" aria-controls="release-2-4-0">
+                                        August 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-4-0" class="accordion-collapse collapse show"
+                                     aria-labelledby="release-2-4-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Connect your app</b>The "Copy endpoint URL" button is now "Connect your app". It offers the query link in JSON, CSV, TSV or XML (e.g. for Excel or Power BI), the raw SPARQL text, and the same request as a cURL, wget or PowerShell command.</li>
+                                            <li><b>Copy property path</b>Every card and row in the tree view now has an actions menu. It copies a ready-to-use SPARQL triple pattern snippet, copies the value, or opens the SPARQL reference card.</li>
+                                            <li><b>Ontology-aligned badge labels</b>Tree view badges now show ePO ontology class names (e.g. "Contract") instead of mapping-specific names (e.g. "SettledContract").</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.3.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header ted-accordion-header" id="release-2-3-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-3-0" aria-expanded="false" aria-controls="release-2-3-0">
+                                        July 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-3-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-3-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Chart visualization</b>SELECT query results can now be displayed as interactive charts (bar, line, pie, scatter) via a Table/Chart toggle when results are chartable.</li>
+                                            <li><b>Exchange rate snippet</b>Type <code>currency</code> in the editor to insert a currency conversion lookup table with EUR exchange rates, refreshed automatically from InforEuro.</li>
+                                            <li><b>Clickable URLs in results</b>Web URLs in SELECT result tables are now rendered as clickable links.</li>
+                                            <li><b>Query execution time</b>Elapsed time is displayed in the results toolbar after each query runs.</li>
+                                            <li><b>Not-found notice tracking</b>Notices that don't exist are kept in search history with a "not found" badge, so you know which numbers you already tried.</li>
+                                            <li><b>ePO v3 + v4 autocomplete</b>Editor now recognises terms from both Standard Forms (v3) and eForms (v4) ontology versions.</li>
+                                            <li><b>Guided tours</b>Each tab has a play icon that launches an interactive walkthrough.</li>
+                                            <li><b>Query Library improvements</b>"Try this query" and "Customise" buttons, copy SPARQL to clipboard, error handling with retry.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.2.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header ted-accordion-header" id="release-2-2-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-2-0" aria-expanded="false" aria-controls="release-2-2-0">
+                                        May 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-2-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-2-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>ePO 3 (Standard Forms) support</b>The Inspect tab now works for older notices published under Standard Forms, not just eForms. A fallback query finds notices by their identifier value when the primary lookup returns no results.</li>
+                                            <li><b>22 new SPARQL queries added</b>New categories Stats, Federated queries and Contracts created and 22 new SPARQL queries have been added.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.1.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header ted-accordion-header" id="release-2-1-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-1-0" aria-expanded="false" aria-controls="release-2-1-0">
+                                        April 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-1-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-1-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Search in tree</b>A search bar above the tree view lets you find specific properties or values within a notice. Type at least 3 characters and use the arrow buttons to jump between matches.</li>
+                                            <li><b>SPARQL reference card</b>Click the code icon on any tree resource to see its PREFIX declaration, prefixed name, and IRI — ready to copy into your SPARQL query.</li>
+                                            <li><b>Meaningful Turtle prefixes</b>The Turtle view now uses human-readable namespace prefixes (e.g. <code>epo:</code>) instead of auto-generated ones.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 2.0.0 — collapsed -->
+                            <div class="accordion-item">
+                                <h3 class="accordion-header ted-accordion-header" id="release-2-0-0-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#release-2-0-0" aria-expanded="false" aria-controls="release-2-0-0">
+                                        March 2026
+                                    </button>
+                                </h3>
+                                <div id="release-2-0-0" class="accordion-collapse collapse"
+                                     aria-labelledby="release-2-0-0-header" data-bs-parent="#release-notes-accordion">
+                                    <div class="accordion-body">
+                                        <ul>
+                                            <li><b>Inspect tab</b>Look up any notice by publication number and explore its full RDF graph as an interactive tree, raw Turtle, or backlinks view.</li>
+                                            <li><b>Procedure timeline</b>See all notices belonging to the same procurement procedure, ordered chronologically with colour-coded cards (green for originals, yellow for amendments).</li>
+                                            <li><b>Share and download</b>Copy a shareable URL that reproduces your exact view, or download the RDF data as Turtle, RDF/XML, or N-Triples.</li>
+                                            <li><b>Home tab</b>A carousel introduction with quick-start CTAs for each workflow.</li>
+                                            <li><b>Redesigned layout</b>EU institutional header, sticky navigation, and a unified tab structure (Inspect, Explore, Customize).</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+
                         <!-- Third-Party Components -->
-                        <div class="card">
+                        <div class="card" id="third-party-components">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">Third-Party Components</h5>
                             </div>
@@ -989,6 +1118,82 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Connect dialog — how to run this query from outside the site.
+         The format chosen at the top governs every snippet below it, so
+         what you copy always matches what you picked. Filled at open time
+         by QueryResults; the lists of formats differ per lane. -->
+    <div id="connect-panel">
+                <div class="connect-body">
+                    <div class="connect-primary">
+                        <p>
+                            Paste this link into Excel, Power BI, or any tool that reads data from
+                            the web. It re-runs your query and returns fresh data every time.
+                        </p>
+                        <!-- A split button: copy on the left, the format it will
+                             return on the right. One click for the act, and the
+                             choice visible without opening anything. -->
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary connect-copy" type="button" data-connect-copy="link">
+                                <i class="bi bi-clipboard"></i> Copy link
+                            </button>
+                            <button class="btn btn-sm btn-primary dropdown-toggle connect-format-toggle" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                    aria-label="Choose the format the link returns">
+                                <span data-connect-format-name="link">JSON</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" data-connect-format-menu="link"></ul>
+                        </div>
+                    </div>
+
+                    <hr class="connect-rule">
+
+                    <div class="connect-secondary">
+                        <p class="mb-2">
+                            If you want to run this in a terminal, or in an app that speaks
+                            SPARQL, use one of the buttons below.
+                        </p>
+                        <div class="connect-commands">
+                            <!-- A menu of formats, each of which copies. The
+                                 format is part of the act rather than a setting
+                                 carried on the button. -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a cURL command — macOS, Linux">
+                                    <i class="bi bi-clipboard"></i> cURL
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="curl"></ul>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a wget command — Linux">
+                                    <i class="bi bi-clipboard"></i> wget
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="wget"></ul>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false"
+                                        title="Copy a PowerShell command — Windows">
+                                    <i class="bi bi-clipboard"></i> PowerShell
+                                </button>
+                                <ul class="dropdown-menu" data-connect-copy-menu="powershell"></ul>
+                            </div>
+                            <!-- The commands end here. What follows is the query
+                                 itself, which is not one — and has no format:
+                                 the text is the same whatever the endpoint is
+                                 asked to return. -->
+                            <div class="vr button-row-divider"></div>
+                            <button class="btn btn-sm btn-outline-secondary connect-copy" type="button"
+                                    data-connect-copy="sparql" title="Copy the SPARQL query, to put into your own code">
+                                <i class="bi bi-clipboard"></i> SPARQL
+                            </button>
+                        </div>
+                    </div>
+                </div>
     </div>
 
     <!-- Toast Container — one shared toast reused by both Copy URL
