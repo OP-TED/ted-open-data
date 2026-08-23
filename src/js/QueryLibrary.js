@@ -521,10 +521,15 @@ export class QueryLibrary {
    * Looks up declared parameters from query-parameters.json by filename.
    * If the query has declared parameters, shows a form with date pickers
    * pre-filled with default values. Otherwise hides the form.
-   * @param {string} sparqlFilename - The .sparql filename (e.g. "notices-per-period.sparql")
+   * @param {string} sparqlPath - The query's path as the library lists it
+   *   (e.g. "queries/notices-per-period.sparql"). The parameter file is keyed
+   *   by basename, from when the queries lived in this repository; the library
+   *   now reads them from ted-open-data-examples, where they sit under
+   *   `queries/`.
    * @private
    */
-  _renderParameterForm(sparqlFilename) {
+  _renderParameterForm(sparqlPath) {
+    const sparqlFilename = sparqlPath?.split('/').pop();
     const entry = this.queryParametersData?.[sparqlFilename];
     this.currentParams = entry?.parameters || [];
     this.currentTemplate = entry?.template || null;
