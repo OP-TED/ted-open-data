@@ -28,9 +28,9 @@ const TOAST_BODY_ID = 'copy-url-toast-body';
 
 const VARIANT_CLASSES = {
   success: [],
-  danger: ['text-bg-danger'],
-  warning: ['text-bg-warning'],
-  info: ['text-bg-info'],
+  danger: ['toast-error'],
+  warning: ['toast-warning'],
+  info: ['toast-info'],
 };
 // Track the last-applied variant classes so we can strip them cleanly
 // on the next show without fighting Bootstrap's own class management.

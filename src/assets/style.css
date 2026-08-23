@@ -37,6 +37,17 @@
     --ted-text-muted: #666666;       /* muted text, badge type, type links */
     --ted-text-on-dark: #fff;        /* white text on coloured backgrounds */
 
+    /* Semantic — notifications. Each is an accent bar and the surface it
+       sits on; the pair is what carries the meaning. */
+    --ted-info: #006FB4;
+    --ted-info-surface: #EEF5FB;
+    --ted-success: #467A39;
+    --ted-success-surface: #F3FBEF;
+    --ted-warning: #F29527;
+    --ted-warning-surface: #FDF3E7;
+    --ted-error: #DA2131;
+    --ted-error-surface: #FCEAEC;
+
     /* Semantic — tree view */
     --ted-color-predicate: #b56217;  /* ecl-orange 700 */
     --ted-color-predicate-hover: #8b4c11; /* ecl-orange 800 */
@@ -1887,6 +1898,28 @@ main {
   margin-top: 0.4rem;
   color: var(--ted-color-literal);
   overflow-wrap: anywhere;
+}
+
+/* Notification toasts, per the style guide: the meaning is carried by an
+   accent bar and a tinted surface, never by the text colour alone. The
+   header shares the surface so the toast reads as one panel. */
+.toast-error,
+.toast-warning,
+.toast-info {
+  --bs-toast-color: var(--ted-text);
+  border-left: 4px solid;
+}
+
+.toast-error   { --bs-toast-bg: var(--ted-error-surface);   border-left-color: var(--ted-error); }
+.toast-warning { --bs-toast-bg: var(--ted-warning-surface); border-left-color: var(--ted-warning); }
+.toast-info    { --bs-toast-bg: var(--ted-info-surface);    border-left-color: var(--ted-info); }
+
+.toast-error .toast-header,
+.toast-warning .toast-header,
+.toast-info .toast-header {
+  background: transparent;
+  color: var(--ted-text);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
 /* Breadcrumb steps show the type alone; the tooltip carries the identifier
