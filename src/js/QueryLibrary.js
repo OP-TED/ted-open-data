@@ -23,10 +23,9 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
-import {
-  queryParameters, fillQuery, controlKind, rangeEnds, rangeWording, compareValues,
-  parameterRanges, valueProblem,
-} from './utils/queryParameters.js';
+import { queryParameters } from './utils/queryParameters.js';
+import { rangeEnds, rangeWording, parameterRanges } from './utils/parameterRanges.js';
+import { fillQuery, controlKind, compareValues, valueProblem } from './utils/parameterValues.js';
 
 /**
  * How long the parser may run to read a query through to its end. A library
