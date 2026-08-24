@@ -1885,40 +1885,6 @@ main {
   background: var(--ted-blue-5, #F3F6FC);
 }
 
-/* ── Query Library: Parameter form ── */
-
-#query-parameters-form {
-  background: var(--ted-blue-5, #F3F6FC);
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  padding: 1rem 1.25rem;
-}
-
-#query-parameters-form h6 {
-  color: var(--ted-text-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding-left: 0.5rem;
-}
-
-#query-parameters-fields {
-  padding-left: 0.5rem;
-}
-
-#query-parameters-fields label {
-  color: var(--ted-text);
-  font-weight: 500;
-}
-
-#query-parameters-fields input[type="date"] {
-  max-width: 180px;
-}
-
-#query-parameters-fields input[type="text"] {
-  min-width: 320px;
-}
-
 /* Bootstrap makes a toast 85% opaque by default. A toast lands over the tree,
    whose rows then read through it. */
 .toast {
@@ -1933,6 +1899,38 @@ main {
   color: var(--ted-color-literal);
   overflow-wrap: anywhere;
 }
+
+/* ── Query Library: the dialog offering a query's values ── */
+
+/* A range is a fieldset so that its name reaches a screen reader with each
+   of its controls. Neither element should look different for it. */
+#query-parameters-fields fieldset {
+  min-width: 0;
+}
+
+#query-parameters-fields legend {
+  float: none;
+  width: auto;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+#query-parameters-fields label,
+#query-parameters-fields legend {
+  color: var(--ted-text);
+  font-weight: 500;
+  /* A range reads as a sentence — "Between … and …" — and its words must
+     not break across lines. */
+  white-space: nowrap;
+}
+
+/* Each control is as wide as the value it holds needs, so a number does not
+   sit in a box built for a sentence. */
+#query-parameters-fields input[type="number"] { max-width: 9rem; }
+#query-parameters-fields input[type="date"] { max-width: 11rem; }
+#query-parameters-fields input[type="time"] { max-width: 10rem; }
+#query-parameters-fields input[type="datetime-local"] { max-width: 15rem; }
+#query-parameters-fields input[type="text"] { max-width: 26rem; }
 
 /* Notification toasts, per the style guide: the meaning is carried by an
    accent bar and a tinted surface, never by the text colour alone. The

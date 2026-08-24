@@ -384,22 +384,12 @@
                                         <button type="button" id="try-query-button" class="btn btn-primary" disabled>Run query</button>
                                     </div>
                                 </div>
-                                <!-- Parameter form: auto-generated date inputs for parameterised queries -->
-                                <div id="query-parameters-form" class="d-none mb-3 px-0">
-                                    <h6 class="text-muted mb-2">Parameters</h6>
-                                    <div id="query-parameters-fields" class="row g-2"></div>
-                                </div>
                                 <div class="d-flex align-items-center mb-2">
                                     <h6 class="text-muted mb-0">SPARQL query</h6>
-                                    <button type="button" id="toggle-sparql-button" class="btn btn-sm btn-outline-secondary ms-2" title="Show or hide the SPARQL query" aria-expanded="true" aria-controls="query-sparql-wrapper">
-                                        <i class="bi bi-eye-slash"></i> Hide query
-                                    </button>
                                     <button type="button" id="copy-sparql-button" class="btn btn-sm btn-outline-secondary ms-auto" title="Copy SPARQL to clipboard"><i class="bi bi-clipboard"></i> Copy</button>
                                 </div>
-                                <div id="query-sparql-wrapper">
-                                    <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
-                                </div>
-                                <div id="query-action-buttons-bottom" class="d-none d-flex justify-content-end p-3 gap-2">
+                                <div id="query-sparql" role="region" aria-label="SPARQL query preview"></div>
+                                <div id="query-action-buttons-bottom" class="d-flex justify-content-end p-3 gap-2">
                                     <button type="button" class="btn btn-outline-secondary query-customise-btn" disabled>Customise</button>
                                     <button type="button" class="btn btn-primary query-try-btn" disabled>Run query</button>
                                 </div>
@@ -804,8 +794,15 @@
                         <h4>Query Library</h4>
                         <p>
                             The Query Library provides example SPARQL queries to help you get started.
+                            Pick one and press <b>Run query</b>. Where a query has values you can change — a
+                            date, a period, an identifier — you are asked for them first, so you can ask about
+                            the day or range you care about without editing any SPARQL. Press
+                            <b>Customise</b> instead to open the query in the editor and change it yourself.
+                        </p>
+                        <p>
                             If you'd like to contribute new queries, improve existing ones, or add comments to make them clearer,
                             see the <a href="https://github.com/OP-TED/ted-open-data-examples/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">contributing guide</a>.
+                            It also explains how to let readers change a query's values.
                         </p>
 
                         <h3>Questions &amp; feedback</h3>
@@ -845,6 +842,7 @@
                                      aria-labelledby="release-2-4-0-header" data-bs-parent="#release-notes-accordion">
                                     <div class="accordion-body">
                                         <ul>
+                                            <li><b>Run a query without editing SPARQL</b>Press "Run query" on a Query Library entry and, where the query has values to change, you are asked for them first — a date picker for a date, "Between … and …" for a period — already filled in with the query's own values.</li>
                                             <li><b>Connect your app</b>The "Copy endpoint URL" button is now "Connect your app". It offers the query link in JSON, CSV, TSV or XML (e.g. for Excel or Power BI), the raw SPARQL text, and the same request as a cURL, wget or PowerShell command.</li>
                                             <li><b>Copy property path</b>Every card and row in the tree view now has an actions menu. It copies a ready-to-use SPARQL triple pattern snippet, copies the value, or opens the SPARQL reference card.</li>
                                             <li><b>Ontology-aligned badge labels</b>Tree view badges now show ePO ontology class names (e.g. "Contract") instead of mapping-specific names (e.g. "SettledContract").</li>
@@ -1102,6 +1100,34 @@
     </div>
 
     <!-- Clear editor confirmation modal -->
+    <!-- The values a query offers to have changed, asked for at the moment
+         of running it. A query that declares none never opens this. -->
+    <div class="modal fade" id="query-parameters-modal" tabindex="-1" aria-labelledby="query-parameters-label"
+         aria-describedby="query-parameters-intro" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #f5f5f5;">
+                    <h6 class="modal-title" id="query-parameters-label">Run query</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-body-secondary small mb-3" id="query-parameters-intro">
+                        Change these values to ask about something else, or run the query as it stands.
+                    </p>
+                    <div id="query-parameters-fields" class="row g-3"></div>
+                    <!-- A range whose ends are the wrong way round matches
+                         nothing, and an empty result reads as an answer. -->
+                    <div id="query-parameters-error" class="alert alert-danger small mt-3 mb-0 d-none"
+                         role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="query-parameters-run">Run query</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="clear-confirm-modal" tabindex="-1" aria-labelledby="clear-confirm-label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">

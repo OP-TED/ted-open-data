@@ -12,6 +12,7 @@ The two workflows share a single **Reuse** tab that auto-picks the right renderi
 - **Notice browser**: type a publication number → navigate the resulting RDF graph
 - **Procedure timeline**: see all sibling notices in the same procurement procedure with one click
 - **SPARQL editor** with ePO autocomplete, syntax linting, and a curated query library
+- **Run a library query without writing SPARQL**: a query can offer its values as a form, read from the query itself
 - **Auto-routing by query type**: SELECT/ASK → tabular results, CONSTRUCT/DESCRIBE → tree/turtle/backlinks
 - **Chart SELECT results** as bar, line, pie, or scatter charts with selectable X/Y axes and grouping
 - **Shareable URLs** for any notice or sub-resource view (`?facet=…`)
