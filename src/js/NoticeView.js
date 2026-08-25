@@ -288,22 +288,26 @@ export class NoticeView {
   // lets this work both for the Inspect-tab card-header (where the target
   // element is the card-header itself) and for the Explorer mini card
   // (where the target is a span sharing a d-flex parent with the chevron).
-  // `align-items-baseline` keeps the sans-serif label and the monospace IDs
-  // visually aligned on the text baseline — centering by line-box would
-  // misalign them because the two fonts report different metrics.
+  // Centred rather than aligned on the baseline: on a header narrow enough to
+  // wrap the label there is a block of two lines beside a single one, and a
+  // shared first baseline hangs the ID off the top of it.
   _setProcedureTitle(el, procedures) {
     el.replaceChildren();
-    el.classList.add('d-flex', 'align-items-baseline', 'flex-grow-1');
+    el.classList.add('d-flex', 'align-items-center', 'flex-grow-1', 'procedure-title');
 
     const label = document.createElement('span');
+    // pe-3 enforces a real minimum gap on top of the ms-auto pushing the ID
+    // right, so the two never butt up against each other even when the header
+    // is so narrow that the auto-margin collapses to zero. On the label
+    // rather than the ID because padding is width whichever it sits on, and
+    // the label is the half that is capped to the header — on the ID it was
+    // 16px beyond the cap, and the header overran the card.
+    label.className = 'procedure-title-label pe-3';
     label.textContent = 'Procedure Timeline';
     el.appendChild(label);
 
     const ids = document.createElement('span');
-    // ps-3 enforces a real minimum gap on top of the ms-auto pushing right,
-    // so the procedure ID never butts up against the title even when the
-    // header is so narrow that the auto-margin collapses to zero.
-    ids.className = 'ms-auto ps-3 font-monospace text-muted';
+    ids.className = 'ms-auto font-monospace text-muted procedure-title-ids';
     ids.textContent = procedures.map(p => p.procedureId).join(', ');
     el.appendChild(ids);
   }
