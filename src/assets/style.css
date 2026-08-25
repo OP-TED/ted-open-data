@@ -1339,7 +1339,10 @@ main {
   line-height: 1;
 }
 
-/* One of these on every row, so it stays quiet until pointed at. */
+/* One of these on every row, and out of sight until the row is pointed at. On
+   a notice of a few thousand triples a column of them reads as a second dotted
+   rule down the page, beside the leader and competing with the data. Nothing
+   is lost by hiding it: the leader appears on hover and runs to the button. */
 .tree-actions-btn {
   background: none;
   border: none;
@@ -1348,7 +1351,24 @@ main {
   font-size: 1rem;
   line-height: 1;
   color: var(--ted-text-muted);
-  opacity: 0.45;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+/* The row being pointed at, or holding focus, shows its own.
+
+   The structural half sits in :where() so it adds no specificity. Written
+   plainly this selector would outweigh `.tree-actions-btn:hover` below and
+   hold the button at rest strength while you were pointing straight at it. */
+:where(.tree-node, .tree-card-header):hover :where(.tree-actions) .tree-actions-btn,
+:where(.tree-node, .tree-card-header):focus-within :where(.tree-actions) .tree-actions-btn {
+  opacity: .45;
+}
+
+/* Nothing to hover with, so the reveal never comes: rest at the strength a
+   hovered row would have had. */
+@media (hover: none) {
+  .tree-actions-btn { opacity: .45; }
 }
 
 /* Green on hover, as the tour trigger does — the primary colour is what this
@@ -1377,6 +1397,71 @@ main {
 }
 
 .tree-node { padding: 1px 26px 1px 0; }
+
+/* On a wide pane the run from a short value to its menu is long, and the eye
+   loses the line on the way across. Hovering the menu fills that run with a
+   leader back to the row it belongs to.
+
+   Only rows that have a menu to lead to: _renderCycleMarker builds a
+   .tree-node with none, and a leader there would point at nothing.
+
+   Two items only — the statement and the leader. The statement's own parts
+   are inline within it, so they wrap as one run of text and keep the spaces
+   around the "→" that belong to them. */
+.tree-node:has(> .tree-actions) {
+  display: flex;
+  align-items: center;
+}
+
+/* Basis 0, so the leader asks for no width of its own and takes only what the
+   row had left over. With a basis it would reserve space during layout and
+   change where a long value breaks. */
+.tree-node:has(> .tree-actions)::after {
+  content: "";
+  flex: 1 1 0;
+  min-width: 0;
+  height: .9em;
+  background-image: repeating-linear-gradient(to right,
+    rgba(102, 102, 102, .4) 0 1px, transparent 1px 5px);
+  background-repeat: repeat-x;
+  background-size: 5px 1px;
+  background-position: 0 62%;
+  /* The leader stops ~22px short of the menu glyph: without that gap the
+     kebab reads as its last three dots rather than as a control. The same
+     22px from the text on the left, so it sits between the two rather than
+     leaning towards the words; the right number is smaller only because the
+     button's own padding already accounts for 4px of it.
+
+     Masked rather than held off by margins. A margin is width whether or not
+     the leader is showing, and 40px of it came out of every row that has a
+     menu — narrowing the text and moving where a long value breaks. The mask
+     leaves the ends unpainted instead, and the row keeps its full width. */
+  --leader-gap: linear-gradient(to right,
+    transparent 0 22px, #000 22px,
+    #000 calc(100% - 18px), transparent calc(100% - 18px));
+  -webkit-mask-image: var(--leader-gap);
+  mask-image: var(--leader-gap);
+  opacity: 0;
+  transition: opacity .22s ease 0s;
+}
+
+/* Drawn for the button, not for the row: the row being pointed at already
+   shows its own button, and what is left to answer is which row that button
+   belongs to — a question that only arises once the pointer is on it.
+
+   No delay: a leader triggered by the row needed one so that sweeping down
+   the list never lit one up, but nothing sweeps across a button. Leaving
+   stays slower than arriving, so moving between two neighbouring buttons
+   never leaves the eye without a line. */
+.tree-node:has(> .tree-actions .tree-actions-btn:hover)::after,
+.tree-node:has(> .tree-actions .tree-actions-btn:focus-visible)::after {
+  opacity: 1;
+  transition: opacity .12s ease;
+}
+
+/* Their left margin was standing in for the space the row now gets from gap. */
+.tree-node .split-badge,
+.tree-node .tree-type-badge { margin-left: 0; }
 .tree-card {
   border: 1px solid #dee2e6;
   border-radius: 5px;
@@ -1395,7 +1480,18 @@ main {
 }
 .tree-card-header .predicate { text-decoration: none; color: var(--ted-color-predicate); font-weight: 500; }
 .tree-card-header .predicate:hover { text-decoration: underline; color: var(--ted-color-predicate-hover); }
-.tree-card-body { padding: 4px 8px 4px 16px; }
+/* No right padding: the actions sit at `right: 2px` of their own row, so any
+   padding here would set every row in the card 8px inside its own header's
+   button — and again for each level of nesting. The rail reads as one column
+   down the tree only if the bodies leave the right edge alone. */
+.tree-card-body { padding: 4px 0 4px 16px; }
+
+/* Pulled out by exactly one border, so a nested card's right edge lands in the
+   same pixel column as its parent's rather than beside it. Flush without the
+   negative margin leaves the two borders adjacent, and a card three deep then
+   draws three lines a pixel apart. Sharing the column also keeps every card's
+   actions in one rail down the whole tree. */
+.tree-card-body > .tree-card { margin-right: -1px; }
 
 .tree-toggle {
   cursor: pointer;

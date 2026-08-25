@@ -1042,14 +1042,23 @@ export class TreeRenderer {
     row.dataset.predicate = predValue;
     row.dataset.objectValue = object.value;
 
+    // The statement is one run of text, held in one element. The row itself
+    // lays out that text against the leader and the menu, and if the three
+    // parts were its items instead they would be sized apart — the predicate
+    // wrapping in a column of its own, the arrow stranded between two of
+    // them. Together they wrap as a sentence does.
+    const text = document.createElement('span');
+    text.className = 'tree-node-text';
+
     // No navigation context, for the same reason as the card header: this
     // links to the predicate's own definition, not to a step on the route.
     const pred = renderTerm({ termType: 'NamedNode', value: predValue });
     pred.classList.add('predicate');
-    row.appendChild(pred);
+    text.appendChild(pred);
 
-    row.appendChild(document.createTextNode(' → '));
-    row.appendChild(renderTerm(object, this._navigationContext(pathCtx)));
+    text.appendChild(document.createTextNode(' → '));
+    text.appendChild(renderTerm(object, this._navigationContext(pathCtx)));
+    row.appendChild(text);
     // Anchored on the property: it is what the card names, and it sits at the
     // start of the row where the eye already is.
     row.appendChild(this._buildRowInfoButton(predValue, null, pathCtx, object, pred));
