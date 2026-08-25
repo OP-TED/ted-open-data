@@ -596,8 +596,14 @@
                      SELECT-lane results toolbar styling so the two lanes
                      of the Data tab feel visually consistent. The buttons
                      sit right-aligned on the same row as the title via
-                     ms-auto. -->
-                <div class="d-flex align-items-center gap-2 mt-3 mb-3">
+                     ms-auto.
+
+                     Both levels wrap. A notice title is long enough to leave
+                     no room for the buttons on a narrow window, and neither
+                     button can give any width back — both are text-nowrap.
+                     So the pair drops below the title, and below each other
+                     if even that is too wide, rather than off the edge. -->
+                <div class="d-flex align-items-center flex-wrap gap-2 mt-3 mb-3">
                     <h5 id="data-card-title" class="mb-0"></h5>
                     <button type="button" class="tour-trigger" id="reuse-graph-tour-trigger"
                             data-bs-toggle="tooltip" data-bs-placement="top"
@@ -605,28 +611,32 @@
                             aria-label="Take a quick tour of this tab">
                         <i class="bi bi-play-circle"></i>
                     </button>
-                    <button type="button" id="data-share-btn"
-                            class="btn btn-sm btn-outline-secondary ms-auto text-nowrap"
-                            title="Copy shareable URL" style="display: none;">
-                        <i class="bi bi-share"></i> Share view
-                    </button>
-                    <!-- Stage 10 — Download menu for the loaded RDF graph.
-                         Visible whenever the data card itself is visible
-                         (handled by DataView). Three formats: Turtle (the
-                         best fidelity, served from the rawTurtle already in
-                         memory), N-Triples (re-fetched), RDF/XML (re-fetched). -->
-                    <div class="dropdown" id="data-download-menu" style="display: none;">
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary dropdown-toggle text-nowrap"
-                                id="data-download-btn"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-download"></i> Download as…
+                    <!-- The two travel together, and stay at the right edge
+                         whichever row they end up on. -->
+                    <div class="d-flex flex-wrap justify-content-end gap-2 ms-auto">
+                        <button type="button" id="data-share-btn"
+                                class="btn btn-sm btn-outline-secondary text-nowrap"
+                                title="Copy shareable URL" style="display: none;">
+                            <i class="bi bi-share"></i> Share view
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="data-download-btn">
-                            <li><a class="dropdown-item" href="#" data-download-format="text/turtle">Turtle</a></li>
-                            <li><a class="dropdown-item" href="#" data-download-format="application/rdf+xml">RDF/XML</a></li>
-                            <li><a class="dropdown-item" href="#" data-download-format="application/n-triples">N-Triples</a></li>
-                        </ul>
+                        <!-- Stage 10 — Download menu for the loaded RDF graph.
+                             Visible whenever the data card itself is visible
+                             (handled by DataView). Three formats: Turtle (the
+                             best fidelity, served from the rawTurtle already in
+                             memory), N-Triples (re-fetched), RDF/XML (re-fetched). -->
+                        <div class="dropdown" id="data-download-menu" style="display: none;">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary dropdown-toggle text-nowrap"
+                                    id="data-download-btn"
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download"></i> Download as…
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="data-download-btn">
+                                <li><a class="dropdown-item" href="#" data-download-format="text/turtle">Turtle</a></li>
+                                <li><a class="dropdown-item" href="#" data-download-format="application/rdf+xml">RDF/XML</a></li>
+                                <li><a class="dropdown-item" href="#" data-download-format="application/n-triples">N-Triples</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
