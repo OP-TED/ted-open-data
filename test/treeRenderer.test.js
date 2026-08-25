@@ -1061,6 +1061,99 @@ const labelsOf = (menu) => itemsOf(menu).map(b => b.innerHTML.replace(/<[^>]*>/g
 const itemNamed = (menu, label) => itemsOf(menu)[labelsOf(menu).indexOf(label)];
 const cardItemOf = (menu) => itemNamed(menu, 'SPARQL reference card');
 
+// ── the reference card's lifetime ──────────────────────────────────
+
+// Bootstrap holds every Popover it makes in a strong map, and only dispose()
+// lets go. A card opened and never disposed therefore pins its anchor and its
+// tip for as long as the page lives — through navigation, since render() only
+// clears the DOM.
+
+/** Fire the click handlers a stub element has collected. */
+const clickOn = (el) => (el._listeners?.get('click') || []).forEach(h => h());
+
+/**
+ * A rendered notice with the popover census reset, since earlier tests in
+ * this file open cards of their own and never close them.
+ */
+function withFreshCards() {
+  bootstrap.Popover.live.clear();
+  return renderedNotice();
+}
+
+test('opening one card and then another leaves the first openable', () => {
+  const { container } = withFreshCards();
+  const [first, second] = actionMenus(container);
+
+  clickOn(cardItemOf(first));
+  clickOn(cardItemOf(second));   // shuts the first to open this one
+
+  // The first card's popover was disposed to make way, and a disposed
+  // popover is empty — reopening has to build a new one, not reach for it.
+  assert.doesNotThrow(() => clickOn(cardItemOf(first)));
+});
+
+test('a card closed by opening another is disposed, not merely hidden', () => {
+  const { container } = withFreshCards();
+  const [first, second] = actionMenus(container);
+
+  clickOn(cardItemOf(first));
+  assert.equal(bootstrap.Popover.live.size, 1);
+
+  clickOn(cardItemOf(second));
+  assert.equal(bootstrap.Popover.live.size, 1, 'the first is let go, not kept alongside');
+});
+
+test('a card closed by its own menu item is disposed', () => {
+  const { container } = withFreshCards();
+  const [menu] = actionMenus(container);
+
+  clickOn(cardItemOf(menu));
+  clickOn(cardItemOf(menu));     // the same item again shuts it
+
+  assert.equal(bootstrap.Popover.live.size, 0);
+});
+
+// The card's own × is wired inside the shown.bs.popover handler, so it is
+// the path furthest from the code that opens the card — and the one where a
+// second, shorter teardown is easiest to write by mistake.
+test('a card closed by its own × is disposed', () => {
+  const { container } = withFreshCards();
+  const [menu] = actionMenus(container);
+
+  clickOn(cardItemOf(menu));
+  const popover = bootstrap.Popover.live.values().next().value;
+  clickOn(popover.tip.querySelector('.tree-info-close'));
+
+  assert.equal(bootstrap.Popover.live.size, 0);
+});
+
+// An open card listens for clicks anywhere else. That listener has to go
+// when the card does, or it outlives the popover it was watching for.
+test('closing a card takes its outside-click listener with it', () => {
+  const { container } = withFreshCards();
+  const [menu] = actionMenus(container);
+  const watching = () => (document._listeners.get('click') || []).length;
+
+  const before = watching();
+  clickOn(cardItemOf(menu));
+  assert.equal(watching(), before + 1, 'an open card watches for a click elsewhere');
+
+  clickOn(cardItemOf(menu));
+  assert.equal(watching(), before, 'and stops watching once it is closed');
+});
+
+// Navigating away clears the DOM, which drops the elements but not the
+// popovers Bootstrap is still holding by them.
+test('navigating away disposes the open card', () => {
+  const { r, container } = withFreshCards();
+  clickOn(cardItemOf(actionMenus(container)[0]));
+  assert.equal(bootstrap.Popover.live.size, 1);
+
+  r.render([], { subjectUri: NOTICE });
+
+  assert.equal(bootstrap.Popover.live.size, 0);
+});
+
 test('every row carries a menu, alongside the one on the card', () => {
   const { container } = renderedNotice();
 

@@ -155,6 +155,16 @@ class StubElement {
   }
   replaceChildren(...children) { this._children = children; }
 
+  /** Detach from the parent, as Element.remove does. */
+  remove() {
+    const siblings = this._parent?._children;
+    if (siblings) {
+      const at = siblings.indexOf(this);
+      if (at !== -1) siblings.splice(at, 1);
+    }
+    this._parent = null;
+  }
+
   // Simple selectors only — ".class", "#id" or "tag" — matched against the
   // element subtree. Combinators (spaces, ">", ":scope") are not supported and
   // return nothing, as before.
@@ -221,6 +231,19 @@ if (typeof globalThis.requestAnimationFrame === 'undefined') {
 
 if (typeof globalThis.document === 'undefined') {
   globalThis.document = {
+    // Code that closes something when the click lands elsewhere registers
+    // here. The handlers are kept so a test can see one was removed again.
+    _listeners: new Map(),
+    addEventListener(event, handler) {
+      if (!this._listeners.has(event)) this._listeners.set(event, []);
+      this._listeners.get(event).push(handler);
+    },
+    removeEventListener(event, handler) {
+      const handlers = this._listeners.get(event);
+      if (!handlers) return;
+      const at = handlers.indexOf(handler);
+      if (at !== -1) handlers.splice(at, 1);
+    },
     getElementById(id) {
       if (!_stubElements.has(id)) _stubElements.set(id, new StubElement(id));
       return _stubElements.get(id);
@@ -268,16 +291,53 @@ if (typeof globalThis.bootstrap === 'undefined') {
     disable() { this.enabled = false; }
     dispose() {}
   }
+  // Faithful on the two points a leak or a use-after-dispose turns on.
+  //
+  // Bootstrap keeps every instance in a strong module-level Map and only
+  // dispose() removes it, so `live` stands in for that: anything left in it
+  // is an instance the page is still holding. And dispose() nulls every own
+  // property of the instance, so a later show() reads from null and throws —
+  // which is what happens if a closure keeps pointing at a disposed popover.
   class Popover {
+    static live = new Set();
     constructor(el, options = {}) {
       this.el = el;
       this.options = options;
       this.tip = null;
+      this.disposed = false;
       if (el) el._popover = this;
+      Popover.live.add(this);
     }
-    show() { this.shown = true; }
-    hide() { this.shown = false; }
-    dispose() {}
+    show() {
+      if (this.disposed) {
+        throw new TypeError("Cannot read properties of null (reading 'style')");
+      }
+      this.shown = true;
+      // Bootstrap builds the tip and announces it. TreeRenderer wires the
+      // card's own close button inside that handler, so without the event
+      // that button is never reachable from a test.
+      this.tip = document.createElement('div');
+      const close = document.createElement('button');
+      close.className = 'tree-info-close';
+      this.tip.appendChild(close);
+      for (const handler of this.el?._listeners?.get('shown.bs.popover') || []) handler();
+    }
+    hide() {
+      this.shown = false;
+      this.tip = null;
+      // Bootstrap's hide() is animated unless told otherwise, and an animated
+      // hide finishes well after it returns. Disposing before then leaves the
+      // transition reading from an instance dispose() has already emptied,
+      // which in a browser is `Cannot convert undefined or null to object`.
+      this.hiding = this.options.animation !== false;
+    }
+    dispose() {
+      if (this.hiding) {
+        throw new Error('dispose() during an animated hide — the transition has not finished');
+      }
+      this.disposed = true;
+      Popover.live.delete(this);
+    }
   }
   globalThis.bootstrap = { Tooltip, Popover, Tab: class { constructor(el) { this.el = el; } show() {} } };
 }
@@ -291,6 +351,8 @@ export function resetShims() {
   globalThis.sessionStorage.clear();
   setLocation(DEFAULT_HREF);
   _stubElements.clear();
+  globalThis.bootstrap?.Popover?.live?.clear();
+  globalThis.document?._listeners?.clear();
 }
 
 export { setLocation };

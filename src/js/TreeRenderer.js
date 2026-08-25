@@ -98,7 +98,11 @@ export class TreeRenderer {
   constructor(container) {
     this.container = container;
     this.subjectIndex = null; // Map<subject, Map<predicate, object[]>>
-    this._activePopover = null;
+    // The open card's own teardown, not the Popover instance. Holding the
+    // instance would mean disposing an object another closure still points
+    // at, and a disposed Popover is a husk — Bootstrap nulls every property
+    // on it, so the next open would call show() on nothing.
+    this._closeActivePopover = null;
     this._toggles = new Map();  // subjectValue → { toggle, expand, collapse, card }
     this._searchIndex = [];     // flat array of { label, subjectValue, kind }
   }
@@ -499,16 +503,9 @@ export class TreeRenderer {
     return header;
   }
 
+  /** Shut whichever card is open, through the teardown that card owns. */
   _dismissPopover() {
-    if (this._activePopoverCleanup) {
-      this._activePopoverCleanup();
-      this._activePopoverCleanup = null;
-    }
-    if (this._activePopover) {
-      this._activePopover.hide();
-      this._activePopover.dispose();
-      this._activePopover = null;
-    }
+    if (this._closeActivePopover) this._closeActivePopover();
   }
 
   // The body of the SPARQL reference card, as HTML. Split out from
@@ -701,6 +698,7 @@ export class TreeRenderer {
     const anchorEl = anchor || btn;
 
     let popover = null;
+    let onOutsideClick = null;
     const getPopover = () => (popover ??= new bootstrap.Popover(anchorEl, {
       title: `<span>SPARQL reference card</span><button class="btn-close tree-info-close" aria-label="Close"></button>`,
       content: buildContent(),
@@ -710,49 +708,58 @@ export class TreeRenderer {
       trigger: 'manual',
       container: 'body',
       customClass: 'tree-info-popover-container',
+      // Bootstrap's hide() is animated by default, and so finishes after it
+      // returns — while dispose() empties the instance at once. Disposing on
+      // the way out then leaves the transition reading from what it emptied
+      // (`Cannot convert undefined or null to object`), and leaves the
+      // anchor's aria-describedby pointing at a card that has gone. Without
+      // the animation the close is over when hide() returns, and a card
+      // asked for from a menu is better appearing at once anyway.
+      animation: false,
     }));
+
+    // Every way this card can close comes through here. Bootstrap keeps its
+    // instances in a strong map and only dispose() removes them, so a card
+    // opened and left undisposed pins its anchor and its tip for the life of
+    // the page. Disposing is not enough on its own either: dispose() empties
+    // the instance, so the reference has to go with it or the next open
+    // hands back the husk. Both steps are safe here only because the popover
+    // is built without animation, so hide() has finished when it returns.
+    const close = () => {
+      if (onOutsideClick) {
+        document.removeEventListener('click', onOutsideClick, true);
+        onOutsideClick = null;
+      }
+      if (popover) {
+        popover.hide();
+        popover.dispose();
+        popover = null;
+      }
+      if (this._closeActivePopover === close) this._closeActivePopover = null;
+    };
 
     // The kebab itself is Bootstrap's — it opens and closes the menu through
     // the data API, so nothing here intercepts its click. The card opens from
     // the item, once the menu has closed itself.
     action.addEventListener('click', () => {
-      getPopover();
-      if (this._activePopover === popover) {
-        popover.hide();
-        this._activePopover = null;
+      if (this._closeActivePopover === close) {
+        close();
         return;
       }
       this._dismissPopover();
-      popover.show();
-      this._activePopover = popover;
+      getPopover().show();
+      this._closeActivePopover = close;
     });
 
     anchorEl.addEventListener('shown.bs.popover', () => {
       const tip = popover.tip;
       if (!tip) return;
-      const onOutsideClick = (e) => {
-        if (!tip.contains(e.target) && !wrap.contains(e.target)) {
-          popover.hide();
-          this._activePopover = null;
-          document.removeEventListener('click', onOutsideClick, true);
-        }
+      onOutsideClick = (e) => {
+        if (!tip.contains(e.target) && !wrap.contains(e.target)) close();
       };
       document.addEventListener('click', onOutsideClick, true);
-      const cleanup = () => {
-        document.removeEventListener('click', onOutsideClick, true);
-      };
-      this._activePopoverCleanup = cleanup;
-      anchorEl.addEventListener('hidden.bs.popover', () => {
-        cleanup();
-        if (this._activePopoverCleanup === cleanup) this._activePopoverCleanup = null;
-      }, { once: true });
       const closeBtn = tip.querySelector('.tree-info-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          popover.hide();
-          this._activePopover = null;
-        });
-      }
+      if (closeBtn) closeBtn.addEventListener('click', close);
       tip.querySelectorAll('.tree-info-copy-inline').forEach(cb => {
         cb.addEventListener('click', async () => {
           const ok = await copyToClipboard(cb.dataset.copy);
@@ -1074,17 +1081,26 @@ export class TreeRenderer {
     row.dataset.predicate = predValue;
     row.dataset.objectValue = object.value;
 
+    // The statement is one run of text, held in one element. The row itself
+    // lays out that text against the leader and the menu, and if the three
+    // parts were its items instead they would be sized apart — the predicate
+    // wrapping in a column of its own, the arrow stranded between two of
+    // them. Together they wrap as a sentence does.
+    const text = document.createElement('span');
+    text.className = 'tree-node-text';
+
     // No navigation context, for the same reason as the card header: this
     // links to the predicate's own definition, not to a step on the route.
     const pred = renderTerm({ termType: 'NamedNode', value: predValue });
     pred.classList.add('predicate');
-    row.appendChild(pred);
+    text.appendChild(pred);
 
-    row.appendChild(document.createTextNode(' → '));
-    row.appendChild(renderTerm(object, {
+    text.appendChild(document.createTextNode(' → '));
+    text.appendChild(renderTerm(object, {
       ...this._navigationContext(pathCtx),
       typeName: this._typeName(object.value),
     }));
+    row.appendChild(text);
     // Anchored on the property: it is what the card names, and it sits at the
     // start of the row where the eye already is.
     row.appendChild(this._buildRowInfoButton(predValue, null, pathCtx, object, pred));
