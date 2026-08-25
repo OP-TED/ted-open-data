@@ -1513,24 +1513,57 @@ main {
 /* Split badge — two-tone pill with border */
 .split-badge {
   display: inline-flex;
-  align-items: center;
+  /* Stretch rather than centre. On a pill whose identifier has wrapped, a
+     centred label is only as tall as its own line, and reads as a grey chip
+     afloat in white; each half centres its own text instead. */
+  align-items: stretch;
   font-size: 13px;
   font-weight: 400;
   vertical-align: middle;
   margin-left: 4px;
-  border-radius: 999px;
+  /* Half the height of a pill on one line: 1.5em of text and padding plus its
+     two borders, halved. A pill that fits on its line looks exactly as it did
+     with 999px, and one that has wrapped is a rounded rectangle rather than
+     the ellipse that 999px turns a tall box into. */
+  border-radius: calc(0.75em + 1px);
   overflow: hidden;
   text-decoration: none !important;
   line-height: 1;
   border: 1px solid var(--ted-text-muted);
+  /* So the halves can take a line each rather than breaking into columns of
+     letters when the pane is narrow — a deeply nested row on a phone. */
+  flex-wrap: wrap;
+  /* An identifier is often longer than a narrow pane is wide, and the pill
+     would otherwise keep going past the edge of the card. */
+  max-width: 100%;
+}
+.split-badge-type,
+.split-badge-id {
+  display: flex;
+  align-items: center;
+  padding: 0.25em 0.6em;
+  /* Neither half has anywhere to break: a class name runs its words together
+     and an identifier is one long token, so nothing the usual rules count as
+     a break opportunity. Without `anywhere` the longer half holds its full
+     length and leaves the other a column a character wide —
+     ProcurementProcedureInformationProvider is the one that shows it. */
+  overflow-wrap: anywhere;
+  /* So a half that has a line to itself takes the whole of it. It does nothing
+     while the two still share one, the pill being only as wide as it needs.
+
+     Nothing here decides when they separate: a flex line breaks on each item's
+     unbroken width, so the two part company as soon as they no longer fit side
+     by side, and `anywhere` applies only afterwards, within a half that is
+     still too long for its own line. A floor of 5em stood here to force that
+     and measured identically without it — while padding every ordinary badge
+     out to 10em. */
+  flex-grow: 1;
 }
 .split-badge-type {
-  padding: 0.25em 0.6em;
   background-color: var(--ted-text-muted);
   color: #fff;
 }
 .split-badge-id {
-  padding: 0.25em 0.6em;
   background-color: #fff;
   color: var(--ted-color-literal);
 }
