@@ -241,7 +241,7 @@ export class QueryEditor {
   /**
    * Initialize event listeners.
    * Sets up event listeners for form submission and the stop button.
-   * The Copy URL button is owned by `QueryResults`, which binds its
+   * The Connect your app button is owned by `QueryResults`, which binds its
    * own handler — we no longer double-bind here.
    */
   initEventListeners() {
@@ -510,17 +510,18 @@ export class QueryEditor {
     // re-rendering.
     this.resultsErrorMessage.textContent = friendly;
     if (action?.kind === 'copy-select-url') {
-      // Append a space + inline link + period to the friendly
-      // sentence. Clicking the link calls the existing Copy URL
-      // handler on QueryResults so the user gets the same toast
-      // and the same JSON-format URL we offer from the toolbar.
+      // Append a space + inline link + period to the friendly sentence.
+      // Clicking it copies the query link: the query timed out here, so what
+      // the user needs is a way to run it from a tool without this page's
+      // patience. Not the Connect panel, which hangs off a button in the
+      // results toolbar — and the toolbar is hidden whenever there is an error.
       this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
       const link = document.createElement('a');
       link.href = '#';
       link.textContent = action.label;
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        this.queryResults?.onCopyUrl();
+        this.queryResults?.copyQueryLink();
       });
       this.resultsErrorMessage.appendChild(link);
       this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
@@ -555,7 +556,7 @@ export class QueryEditor {
 
   /**
    * Minify the SPARQL query. The return value is fed directly into
-   * `encodeURIComponent` for Copy URL / Share view, so it must never
+   * `encodeURIComponent` for the connect link / Share view, so it must never
    * throw — a parse failure would bubble out of the click handler as
    * an unhandled rejection and leave the button in a broken state.
    * On parse failure, fall back to the raw query: the resulting URL

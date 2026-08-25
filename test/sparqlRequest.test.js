@@ -87,7 +87,7 @@ test('buildSparqlUrl prefixes the endpoint with a ? separator', () => {
 });
 
 test('buildSparqlUrl produces the same parameter block as buildSparqlBody', () => {
-  // "Copy endpoint URL" must exactly reproduce what Run Query just ran.
+  // "Copy Query" link must exactly reproduce what Run Query just ran.
   const body = buildSparqlBody(QUERY);
   const url = buildSparqlUrl('https://example.com/sparql', QUERY);
   assert.equal(url, `https://example.com/sparql?${body}`);

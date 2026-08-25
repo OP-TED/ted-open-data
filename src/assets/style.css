@@ -340,16 +340,20 @@ main {
 }
 
 /* Buttons */
-.btn-primary {
-    background-color: var(--ted-primary);
-    border-color: var(--ted-primary);
-}
 
-.btn-primary:hover,
-.btn-primary:focus,
-.btn-primary:active {
-    background-color: var(--ted-green-dark); /* Darker shade of TED green */
-    border-color: var(--ted-green-dark);
+/* Set through Bootstrap's own variables rather than by overriding the
+   properties: 5.3 draws every state from --bs-btn-*, so a rule that sets
+   background-color reaches the resting and hover states but loses the
+   pressed one, which stayed Bootstrap blue. */
+.btn-primary {
+    --bs-btn-bg: var(--ted-primary);
+    --bs-btn-border-color: var(--ted-primary);
+    --bs-btn-hover-bg: var(--ted-green-dark);
+    --bs-btn-hover-border-color: var(--ted-green-dark);
+    --bs-btn-active-bg: var(--ted-green-dark);
+    --bs-btn-active-border-color: var(--ted-green-dark);
+    --bs-btn-disabled-bg: var(--ted-primary);
+    --bs-btn-disabled-border-color: var(--ted-primary);
 }
 
 /* Outline variant of the primary button — used by the carousel's
@@ -358,16 +362,12 @@ main {
    2-4; on hover it fills in with the same TED green as those CTAs
    for visual consistency at the moment of interaction. */
 .btn-outline-primary {
-    color: var(--ted-primary);
-    border-color: var(--ted-primary);
-}
-
-.btn-outline-primary:hover,
-.btn-outline-primary:focus,
-.btn-outline-primary:active {
-    background-color: var(--ted-primary);
-    border-color: var(--ted-primary);
-    color: #fff;
+    --bs-btn-color: var(--ted-primary);
+    --bs-btn-border-color: var(--ted-primary);
+    --bs-btn-hover-bg: var(--ted-primary);
+    --bs-btn-hover-border-color: var(--ted-primary);
+    --bs-btn-active-bg: var(--ted-primary);
+    --bs-btn-active-border-color: var(--ted-primary);
 }
 
 .btn-primary:disabled {
@@ -1108,9 +1108,13 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.results-toolbar-actions {
+/* One gap, applied by the container, so every item in the row — including
+   the rule — is spaced alike rather than by its own margin. */
+.results-toolbar-actions,
+#results-view-toggle {
   display: flex;
   flex-shrink: 0;
+  gap: 0.5rem;
 }
 /* A little vertical breathing room on the toolbar buttons — keep
    them noticeably slimmer than a default btn-sm (which is 31px tall
@@ -1118,6 +1122,15 @@ main {
    feel unhurried. */
 .results-toolbar .btn {
   padding: 0.35rem 1rem;
+}
+
+/* Shorter than the buttons it sits between, so it reads as a separator
+   rather than as another edge in the row. Used by both button rows that
+   hold two kinds of thing. */
+.button-row-divider {
+  align-self: center;
+  height: 1.5rem;
+  opacity: 0.25;
 }
 
 /* Graph-lane buttons get the same horizontal padding so both lanes
@@ -1132,7 +1145,7 @@ main {
    action buttons (both lanes). */
 #data-share-btn i.bi,
 #data-download-btn i.bi,
-#copy-url-button i.bi,
+#connect-button i.bi,
 #download-as-button i.bi {
   margin-right: 0.3rem;
 }
@@ -1996,4 +2009,103 @@ main {
    as well, which does not fit Bootstrap's default 200px. */
 .breadcrumb-tooltip .tooltip-inner {
   max-width: 300px;
+}
+
+/* ── Connect panel ── */
+
+/* The panel's markup lives in the page and is handed to Bootstrap as the
+   popover's content, so between shows it sits wherever it was declared. It is
+   hidden by where it is rather than by a class the code has to remember to
+   toggle: visible only once the popover has taken it. */
+#connect-panel {
+  display: none;
+}
+
+.connect-popover #connect-panel {
+  display: block;
+}
+
+/* Bootstrap caps a popover at 276px, which is a column of wrapped words for
+   this content. Wide enough here for the sentence to read as a sentence. */
+.connect-popover {
+  --bs-popover-max-width: 540px;
+}
+
+/* Lifted off the results. A 1px border alone leaves the table rows behind it
+   reading almost as though they were inside it. */
+.connect-popover {
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.175);
+}
+
+.connect-popover .popover-body {
+  padding: 1.5rem;
+}
+
+/* Bootstrap fills an outline button in on hover and while its menu is open.
+   Beside a solid green Connect button, a filled green Download reads as a
+   second primary — so it never fills. A faint tint answers the pointer
+   instead, and the open menu below it says when it is open. */
+#download-as-button {
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-color: var(--ted-primary);
+  --bs-btn-hover-border-color: var(--ted-primary);
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-color: var(--ted-primary);
+  --bs-btn-active-border-color: var(--ted-primary);
+}
+
+/* Pressed while its own panel is open: the invitation has moved inside the
+   panel, so this recedes — but stays solid, or it would be indistinguishable
+   from the outlined Download button beside it. */
+#connect-button.connect-open {
+  --bs-btn-bg: var(--ted-green-dark);
+  --bs-btn-border-color: var(--ted-green-dark);
+  --bs-btn-hover-bg: var(--ted-green-dark);
+  --bs-btn-hover-border-color: var(--ted-green-dark);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* The act first, the explanation under it. Someone who already knows what
+   they came for should not have to read a paragraph to find the button. */
+.connect-primary {
+  text-align: left;
+}
+
+/* The same padding the toolbar gives its own buttons. Without it this one
+   takes Bootstrap's btn-sm default and looks pinched beside the button that
+   opened the panel. */
+.connect-primary .btn {
+  padding: 0.35rem 1rem;
+}
+
+.connect-primary p {
+  margin: 0 0 1rem;
+}
+
+/* The half of the split button that names the format. Separated by a hairline
+   so the two halves read as two things, not one long label. */
+.connect-format-toggle {
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* One thing above the rule — the answer — and, below it, conveniences that
+   are not what this dialog is for. Quiet: smaller, and asking for no
+   attention until somebody goes looking for them. */
+/* A wide gap above, a narrow one below: the button belongs to the paragraph
+   it answers, and the rule belongs to what follows it. Below the rule, the
+   same 0.5rem the paragraph there leaves above its own buttons. */
+.connect-rule {
+  margin: 3rem 0 0.5rem;
+}
+
+.connect-secondary {
+  font-size: 0.85rem;
+  color: var(--ted-text-muted);
+  text-align: left;
+}
+
+.connect-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
