@@ -548,15 +548,34 @@ export class QueryLibrary {
    * else, so there is no second copy of the query to fall out of step with
    * the published one.
    *
-   * Nothing is shown here. The values are asked for at the moment of
+   * The form is not shown here. The values are asked for at the moment of
    * running, where they are about to matter, so a query that declares none
-   * changes nothing about the page.
+   * changes nothing about the page beyond what the Run button is called.
    *
    * @param {string} queryText - The query, exactly as published.
    * @private
    */
   _readParameters(queryText) {
     this.currentParams = this._parametersIn(queryText);
+    this._nameRunButtons();
+  }
+
+  /**
+   * Say on the button which of its two jobs it is about to do.
+   *
+   * One button runs two ways: a query with values to change asks for them
+   * first, and one without goes straight to the results. A trailing
+   * ellipsis is the usual way a command says it wants something from you
+   * before it can finish, and without it nothing tells the reader which
+   * they are about to get.
+   *
+   * @private
+   */
+  _nameRunButtons() {
+    const name = this.currentParams.length > 0 ? 'Run query…' : 'Run query';
+    for (const button of [this.tryQueryButton, this.tryQueryButtonBottom]) {
+      if (button) button.textContent = name;
+    }
   }
 
   /**

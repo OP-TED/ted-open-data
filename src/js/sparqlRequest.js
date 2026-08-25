@@ -17,7 +17,7 @@
 // QueryEditor.onSubmit (POST body), QueryResults.downloadAs (POST body
 // with a caller-supplied format), and the Connect panel (a GET URL
 // for Connect your app). Consolidating them here keeps them honest so the
-// query link reproduces exactly what "Run Query" just ran.
+// query link reproduces exactly what "Run query" just ran.
 //
 // The options they carry used to come from the Customize tab's Options
 // panel; that UI was removed (issue #32), so readSparqlOptions now returns
