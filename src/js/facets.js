@@ -239,6 +239,24 @@ function addUnique(facets, newFacet) {
 
 // ── Validation ──
 
+// Fields recording how a resource was navigated to, attached by tree clicks
+// and read back by DataView to rebuild the property path on the SPARQL
+// reference card. They describe a live exploration and are deliberately left
+// out of shareable URLs, so anything arriving over one is forged.
+//
+// This matters because `viaRootPattern` is a ready-made SPARQL fragment that
+// the card interpolates verbatim and offers for copying. A crafted ?facet=
+// could therefore put a SERVICE clause pointing at an attacker's endpoint in
+// front of a recipient, presented as the app's own suggested query. The other
+// two are less dangerous — path elements are re-rendered through
+// _shrinkOrBracket and come back bracketed — but none of the three has any
+// business crossing this boundary.
+//
+// When route sharing is implemented, it should serialise validated IRIs and
+// type URIs and rebuild the pattern locally. No transported field should ever
+// contain executable SPARQL.
+const SESSION_ONLY_FIELDS = ['viaPath', 'viaRoot', 'viaRootPattern'];
+
 // Boundary validator for facets coming from untrusted sources (URL params,
 // sessionStorage). Returns a cleaned-up copy of the facet or null. The
 // checks are stricter than "has a value field": notice-number values must
@@ -246,6 +264,17 @@ function addUnique(facets, newFacet) {
 // strings, query strings must be non-empty.
 function validateFacet(data) {
   if (!data || typeof data !== 'object' || !data.type) return null;
+
+  // Spreading `data` below preserves fields this validator does not know
+  // about, which is what lets a forged one through. Drop the session-only
+  // ones before anything else looks at them.
+  for (const field of SESSION_ONLY_FIELDS) {
+    if (field in data) {
+      data = { ...data };
+      for (const f of SESSION_ONLY_FIELDS) delete data[f];
+      break;
+    }
+  }
 
   if (data.type === 'notice-number') {
     const normalized = normalize(data.value);

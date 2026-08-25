@@ -40,6 +40,7 @@ import {
   turtle,
 } from '../vendor/codemirror-bundle.js';
 import { eclipseHighlightStyle, eclipseTheme } from './utils/cmTheme.js';
+import { navigationPath } from './utils/navigationPath.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
 import { triggerBlobDownload } from './utils/download.js';
 import { classifyError } from './utils/errorMessages.js';
@@ -449,7 +450,12 @@ export class DataView {
     if (this.viewMode === 'tree') {
       const facet = this.controller.currentFacet;
       const subjectUri = facet?.type === 'named-node' ? facet.term?.value : null;
-      this.treeRenderer.render(results.quads, { subjectUri });
+      const { chain, anchor } = navigationPath(this.controller.breadcrumb, this.controller.breadcrumbIndex);
+      this.treeRenderer.render(results.quads, {
+        subjectUri,
+        pathFromRoot: chain,
+        rootPattern: anchor,
+      });
     } else if (this.viewMode === 'turtle') {
       this._renderTurtle(results.rawTurtle);
     }

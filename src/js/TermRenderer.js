@@ -34,7 +34,7 @@ function setController(controller) {
 // term's kind (named node → <a>, blank node → plain span, literal → span
 // with datatype / language suffixes).
 function renderTerm(term, options = {}) {
-  const { clickable = true, onClick = null } = options;
+  const { clickable = true, onClick = null, viaPath = [], viaRoot = null, viaRootPattern = null } = options;
 
   if (!term || !term.value) {
     const span = document.createElement('span');
@@ -51,7 +51,7 @@ function renderTerm(term, options = {}) {
   }
 
   if (termType === 'NamedNode') {
-    return _renderNamedNode(term, clickable, onClick);
+    return _renderNamedNode(term, clickable, onClick, { viaPath, viaRoot, viaRootPattern });
   }
 
   return _renderLiteral(term);
@@ -75,7 +75,7 @@ function _isNavigableHref(value) {
     && (value.startsWith('http://') || value.startsWith('https://'));
 }
 
-function _renderNamedNode(term, clickable, onClick) {
+function _renderNamedNode(term, clickable, onClick, via = {}) {
   // ePO resources get the same split pill as subject badges.
   const parts = splitEpoResource(term.value);
   if (parts) {
@@ -97,7 +97,7 @@ function _renderNamedNode(term, clickable, onClick) {
     if (clickable && _isNavigableHref(term.value)) {
       el.href = term.value;
     }
-    _attachNavigationHandler(el, term, clickable, onClick);
+    _attachNavigationHandler(el, term, clickable, onClick, via);
     return el;
   }
 
@@ -115,13 +115,21 @@ function _renderNamedNode(term, clickable, onClick) {
     });
   }
 
-  _attachNavigationHandler(el, term, clickable, onClick);
+  _attachNavigationHandler(el, term, clickable, onClick, via);
   return el;
 }
 
 // Wires up the click behaviour for a NamedNode element. Blank-node-like
 // identifiers (no http scheme) render as non-clickable plain text.
-function _attachNavigationHandler(el, term, clickable, onClick) {
+//
+// `via` describes how this term was reached: the chain of predicate URIs
+// walked (`viaPath`), the root subject that chain starts at (`viaRoot`), and
+// the pattern binding that root (`viaRootPattern`). All three ride along on
+// the facet that ExplorerController pushes onto the breadcrumb, so the
+// breadcrumb records not just *which* resources were visited but *how* —
+// which is what lets DataView.navigationPath() reconstruct the whole route
+// and detect when it does not actually join up.
+function _attachNavigationHandler(el, term, clickable, onClick, via = {}) {
   const isNavigable = _isNavigableHref(term.value);
 
   if (!isNavigable || !clickable) {
@@ -144,6 +152,9 @@ function _attachNavigationHandler(el, term, clickable, onClick) {
       _controller.navigateTo({
         type: 'named-node',
         term: { termType: 'NamedNode', value: term.value },
+        viaPath: via.viaPath || [],
+        viaRoot: via.viaRoot ?? null,
+        viaRootPattern: via.viaRootPattern ?? null,
         timestamp: Date.now(),
       });
     });
@@ -185,7 +196,7 @@ function _renderLiteral(term) {
 // _renderNamedNode helper — and then this function would issue a second
 // one after overwriting the text. One badge, one request.
 function renderSubjectBadge(subjectUri, options = {}) {
-  const { clickable = true, badgeClass, onClick = null } = options;
+  const { clickable = true, badgeClass, onClick = null, viaPath = [], viaRoot = null, viaRootPattern = null } = options;
 
   const term = { termType: 'NamedNode', value: subjectUri };
   const badge = document.createElement(clickable ? 'a' : 'span');
@@ -218,7 +229,7 @@ function renderSubjectBadge(subjectUri, options = {}) {
     if (_isNavigableHref(subjectUri)) {
       badge.href = subjectUri;
     }
-    _attachNavigationHandler(badge, term, /* clickable */ true, onClick);
+    _attachNavigationHandler(badge, term, /* clickable */ true, onClick, { viaPath, viaRoot, viaRootPattern });
   }
 
   return badge;
