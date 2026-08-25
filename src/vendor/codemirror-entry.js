@@ -26,7 +26,8 @@ export {history, defaultKeymap, historyKeymap} from '@codemirror/commands';
 
 // Language
 export {bracketMatching, foldGutter, foldKeymap, indentOnInput,
-        syntaxHighlighting, defaultHighlightStyle, HighlightStyle} from '@codemirror/language';
+        syntaxHighlighting, defaultHighlightStyle, HighlightStyle,
+        syntaxTree, ensureSyntaxTree} from '@codemirror/language';
 
 // Autocomplete
 export {autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap} from '@codemirror/autocomplete';
