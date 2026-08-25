@@ -289,11 +289,18 @@ main {
     font-weight: 500;
 }
 
-/* Third-Party Components Card */
+/* The reference cards in the Help tab's right column. Their headers take
+   eu-blue-10, the accent the accordion inside one of them already uses, so
+   the column reads in one colour rather than two. */
 #help .card .card-header {
-    background-color: var(--light-background-color);
-    color: var(--ted-primary);
+    background-color: var(--ted-blue-10);
     border-bottom: 1px solid var(--border-color);
+}
+
+/* The Help tab makes every heading green. A card title sits on a blue ground
+   here, so it is set apart from that rule rather than inheriting it. */
+#help .card .card-header .card-title {
+    color: var(--ted-text); /* gray-100 */
 }
 
 /* Explorer-port card headers should NOT inherit the global
@@ -890,12 +897,49 @@ main {
     max-height: calc(100vh - var(--header-total-height, 251px) - 80px);
 }
 
-.query-library-accordion-header {
+/* Accordions in this application look alike wherever they appear: the query
+   library's categories and the release notes both use this. */
+.ted-accordion-header {
     margin-bottom: 0;
 }
-.query-library-accordion-header .accordion-button:not(.collapsed) {
-    background-color: var(--ted-blue-5); /* eu-blue-5 — selected category only */
+.ted-accordion-header .accordion-button:not(.collapsed) {
+    background-color: var(--ted-blue-5); /* eu-blue-5 — the open item only */
     box-shadow: none;
+}
+
+/* The release notes share the Help tab's right column with the third-party
+   components card, so they are sized to it rather than to the body text of
+   the column beside them. 0.875rem is the <small> that card is written in. */
+/* Set like the components card beneath: the name of the thing at body size in
+   body colour, what it does smaller and muted under it. */
+#release-notes-accordion .accordion-body {
+    font-size: 0.875rem;
+    color: var(--ted-text-muted);
+}
+
+/* Entries are set like the components card beneath: no bullets, and the name
+   of the thing on its own line above what it does. */
+#release-notes-accordion .accordion-body ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+#release-notes-accordion .accordion-body li + li {
+    margin-top: 0.75rem;
+}
+
+#release-notes-accordion .accordion-body b {
+    display: block;
+    font-size: 1rem;
+    color: var(--bs-body-color);
+}
+
+/* The two panels in this column group their contents the same way, so their
+   group headings are set alike — an h6 is 500 where an accordion button is
+   400, and that was the only difference. */
+#third-party-components .card-body h6 {
+    font-weight: 400;
 }
 
 /* ─────────────────────────────────────────────────────────────────
