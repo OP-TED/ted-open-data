@@ -303,6 +303,34 @@ main {
 #explorer-procedure-mini { margin-top: 8px; }
 #explorer-procedure-title > span:first-child,
 #procedure-card-title > span:first-child { color: var(--ted-primary, #2c862d); }
+
+/* A procedure ID is a UUID, and its hyphens are break opportunities, so beside
+   the label it stacked four lines deep and took the card title with it. It
+   takes a line of its own instead, once the two no longer fit on one: this is
+   the only place the ID appears — the timeline itself lists publication
+   numbers — so clipping it to the width the label left over would have hidden
+   the whole of it on a narrow pane, where a title tooltip is no use to anyone
+   without a mouse. `anywhere` for an ID that arrives without hyphens. */
+.procedure-title-ids {
+  overflow-wrap: anywhere;
+}
+
+/* On the Explorer's mini card this is itself an item of the header's flex row,
+   beside the chevron, and would hold the width of its own contents — clipping
+   the ID inside a box that had already overrun the card. */
+.procedure-title {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* The two share the header's width, so without this they give ground together
+   and the label wraps while there is still an ID to clip. The ID gives up all
+   of it first; max-width lets the label wrap once there is nothing left to
+   take, rather than run past the edge of the card. */
+.procedure-title-label {
+  flex-shrink: 0;
+  max-width: 100%;
+}
 #explorer-procedure-mini .card-header,
 #notice-results .card-header {
     background-color: rgba(0, 0, 0, 0.03);
