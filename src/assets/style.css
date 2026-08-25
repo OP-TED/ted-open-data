@@ -1991,3 +1991,9 @@ main {
   color: var(--ted-color-literal);
   overflow-wrap: anywhere;
 }
+
+/* Breadcrumb steps show the type alone; the tooltip carries the identifier
+   as well, which does not fit Bootstrap's default 200px. */
+.breadcrumb-tooltip .tooltip-inner {
+  max-width: 300px;
+}

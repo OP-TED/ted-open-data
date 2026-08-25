@@ -22,7 +22,7 @@
 //
 // Each also carries a `timestamp` field used for ordering and uniqueness.
 
-import { shortLabel } from './utils/namespaces.js';
+import { resourceIdentifier, resourceUuid, shortLabel } from './utils/namespaces.js';
 
 // ── Publication number normalisation ──
 
@@ -73,7 +73,19 @@ function getLabel(facet) {
   if (!facet) return '';
   if (facet.type === 'query') return 'Query';
   if (facet.type === 'notice-number') return facet.value;
-  if (facet.type === 'named-node') return shortLabel(facet.term.value);
+  if (facet.type === 'named-node') {
+    // An ePO resource URI carries a class name the mapping wrote into it,
+    // which the ontology need not recognise, so it is never shown (issue
+    // #74). The name comes from the types the resource declares and travels
+    // on the facet; the identifier still comes from the URI, which is where
+    // it belongs. Same halves as the badge, same rule for a missing one, so
+    // the heading and the badge below it read alike. URIs of any other shape
+    // have no class name embedded in them and are shown as they are.
+    const uuid = resourceUuid(facet.term.value);
+    if (!uuid) return shortLabel(facet.term.value);
+    const identifier = resourceIdentifier(facet.term.value) || (facet.typeName ? '' : uuid);
+    return [facet.typeName, identifier].filter(Boolean).join(' ');
+  }
   return '';
 }
 
@@ -255,7 +267,7 @@ function addUnique(facets, newFacet) {
 // When route sharing is implemented, it should serialise validated IRIs and
 // type URIs and rebuild the pattern locally. No transported field should ever
 // contain executable SPARQL.
-const SESSION_ONLY_FIELDS = ['viaPath', 'viaRoot', 'viaRootPattern'];
+const SESSION_ONLY_FIELDS = ['viaPath', 'viaRoot', 'viaRootPattern', 'typeName'];
 
 // Boundary validator for facets coming from untrusted sources (URL params,
 // sessionStorage). Returns a cleaned-up copy of the facet or null. The

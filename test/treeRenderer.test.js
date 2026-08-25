@@ -24,6 +24,7 @@ import assert from 'node:assert/strict';
 import './_helpers.js'; // provides the minimal document shim TreeRenderer needs at construction
 import { TreeRenderer } from '../src/js/TreeRenderer.js';
 import { setController } from '../src/js/TermRenderer.js';
+import { __setOntologyDataForTesting } from '../src/js/services/ontologyData.js';
 
 // Real URIs from TED notice 00172531-2026's DESCRIBE response.
 const NOTICE      = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_Notice';
@@ -414,29 +415,70 @@ test('_buildPathPattern binds every declared type, not one of them', () => {
   ]]]);
   assert.equal(
     r._buildPathPattern(NOTICE, predicates),
-    '?notice a epo:Notice16, epo:Notice, epo:CompetitionNotice .',
+    '?notice16 a epo:Notice16, epo:Notice, epo:CompetitionNotice .',
   );
 });
 
-test('_variableNameFrom prefers the shortest local name for legibility', () => {
-  // Only the label is chosen here — every type is bound regardless, so this
-  // cannot change what the query matches. It just reads better.
+test('_buildPathPattern names its variable after the most specific type', () => {
+  // With the ontology loaded, the variable follows the class the badge shows
+  // rather than whichever type the endpoint happened to return first.
+  __setOntologyDataForTesting({
+    subClassOf: {
+      'http://data.europa.eu/a4g/ontology#Notice16': ['http://data.europa.eu/a4g/ontology#CompetitionNotice'],
+      'http://data.europa.eu/a4g/ontology#CompetitionNotice': [EPO_NOTICE_CLASS],
+    },
+  });
+  const r = makeRenderer();
+  navigatedTo(r, NOTICE, []);
+  const predicates = new Map([[RDF_TYPE, [
+    namedNode(EPO_NOTICE_CLASS),
+    namedNode('http://data.europa.eu/a4g/ontology#Notice16'),
+    namedNode('http://data.europa.eu/a4g/ontology#CompetitionNotice'),
+  ]]]);
+
+  assert.equal(
+    r._buildPathPattern(NOTICE, predicates),
+    '?notice16 a epo:Notice, epo:Notice16, epo:CompetitionNotice .',
+  );
+  // Loaded and stating nothing, not unloaded: null would send the next
+  // render off to fetch the real file, which no test wants.
+  __setOntologyDataForTesting({ subClassOf: {} });
+});
+
+test('_variableNameFrom follows the ontology, not the shortest name', () => {
+  // "notice" is the shorter name; "notice16" is the more specific class.
+  __setOntologyDataForTesting({
+    subClassOf: {
+      'http://data.europa.eu/a4g/ontology#Notice16': ['http://data.europa.eu/a4g/ontology#CompetitionNotice'],
+      'http://data.europa.eu/a4g/ontology#CompetitionNotice': [EPO_NOTICE_CLASS],
+    },
+  });
   const r = makeRenderer();
   assert.equal(
     r._variableNameFrom([
       'http://data.europa.eu/a4g/ontology#Notice16',
-      'http://data.europa.eu/a4g/ontology#Notice',
+      EPO_NOTICE_CLASS,
       'http://data.europa.eu/a4g/ontology#CompetitionNotice',
     ]),
-    'notice',
+    'notice16',
   );
+  // Loaded and stating nothing, not unloaded: null would send the next
+  // render off to fetch the real file, which no test wants.
+  __setOntologyDataForTesting({ subClassOf: {} });
 });
 
-test('_variableNameFrom is stable when local names tie on length', () => {
+test('_variableNameFrom uses the first declared type when the ontology ranks none', () => {
+  // Two unrelated classes: the variable is only a label, and every type is
+  // bound in the pattern, so the choice cannot change what the query matches.
   const r = makeRenderer();
-  const uris = ['http://ex.org/Beta', 'http://ex.org/Alfa'];
-  assert.equal(r._variableNameFrom(uris), 'alfa');
-  assert.equal(r._variableNameFrom([...uris].reverse()), 'alfa');
+  assert.equal(r._variableNameFrom(['http://ex.org/Beta', 'http://ex.org/Alfa']), 'beta');
+});
+
+test('_variableNameFrom falls back when a type yields no usable name', () => {
+  const r = makeRenderer();
+  assert.equal(r._variableNameFrom([]), 'value');
+  assert.equal(r._variableNameFrom(['http://ex.org/123']), 'value');
+  assert.equal(r._variableNameFrom(['http://ex.org/Some-Type.v2']), 'some_Type_v2');
 });
 
 // ── predicate path threading ────────────────────────────────────────
@@ -919,6 +961,58 @@ test('every link in a rendered tree either carries its route or is a predicate',
     assert.ok(facet.viaRoot, 'and the subject that route starts from');
     assert.ok(facet.viaRootPattern, 'and the pattern binding that subject');
   }
+});
+
+// ── names inherited from the notice ─────────────────────────────────
+//
+// A drill-down query returns one resource's triples, so the resources it
+// refers to arrive untyped. The notice the user came from typed them, and
+// DataView hands those statements down as `declaredTypes`.
+
+test('a resource the current data does not type is named from the notice', () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const r = makeRenderer();
+  r.render([quad(ORGANISATION, EPO_PLAYED_BY, namedNode(REVIEWER))], {
+    declaredTypes: new Map([[REVIEWER, [EPO_REVIEWER_CLASS]]]),
+  });
+
+  assert.equal(r._typeName(REVIEWER), 'Reviewer');
+});
+
+test('what the current data says wins over what the notice said', () => {
+  // The resource's own triples are the better source: the notice may have
+  // stated only the class it needed, its own graph states them all.
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const r = makeRenderer();
+  r.render([quad(REVIEWER, RDF_TYPE, namedNode(EPO_ORGANISATION_CLASS))], {
+    declaredTypes: new Map([[REVIEWER, [EPO_REVIEWER_CLASS]]]),
+  });
+
+  assert.equal(r._typeName(REVIEWER), 'Organisation');
+});
+
+test('a resource neither source types has no name', () => {
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const r = makeRenderer();
+  r.render([quad(ORGANISATION, EPO_PLAYED_BY, namedNode(REVIEWER))], {
+    declaredTypes: new Map(),
+  });
+
+  assert.equal(r._typeName(REVIEWER), null);
+});
+
+test('inherited types survive the re-render that follows the ontology load', () => {
+  // render() replays itself once the class hierarchy arrives. Dropping the
+  // inherited map on that replay would rename every reference mid-view.
+  __setOntologyDataForTesting({ subClassOf: {} });
+  const r = makeRenderer();
+  r.render([quad(ORGANISATION, EPO_PLAYED_BY, namedNode(REVIEWER))], {
+    declaredTypes: new Map([[REVIEWER, [EPO_REVIEWER_CLASS]]]),
+  });
+
+  r.render(...r._lastRender);
+
+  assert.equal(r._typeName(REVIEWER), 'Reviewer');
 });
 
 // ── the reference card is reachable from every row ──────────────────

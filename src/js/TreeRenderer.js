@@ -25,6 +25,8 @@
 import { ns, resolvePrefix, shrink } from './utils/namespaces.js';
 import { renderSubjectBadge, renderTerm } from './TermRenderer.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
+import { mostSpecificTypes, resourceTypeName } from './utils/resourceType.js';
+import { ensureOntologyData, getClassHierarchy, getOntologyData } from './services/ontologyData.js';
 import { showToast } from './utils/toast.js';
 
 const RDF_TYPE = ns.rdf + 'type';
@@ -102,7 +104,26 @@ export class TreeRenderer {
     this._searchIndex = [];     // flat array of { label, subjectValue, kind }
   }
 
-  render(quads, { subjectUri, pathFromRoot = [], rootPattern = null } = {}) {
+  render(quads, { subjectUri, pathFromRoot = [], rootPattern = null, declaredTypes = null } = {}) {
+    // Naming a resource needs the ontology's class hierarchy. It is fetched
+    // once; until it arrives a resource with several declared types shows all
+    // of them, so this re-renders when it lands rather than leaving the first
+    // tree named differently from every later one.
+    // The condition is "not loaded yet", not "hierarchy is empty": a loaded
+    // ontology stating no subclasses would otherwise re-render on every pass.
+    if (!getOntologyData()) {
+      ensureOntologyData().then(loaded => {
+        if (loaded && this._lastRender) this.render(...this._lastRender);
+      });
+    }
+    this._lastRender = [quads, { subjectUri, pathFromRoot, rootPattern, declaredTypes }];
+
+    // What the notice this tree was reached from said its resources are. The
+    // tree names a resource from its own triples where it has them, and falls
+    // back to this for the ones it only refers to. Null at the root, where the
+    // notice's own triples are the ones on screen.
+    this._inheritedTypes = declaredTypes;
+
     // How the user reached this tree: the predicate chain walked from the
     // first breadcrumb entry, and the pattern binding that entry. Both come
     // from DataView, which owns the breadcrumb. Empty when we are at the root.
@@ -388,7 +409,10 @@ export class TreeRenderer {
   _renderCycleMarker(subjectValue, pathCtx = null) {
     const el = document.createElement('div');
     el.className = 'tree-node';
-    el.appendChild(renderTerm({ termType: 'NamedNode', value: subjectValue }, this._navigationContext(pathCtx)));
+    el.appendChild(renderTerm({ termType: 'NamedNode', value: subjectValue }, {
+      ...this._navigationContext(pathCtx),
+      typeName: this._typeName(subjectValue),
+    }));
     el.appendChild(document.createTextNode(' (circular ref)'));
     return el;
   }
@@ -418,7 +442,10 @@ export class TreeRenderer {
       header.appendChild(document.createTextNode(' → '));
     }
 
-    const badge = renderSubjectBadge(subjectValue, this._navigationContext(pathCtx));
+    const badge = renderSubjectBadge(subjectValue, {
+      ...this._navigationContext(pathCtx),
+      typeName: this._typeName(subjectValue),
+    });
     header.appendChild(badge);
 
     if (incomingPredicate) {
@@ -924,6 +951,17 @@ export class TreeRenderer {
     return (predicates?.get(RDF_TYPE) || []).map(t => t.value).filter(Boolean);
   }
 
+  /**
+   * What to call the resource with this URI, from the types the loaded data
+   * declares for it. Null when the data declares none — a resource referenced
+   * but not described here — and the badge then shows the identifier alone.
+   */
+  _typeName(subjectValue) {
+    const loaded = this._typeUris(this.subjectIndex?.get(subjectValue));
+    const types = loaded.length ? loaded : this._inheritedTypes?.get(subjectValue) || [];
+    return resourceTypeName(types, getClassHierarchy());
+  }
+
   // Blank-node subjects are tracked while indexing, because the subject index
   // is keyed by bare value and `_:b0` arrives from the parser as "b0_b0" —
   // indistinguishable from a relative IRI once the term type is dropped.
@@ -940,23 +978,21 @@ export class TreeRenderer {
     return anchor.startsWith(`?${varName} `) ? `${varName}2` : varName;
   }
 
-  // A readable variable name for a resource with these types.
+  // A variable name for a resource with these types.
   //
-  // Where several types are present the shortest local name wins, which for
-  // ePO tends to be the general class — ?notice over ?notice16. That is a
-  // legibility preference and nothing more: a SPARQL variable name carries no
-  // meaning, and every type is bound in the pattern regardless, so the choice
-  // cannot change what the query matches.
+  // Named after the most specific type the ontology identifies, the same one
+  // the badge shows, so the pattern and the tree agree about what is bound.
+  // Where the ontology ranks none of them, the first declared is used: the
+  // choice is between equally true names for the same resource, and every
+  // type is bound in the pattern regardless, so it cannot change what the
+  // query matches.
   //
   // A name may only contain letters, digits and underscores, so a local name
   // carrying a hyphen or a dot would otherwise produce something unparseable.
   _variableNameFrom(typeUris) {
-    const locals = [].concat(typeUris ?? [])
-      .filter(Boolean)
-      .map(uri => uri.split(/[#/]/).pop())
-      .sort((a, b) => a.length - b.length || a.localeCompare(b));
+    const specific = mostSpecificTypes([].concat(typeUris ?? []).filter(Boolean), getClassHierarchy());
 
-    const local = (locals[0] || '').replace(/[^A-Za-z0-9_]/g, '_');
+    const local = (specific[0] || '').split(/[#/]/).pop().replace(/[^A-Za-z0-9_]/g, '_');
     if (!local || !/^[A-Za-z_]/.test(local)) return 'value';
     return local.charAt(0).toLowerCase() + local.slice(1);
   }
@@ -1057,7 +1093,10 @@ export class TreeRenderer {
     text.appendChild(pred);
 
     text.appendChild(document.createTextNode(' → '));
-    text.appendChild(renderTerm(object, this._navigationContext(pathCtx)));
+    text.appendChild(renderTerm(object, {
+      ...this._navigationContext(pathCtx),
+      typeName: this._typeName(object.value),
+    }));
     row.appendChild(text);
     // Anchored on the property: it is what the card names, and it sits at the
     // start of the row where the eye already is.

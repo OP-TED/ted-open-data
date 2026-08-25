@@ -308,11 +308,11 @@ test('getLabel returns a human-readable string per facet kind', () => {
   const named  = { type: 'named-node', term: { value: EPO_NOTICE_URI } };
   assert.equal(getLabel(notice), PUB_2026);
   assert.equal(getLabel(query), 'Query');
-  // EPO_NOTICE_URI is `id_{uuid}_Notice` with no identifier suffix, so
-  // shortLabel has no underscore to split after the uuid and returns the
-  // bare type. URIs with identifiers (e.g. SettledContract_CON-0001) render
-  // as "Type identifier".
-  assert.equal(getLabel(named), 'Notice');
+  // EPO_NOTICE_URI is `id_{uuid}_Notice`: the source data gives a notice no
+  // identifier, so its URI ends at the class name. With no declared type to
+  // show either, the uuid is all that is left to name it by.
+  assert.equal(getLabel(named), '6497924e-6920-4348-8ecb-71530f802aef');
+  assert.equal(getLabel({ ...named, typeName: 'Notice16' }), 'Notice16');
 
   const contractFacet = {
     type: 'named-node',
@@ -321,7 +321,9 @@ test('getLabel returns a human-readable string per facet kind', () => {
         'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_SettledContract_CON-0001',
     },
   };
-  assert.equal(getLabel(contractFacet), 'SettledContract CON-0001');
+  // "SettledContract" is the mapping's name for the class, not the ontology's,
+  // so an unnamed resource shows the identifier alone.
+  assert.equal(getLabel(contractFacet), 'CON-0001');
 });
 
 test('getQuery returns the SPARQL body for each facet kind', () => {
@@ -639,4 +641,65 @@ test('a forged route cannot reach the reference card', () => {
   const breadcrumb = [{ type: 'notice-number', value: '00100333-2025' }, validated];
 
   assert.deepEqual(navigationPath(breadcrumb, 1), { chain: [], anchor: null });
+});
+
+// ── naming a resource in the breadcrumb and heading (issue #74) ─────
+//
+// Both are built from getLabel(). A resource URI reads "id_{uuid}_{Type}_{id}",
+// where the class name is the mapping's rather than the ontology's. The name
+// shown comes from the types the resource declares and rides on the facet; the
+// identifier still comes from the URI, which is where it belongs.
+
+const CONTRACT_URI =
+  'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_SettledContract_CON-0003';
+
+test('getLabel prefers the declared type over the name in the URI', () => {
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: CONTRACT_URI }, typeName: 'Contract' }),
+    'Contract CON-0003',
+  );
+});
+
+test('getLabel keeps the identifier from the URI', () => {
+  const label = getLabel({ type: 'named-node', term: { value: CONTRACT_URI }, typeName: 'Contract' });
+  assert.ok(label.endsWith('CON-0003'), label);
+});
+
+test('getLabel shows the identifier alone when no name was resolved', () => {
+  // Before the resource's own triples arrive, nothing states its class. The
+  // "SettledContract" in the URI is the mapping's name for it and is not
+  // shown in its place, here or on the badge.
+  assert.equal(getLabel({ type: 'named-node', term: { value: CONTRACT_URI } }), 'CON-0003');
+});
+
+test('a resource whose URI carries no identifier is named by its type alone', () => {
+  const uri = 'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_Notice';
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: uri }, typeName: 'Notice16' }),
+    'Notice16',
+  );
+});
+
+test('with neither a type nor an identifier, the uuid is what is left', () => {
+  const uri = 'http://data.europa.eu/a4g/resource/id_1a7fc6eb-fe1e_Notice';
+  assert.equal(getLabel({ type: 'named-node', term: { value: uri } }), '1a7fc6eb-fe1e');
+});
+
+test('a URI of any other shape is shown as it is', () => {
+  // No class name is embedded in one, so there is nothing to withhold.
+  assert.equal(
+    getLabel({ type: 'named-node', term: { value: 'http://data.europa.eu/a4g/ontology#Notice' } }),
+    'epo:Notice',
+  );
+});
+
+test('a resolved name does not cross the URL boundary', () => {
+  // Same reasoning as the route metadata: it describes a live exploration, so
+  // a value arriving on a link is forged.
+  const cleaned = validateFacet({
+    type: 'named-node',
+    term: { termType: 'NamedNode', value: CONTRACT_URI },
+    typeName: 'Anything At All',
+  });
+  assert.ok(!('typeName' in cleaned));
 });
