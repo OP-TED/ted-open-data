@@ -1343,9 +1343,12 @@ main {
 }
 /* The reference-card button sits at the right edge of its row, so the buttons
    form one column down the card rather than landing wherever the row's text
-   happens to end. Taken out of the flow rather than pushed there by flex:
-   flex would make each part of the row a separate item and drop the spaces
-   around the "→", which belong to the row's inline text. */
+   happens to end. Taken out of the flow rather than pushed there by flex, so
+   that the column holds even on a row that wraps.
+
+   The row is a flex container, but only of two things: the statement and the
+   leader that runs from it to the menu. The statement's parts stay inline
+   inside it, so the spaces around the "→" are still its own text. */
 .tree-node,
 .tree-card-header {
   position: relative;
