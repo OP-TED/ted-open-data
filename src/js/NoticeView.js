@@ -84,7 +84,7 @@ function _iconEl(iconClass) {
 //   YYYY-MM-DDTHH:MM:SSZ           → "24 Dec 2024 (Z)"
 function _formatDate(dateStr) {
   if (!dateStr) return '';
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:T[^+\-Z]*)?([+\-]\d{2}:\d{2}|Z)?$/);
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:T[^+\-Z]*)?([+-]\d{2}:\d{2}|Z)?$/);
   if (!match) return dateStr;
   const [, y, m, d, tz] = match;
   const friendly = `${parseInt(d, 10)} ${MONTHS[parseInt(m, 10) - 1]} ${y}`;

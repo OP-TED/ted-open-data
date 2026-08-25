@@ -62,7 +62,8 @@ function makeEditor(initial = '') {
 
 // Wire a panel to a controller and editor. Returns the editor stub.
 function wirePanel(controller, editor) {
-  // eslint-disable-next-line no-new -- constructor wires the event listeners we exercise
+  // Constructed for its side effect: the constructor wires the event
+  // listeners these tests exercise.
   new SearchPanel(controller, {
     loadEditorText: editor.loadEditorText,
     getEditorText: editor.getEditorText,
@@ -163,7 +164,8 @@ test('SearchPanel still corrects the editor when the editor reader is not wired'
     doSPARQL: routedDoSPARQL({ primary: EMPTY_RESULT, fallback: fallbackHit }),
   });
   const writes = [];
-  // eslint-disable-next-line no-new -- constructor wires the event listeners we exercise
+  // Constructed for its side effect: the constructor wires the event
+  // listeners these tests exercise.
   new SearchPanel(controller, { loadEditorText: (t) => writes.push(t) });
 
   await controller.search(createPublicationNumberFacet(PUB));

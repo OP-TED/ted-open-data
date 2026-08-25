@@ -34,6 +34,9 @@ const RDF_TYPE = ns.rdf + 'type';
 // The characters SPARQL's IRIREF grammar excludes: everything up to and
 // including space, plus <, >, ", {, }, |, ^, backtick and backslash. A URI
 // carrying one of these cannot be written between angle brackets at all.
+// The control characters are exactly what this must find: they are
+// forbidden inside <...>.
+// eslint-disable-next-line no-control-regex
 const IRIREF_FORBIDDEN = /[\u0000-\u0020<>"{}|^`\\]/g;
 
 // A conservative subset of SPARQL's PN_LOCAL: starts with a letter, digit or

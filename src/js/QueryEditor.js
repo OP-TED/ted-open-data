@@ -525,7 +525,7 @@ export class QueryEditor {
         try {
           const result = JSON.parse(responseText);
           this.queryResults.displayJsonResults(result);
-        } catch (parseError) {
+        } catch {
           this.queryResults.displayTextResults(responseText, 'text');
         }
 

@@ -25,7 +25,7 @@ import SparqlJs from 'sparqljs';
 import {
   literalFor, valueProblem, controlKind, compareValues,
 } from '../src/js/utils/parameterValues.js';
-import { PROLOGUE, query, parametersOf, filled } from './_parameterFixtures.js';
+import { query, parametersOf, filled } from './_parameterFixtures.js';
 
 // ── filling the query ──────────────────────────────────────────────
 

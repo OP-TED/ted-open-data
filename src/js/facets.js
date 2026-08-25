@@ -36,6 +36,9 @@ const PUBLICATION_NUMBER_PATTERN = /^\s*(\d{1,8})-(\d{4})\s*$/;
 // whitespace and control characters are invalid in IRIs per the RDF spec.
 // Used by both validateFacet (URL/sessionStorage boundary) and
 // _describeTermQuery (interpolation boundary for click-time facets).
+// The control characters are exactly what this must find: no URI may
+// carry them.
+// eslint-disable-next-line no-control-regex
 const FORBIDDEN_URI_CHARS = /[<>"\\\s\x00-\x1f\x7f]/;
 
 function _isSafeUri(value) {

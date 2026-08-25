@@ -20,10 +20,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 
-import { sparql } from 'codemirror-lang-sparql';
-
 import { rangeEnds, rangeWording, parameterRanges } from '../src/js/utils/parameterRanges.js';
-import { PROLOGUE, query, parametersOf, shapeOf } from './_parameterFixtures.js';
+import { PROLOGUE, query, parametersOf } from './_parameterFixtures.js';
 
 // ── reading a range as a sentence ──────────────────────────────────
 

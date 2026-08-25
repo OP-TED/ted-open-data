@@ -34,8 +34,7 @@
 // ?country, so annotating ?country does not offer to edit "en".
 
 import {
-  XSD_NAMESPACE, textReader, literalValue, escapeLiteral, readPrologue,
-  datatypeOf, applyEdits,
+  XSD_NAMESPACE, textReader, literalValue, readPrologue, datatypeOf,
 } from './sparqlTree.js';
 
 /**

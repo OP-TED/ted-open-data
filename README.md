@@ -27,7 +27,8 @@ Visit [TED Open Data](https://data.ted.europa.eu/) to use the live version of th
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js `^18.18 || ^20.9 || >=21.1` — the range ESLint supports, and the
+  narrowest any dependency asks for. `npm install` says so if yours is outside it.
 - npm (v8 or higher)
 
 ### Installation & Running
