@@ -46,11 +46,12 @@ export function startReuseSelectTour() {
 
   steps.push(
     {
-      element: '#copy-url-button',
-      title: 'Copy Query',
+      element: '#connect-button',
+      title: 'Connect your app',
       content:
-        'Copy the query as a link, raw SPARQL text, or a cURL command. The query link returns ' +
-        'these results as JSON — paste it into Excel, Power BI or any HTTP client for live data.',
+        'Run this query from your own tools. You get a link to paste into Excel or Power BI, ' +
+        'which re-runs the query every time you refresh, and the same request as a command ' +
+        'for a terminal.',
       placement: 'bottom',
     },
     {

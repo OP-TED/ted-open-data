@@ -1,11 +1,12 @@
 {
   "name": "ted-open-data",
   "version": "2.4.0-SNAPSHOT",
-  "description": "TED Open Data Service — SPARQL playground and notice browser for the European public procurement dataset",
+  "description": "TED Open Data Service \u2014 SPARQL playground and notice browser for the European public procurement dataset",
   "type": "module",
   "scripts": {
     "start": "node src/js/cors-proxy.cjs",
     "build:codemirror": "node scripts/build-codemirror.cjs",
+    "lint": "eslint .",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
@@ -25,12 +26,18 @@
     "@codemirror/search": "^6.6.0",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
+    "@eslint/js": "^9.39.5",
     "@lezer/highlight": "^1.2.3",
     "codemirror-lang-sparql": "^2.0.0",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "eslint": "^9.39.5",
+    "globals": "^17.11.0"
   },
   "overrides": {
     "path-to-regexp": "0.1.13",
     "qs": "^6.15.2"
+  },
+  "engines": {
+    "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
   }
 }

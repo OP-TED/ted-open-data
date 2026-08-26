@@ -46,6 +46,16 @@ export class BacklinksView {
     this.content = document.getElementById('backlinks-content');
 
     this.controller.addEventListener('facet-changed', () => this._onFacetChanged());
+    this.controller.addEventListener('results-changed', () => this._onResultsChanged());
+  }
+
+  // The target's own triples settle what it is called, and this list can be on
+  // screen before they arrive — the two queries race. Redraw when they land so
+  // the badge at the end of each row says what the heading above it says.
+  _onResultsChanged() {
+    if (!this.currentUri || !this.allQuads.length) return;
+    this._renderBacklinks(this.allQuads);
+    if (this.hasMore) this._addLoadMoreButton();
   }
 
   _onFacetChanged() {
@@ -100,12 +110,14 @@ export class BacklinksView {
     }
     this._removeLoadMoreButton();
 
+    // Only the query is guarded. Rendering used to sit in here too, which
+    // meant a fault in it was reported as "failed to load" — the endpoint
+    // blamed for a bug in this file, and a Load More button offered for a
+    // retry that would fail the same way. A fault below is a fault, and shows
+    // up as one.
+    let quads;
     try {
-      const { quads } = await this._doSPARQL(this._buildQuery(uri, offset));
-      if (token !== this._batchToken) return;
-      this._appendBatch(quads);
-      this._renderBacklinks(this.allQuads);
-      if (this.hasMore) this._addLoadMoreButton();
+      ({ quads } = await this._doSPARQL(this._buildQuery(uri, offset)));
     } catch (err) {
       if (token !== this._batchToken) return;
       // First batch: clear whatever was rendered and show the error.
@@ -117,11 +129,17 @@ export class BacklinksView {
       if (isFirst) this.content.innerHTML = '';
       this._appendLoadError(err);
       if (!isFirst && this.hasMore) this._addLoadMoreButton();
+      return;
     } finally {
       if (token === this._batchToken) {
         this.loadingEl.style.display = 'none';
       }
     }
+
+    if (token !== this._batchToken) return;
+    this._appendBatch(quads);
+    this._renderBacklinks(this.allQuads);
+    if (this.hasMore) this._addLoadMoreButton();
   }
 
   _appendLoadError(err) {
@@ -217,12 +235,23 @@ WHERE {
     // Clicking a backlink subject switches to Tree view and navigates there.
     // This goes through exploreFromBacklink() — a special breadcrumb reset
     // that keeps the root facet and inserts this subject as the second step.
+    // The backlinks query asks for references, not descriptions, so nothing in
+    // its result says what these resources are. The notice at the root of the
+    // breadcrumb did say, and this list is scoped to that same notice.
+    const typeName = this.controller.typeNameFor(subjUri);
+
     const badge = renderSubjectBadge(subjUri, {
+      typeName,
       onClick: (uri) => {
         document.getElementById('view-tree').click();
         this.controller.exploreFromBacklink({
           type: 'named-node',
           term: { termType: 'NamedNode', value: uri },
+          // Carried across so the heading names the resource on arrival
+          // rather than after its query returns — and still names it if that
+          // query fails or the user cancels it. The resource's own triples
+          // replace this the moment they land.
+          typeName,
           timestamp: Date.now(),
         });
       },
@@ -243,9 +272,23 @@ WHERE {
     relation.appendChild(predBadge);
 
     relation.appendChild(this._buildArrow());
-    relation.appendChild(renderSubjectBadge(this.currentUri, { clickable: false }));
+    relation.appendChild(renderSubjectBadge(this.currentUri, {
+      clickable: false,
+      typeName: this._currentTypeName(),
+    }));
 
     return relation;
+  }
+
+  // What to call the resource these backlinks point at. Its own triples were
+  // loaded when the user navigated to it, and the name settled then rides on
+  // the facet; the notice answers for anything that arrived another way.
+  _currentTypeName() {
+    const facet = this.controller.currentFacet;
+    if (facet?.type === 'named-node' && facet.term?.value === this.currentUri && facet.typeName) {
+      return facet.typeName;
+    }
+    return this.controller.typeNameFor(this.currentUri);
   }
 
   _buildArrow() {

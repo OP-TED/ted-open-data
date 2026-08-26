@@ -45,7 +45,6 @@ function _fallbackCopy(text) {
     success = document.execCommand('copy');
   } catch (err) {
     console.warn('[clipboard] execCommand("copy") fallback failed:', err);
-    success = false;
   }
   document.body.removeChild(input);
   return success;

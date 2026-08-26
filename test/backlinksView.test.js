@@ -23,14 +23,18 @@ import assert from 'node:assert/strict';
 
 import { resetShims } from './_helpers.js';
 import { BacklinksView } from '../src/js/BacklinksView.js';
+import { resourceTypeName } from '../src/js/utils/resourceType.js';
 
 const URI_A = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_Notice';
 const URI_B = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_Lot_LOT-0001';
 
-// Minimal controller stub.
+// Minimal controller stub. `typeNameFor` answers from the root notice's type
+// statements, as the real one does; tests that care seed `declaredTypes`.
 function makeController() {
   const c = new EventTarget();
   c.currentFacet = null;
+  c.declaredTypes = new Map();
+  c.typeNameFor = (uri) => resourceTypeName(c.declaredTypes.get(uri) || [], {});
   return c;
 }
 
@@ -187,4 +191,175 @@ test('BacklinksView: navigating away during in-flight load resets currentUri to 
   assert.equal(view.currentOffset, 0, 'currentOffset reset on URI change');
   assert.deepEqual(view.allQuads, [], 'allQuads reset on URI change');
   assert.equal(view.hasMore, true, 'hasMore reset on URI change');
+});
+
+// ── naming the resources in the list (issue #74) ────────────────────
+//
+// The backlinks query asks which resources reference the target; it returns
+// no rdf:type statements at all. The names therefore come from the notice at
+// the root of the breadcrumb, which stated them.
+
+const EPO = 'http://data.europa.eu/a4g/ontology#';
+// A predicate outside any namespace the label service knows, as the tests
+// above use: a real ePO one would send it off for a label it cannot fetch.
+const REFERS_TO = 'http://example.org/refersTo';
+
+// The shim keeps children under _children; textContent does not aggregate.
+function badgeTexts(el) {
+  const out = [];
+  (function walk(node) {
+    if (node.className === 'split-badge-type' || node.className === 'split-badge-id') {
+      out.push(node.textContent);
+    }
+    (node._children || []).forEach(walk);
+  })(el);
+  return out;
+}
+
+async function renderBacklinks(controller, quads) {
+  const view = new BacklinksView(controller, { doSPARQL: async () => ({ quads }) });
+  controller.dispatchEvent(new CustomEvent('facet-changed'));
+  await tick();
+  return view;
+}
+
+test('a referring resource is named from what the notice declared', async () => {
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A } };
+  controller.declaredTypes = new Map([[URI_B, [`${EPO}Lot`]]]);
+
+  const view = await renderBacklinks(controller, [
+    backlinkQuad(URI_B, REFERS_TO, URI_A),
+  ]);
+
+  assert.ok(badgeTexts(view.content).includes('Lot'),
+    `expected a Lot badge, got ${JSON.stringify(badgeTexts(view.content))}`);
+});
+
+test('the target is named from the facet, whose own triples were loaded', async () => {
+  // URI_A is a notice: its URI carries no identifier, so without a name the
+  // badge would fall back to the uuid.
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A }, typeName: 'Notice16' };
+
+  const view = await renderBacklinks(controller, [
+    backlinkQuad(URI_B, REFERS_TO, URI_A),
+  ]);
+
+  assert.ok(badgeTexts(view.content).includes('Notice16'),
+    `expected a Notice16 badge, got ${JSON.stringify(badgeTexts(view.content))}`);
+});
+
+test('a resource neither source types still renders, by its identifier', async () => {
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A } };
+
+  const view = await renderBacklinks(controller, [
+    backlinkQuad(URI_B, REFERS_TO, URI_A),
+  ]);
+
+  const texts = badgeTexts(view.content);
+  assert.ok(texts.includes('LOT-0001'), JSON.stringify(texts));
+  assert.ok(!texts.includes('Lot'), 'the URI class segment must not appear');
+});
+
+test('the target badge catches up when the resource loads after this list', async () => {
+  // The two queries race. When the backlinks land first, the facet carries no
+  // name yet and the badge falls back to the uuid; the name arrives with the
+  // resource's own triples.
+  const controller = makeController();
+  const facet = { type: 'named-node', term: { value: URI_A } };
+  controller.currentFacet = facet;
+
+  const view = await renderBacklinks(controller, [backlinkQuad(URI_B, REFERS_TO, URI_A)]);
+  assert.ok(!badgeTexts(view.content).includes('Notice16'), 'nothing to show yet');
+
+  facet.typeName = 'Notice16';
+  controller.dispatchEvent(new CustomEvent('results-changed'));
+
+  assert.ok(badgeTexts(view.content).includes('Notice16'),
+    `expected the badge to catch up, got ${JSON.stringify(badgeTexts(view.content))}`);
+});
+
+test('a resource loading before this list needs no second render', async () => {
+  // Nothing is on screen yet, so the redraw has to stay out of the way rather
+  // than clear the container the in-flight batch is about to fill.
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A }, typeName: 'Notice16' };
+  const view = new BacklinksView(controller, {
+    doSPARQL: async () => ({ quads: [backlinkQuad(URI_B, REFERS_TO, URI_A)] }),
+  });
+
+  controller.dispatchEvent(new CustomEvent('results-changed'));
+  controller.dispatchEvent(new CustomEvent('facet-changed'));
+  await tick();
+
+  assert.ok(badgeTexts(view.content).includes('Notice16'));
+});
+
+test('clicking a backlink carries the name across, so nothing flickers', async () => {
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A } };
+  controller.declaredTypes = new Map([[URI_B, ['http://data.europa.eu/a4g/ontology#Lot']]]);
+
+  let explored = null;
+  controller.exploreFromBacklink = (f) => { explored = f; };
+
+  const view = await renderBacklinks(controller, [backlinkQuad(URI_B, REFERS_TO, URI_A)]);
+
+  // The subject badge is the clickable one; the target badge is not.
+  const badge = findClickable(view.content);
+  badge._listeners.get('click')[0]({ preventDefault() {} });
+
+  assert.equal(explored.typeName, 'Lot');
+  assert.equal(explored.term.value, URI_B);
+});
+
+// The first element carrying a click handler, depth-first.
+function findClickable(el) {
+  if (el._listeners?.get('click')?.length) return el;
+  for (const child of el._children || []) {
+    const found = findClickable(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+// ── what the error banner is allowed to mean ────────────────────────
+
+test('a query failure is reported as one', async () => {
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A } };
+  const view = new BacklinksView(controller, {
+    doSPARQL: async () => { throw new Error('endpoint down'); },
+  });
+
+  controller.dispatchEvent(new CustomEvent('facet-changed'));
+  await tick();
+
+  const errors = view.content._children.filter(c => c.className === 'text-danger mt-2');
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].textContent, 'endpoint down');
+});
+
+test('a fault in rendering is not dressed up as a query failure', async () => {
+  // The banner says the endpoint failed and offers a retry. Saying that about
+  // a bug in this file sends the user to retry something that cannot succeed,
+  // and hides the fault from whoever has to find it.
+  const controller = makeController();
+  controller.currentFacet = { type: 'named-node', term: { value: URI_A } };
+  const view = new BacklinksView(controller, {
+    doSPARQL: async () => ({ quads: [backlinkQuad(URI_B, REFERS_TO, URI_A)] }),
+  });
+  view._renderBacklinks = () => { throw new TypeError('bug in rendering'); };
+
+  // Straight into _loadBatch: going through facet-changed would leave the
+  // rejection unhandled, which is exactly what it should be in the browser.
+  view.currentUri = URI_A;
+  let raised = null;
+  await view._loadBatch(true).catch(err => { raised = err; });
+
+  assert.ok(raised instanceof TypeError, 'the fault reaches the caller');
+  const errors = view.content._children.filter(c => c.className === 'text-danger mt-2');
+  assert.equal(errors.length, 0, 'and no banner blames the endpoint for it');
 });

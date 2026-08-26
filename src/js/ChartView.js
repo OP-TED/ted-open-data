@@ -12,7 +12,10 @@
  * the Licence.
  */
 
-import { classifyColumns, isChartable, aggregateByX, chartLabel } from './utils/chartUtils.js';
+import {
+  classifyColumns, isChartable, aggregateByX, chartLabel,
+  axisTooltipFormatter, itemTooltipFormatter,
+} from './utils/chartUtils.js';
 
 /**
  * ChartView — renders SPARQL SELECT results as interactive charts using Apache ECharts.
@@ -266,7 +269,7 @@ export class ChartView {
     if (chartType === 'pie') {
       return {
         title: { text: `${yColumn} by ${xColumn}`, left: 'center' },
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        tooltip: { trigger: 'item', formatter: itemTooltipFormatter },
         legend: { type: 'scroll', bottom: 0, formatter: chartLabel },
         series: [{
           type: 'pie',
@@ -292,7 +295,7 @@ export class ChartView {
       ]);
       return {
         title: { text: `${yColumn} by ${xColumn}`, left: 'center' },
-        tooltip: { trigger: 'item', formatter: (p) => `${p.value[0]}: ${p.value[1]}` },
+        tooltip: { trigger: 'item', formatter: itemTooltipFormatter },
         xAxis: { type: 'category', data: labels, name: xColumn, axisLabel: { rotate: 30, formatter: chartLabel } },
         yAxis: { type: 'value', name: yColumn },
         dataZoom: labels.length > 10 ? [{ type: 'inside' }, { type: 'slider' }] : [{ type: 'inside' }],
@@ -308,7 +311,7 @@ export class ChartView {
     // Bar or Line
     return {
       title: { text: `${yColumn} by ${xColumn}`, left: 'center' },
-      tooltip: { trigger: 'axis' },
+      tooltip: { trigger: 'axis', formatter: axisTooltipFormatter },
       xAxis: {
         type: 'category',
         data: labels,
@@ -350,7 +353,7 @@ export class ChartView {
 
       return {
         title: { text: `${yColumn} by ${groupColumn}`, left: 'center' },
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        tooltip: { trigger: 'item', formatter: itemTooltipFormatter },
         legend: { type: 'scroll', bottom: 0, formatter: chartLabel },
         series: [{
           type: 'pie',
@@ -400,7 +403,9 @@ export class ChartView {
 
     return {
       title: { text: `${yColumn} by ${xColumn} (grouped by ${groupColumn})`, left: 'center' },
-      tooltip: { trigger: chartType === 'scatter' ? 'item' : 'axis' },
+      tooltip: chartType === 'scatter'
+        ? { trigger: 'item', formatter: (p) => itemTooltipFormatter(p, { showSeriesName: true }) }
+        : { trigger: 'axis', formatter: axisTooltipFormatter },
       legend: { type: 'scroll', bottom: labels.length > 10 ? 40 : 0, data: groups, formatter: chartLabel },
       xAxis: {
         type: 'category',

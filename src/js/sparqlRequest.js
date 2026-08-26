@@ -15,9 +15,9 @@
 //
 // Three sites build the same parameter block for the Virtuoso endpoint:
 // QueryEditor.onSubmit (POST body), QueryResults.downloadAs (POST body
-// with a caller-supplied format), and QueryResults.generateUrl (GET URL
-// for Copy Query). Consolidating them here keeps them honest so the
-// query link reproduces exactly what "Run Query" just ran.
+// with a caller-supplied format), and the Connect panel (a GET URL
+// for Connect your app). Consolidating them here keeps them honest so the
+// query link reproduces exactly what "Run query" just ran.
 //
 // The options they carry used to come from the Customize tab's Options
 // panel; that UI was removed (issue #32), so readSparqlOptions now returns
@@ -65,9 +65,9 @@ export function buildSparqlBody(query, format = DEFAULT_FORMAT) {
 
 /**
  * Build a GET URL that, when fetched, returns the same result as
- * running the query from the editor. Used by the "Copy Query" →
- * "Query link" option so the user can paste the URL into Excel /
- * Power BI / any HTTP client.
+ * running the query from the editor. Used by the "Connect your app"
+ * dialog so the user can paste the URL into Excel / Power BI / any
+ * HTTP client.
  *
  * Applies the same `default-graph-uri` / `timeout` omission rules as
  * `buildSparqlBody` — the copied URL is an exact reproduction of

@@ -94,7 +94,7 @@ async function _runSparqlQuery(query, endpoint, options = {}) {
     return await response.text();
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error(`SPARQL query timed out after ${timeoutMs}ms`);
+      throw new Error(`SPARQL query timed out after ${timeoutMs}ms`, { cause: err });
     }
     throw err;
   } finally {
