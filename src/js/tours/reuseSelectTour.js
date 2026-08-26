@@ -46,12 +46,12 @@ export function startReuseSelectTour() {
 
   steps.push(
     {
-      element: '#copy-url-button',
-      title: 'Copy endpoint URL',
+      element: '#connect-button',
+      title: 'Connect your app',
       content:
-        'Copies a URL that returns exactly these results as JSON. Paste it into Excel, ' +
-        'Power BI or any other application that can load JSON from a URL, and you will always ' +
-        'see the latest data without having to re-run the query by hand.',
+        'Run this query from your own tools. You get a link to paste into Excel or Power BI, ' +
+        'which re-runs the query every time you refresh, and the same request as a command ' +
+        'for a terminal.',
       placement: 'bottom',
     },
     {

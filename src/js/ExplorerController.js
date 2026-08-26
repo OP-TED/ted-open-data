@@ -41,8 +41,26 @@ import {
   doSPARQL as defaultDoSPARQL,
   cancelAllSparqlRequests as defaultCancelAllSparqlRequests,
 } from './services/sparqlService.js';
+import { ensureOntologyData, getClassHierarchy } from './services/ontologyData.js';
+import { resourceTypeName } from './utils/resourceType.js';
+import { ns } from './utils/namespaces.js';
 
 const STORAGE_KEY = 'explorer-facets-v3';
+const RDF_TYPE = `${ns.rdf}type`;
+
+/** The rdf:type statements in a result, as the types declared per subject. */
+function declaredTypesIn(quads) {
+  const declared = new Map();
+  for (const quad of quads || []) {
+    if (quad.predicate?.value !== RDF_TYPE) continue;
+    const subject = quad.subject?.value;
+    const type = quad.object?.value;
+    if (!subject || !type) continue;
+    if (!declared.has(subject)) declared.set(subject, []);
+    declared.get(subject).push(type);
+  }
+  return declared;
+}
 
 export class ExplorerController extends EventTarget {
   // The `doSPARQL` and `cancelAllSparqlRequests` options let tests inject
@@ -70,6 +88,9 @@ export class ExplorerController extends EventTarget {
     // Monotonic token incremented on every navigation. An in-flight query
     // whose token no longer matches is a stale response and gets dropped.
     this._queryToken = 0;
+    // What the notice at the root of the breadcrumb says each resource is.
+    // See _rememberDeclaredTypes.
+    this.declaredTypes = new Map();
     this._loadFromSession();
   }
 
@@ -111,6 +132,9 @@ export class ExplorerController extends EventTarget {
       : this._resolveExisting(stamped);
     this.breadcrumb = [canonical];
     this.breadcrumbIndex = 0;
+    // A new root means a new graph; what the previous notice said about its
+    // resources has no bearing on this one.
+    this.declaredTypes = new Map();
     // sparqlOptions are forwarded to doSPARQL so CONSTRUCT/DESCRIBE
     // queries honour the fixed endpoint options from readSparqlOptions
     // (or a shared URL's ?opts=). Notice-number searches pass no options
@@ -335,6 +359,10 @@ export class ExplorerController extends EventTarget {
       this.breadcrumb = [rootFacet, namedNode];
       this.breadcrumbIndex = 1;
       this._sparqlOptions = sparqlOptions;
+      // The root notice is never navigated to on this path, so its type
+      // statements — which name every resource it refers to — have to be
+      // fetched deliberately. Runs alongside the resource's own query.
+      this._loadRootDeclaredTypes(rootParam);
       this._navigated({ save: false }).catch(err => {
         console.error('[ExplorerController] initFromUrlParams root+named-node failed:', err);
       });
@@ -410,6 +438,94 @@ export class ExplorerController extends EventTarget {
     this._emit('facets-list-changed');
   }
 
+  // Remember what the notice at the root of the breadcrumb says each of its
+  // resources is.
+  //
+  // Drilling into a resource re-queries for that resource alone, so the
+  // handful of triples that come back name it but say nothing about the
+  // resources it points at — which the notice, a moment earlier, did. Keeping
+  // the notice's rdf:type statements lets those references stay named all the
+  // way down. It is the same data the user was just looking at, for the same
+  // URIs; nothing is fetched or inferred.
+  //
+  // Only the root fills the map, and only until the user searches for another
+  // notice. Arriving on a shared link straight to a resource fills nothing,
+  // and its references show identifiers alone.
+  _rememberDeclaredTypes(results) {
+    if (this.breadcrumbIndex !== 0) return;
+    this.declaredTypes = declaredTypesIn(results?.quads);
+  }
+
+  // A shared link opens on a resource, so the notice it came from is never
+  // queried and nothing loaded says what the resources it references are. The
+  // link carries the root notice, so fetch it alongside — the same query a
+  // notice search runs — for its rdf:type statements alone.
+  //
+  // The whole notice rather than a query for the type statements: `?s a ?t`
+  // inside the graph join costs the endpoint around twenty times what
+  // `?s ?p ?o` does, for a third of the data.
+  async _loadRootDeclaredTypes(publicationNumber) {
+    const facet = { type: 'notice-number', value: publicationNumber };
+    let results;
+    try {
+      results = await this._doSPARQL(getQuery(facet), this._sparqlOptions || {});
+      // Legacy notices carry no publication number of the kind the primary
+      // query matches on, exactly as in _executeCurrentQuery.
+      if (results.size === 0) {
+        results = await this._doSPARQL(
+          noticeByPublicationNumberQueryEpo3(publicationNumber),
+          this._sparqlOptions || {},
+        );
+      }
+    } catch (e) {
+      // Nothing on screen waits for this. Without it the references show
+      // their identifiers, which is what a link carrying no root does anyway.
+      console.warn('[ExplorerController] Could not load the root notice for its types:', e);
+      return;
+    }
+
+    // A search started meanwhile has a root of its own, and its types are the
+    // ones that apply.
+    if (this.breadcrumb[0]?.value !== publicationNumber) return;
+    this.declaredTypes = declaredTypesIn(results.quads);
+    // Redraw only if there is something drawn. Announcing results while the
+    // resource's own query is still in flight would clear the view it is
+    // about to fill; when it lands it announces them itself.
+    if (this.results) this._emit('results-changed');
+  }
+
+  // What the notice at the root of the breadcrumb calls a resource. For views
+  // that hold no triples of their own — the backlinks list, whose query
+  // returns references and nothing else — this is the only source of a name.
+  typeNameFor(uri) {
+    return resourceTypeName(this.declaredTypes.get(uri) || [], getClassHierarchy());
+  }
+
+  // Record what to call the resource just loaded, from the types it declares.
+  //
+  // The tree can only name a resource it holds triples for, so a reference to
+  // a resource described in another notice arrives here unnamed. Its own
+  // triples are loaded now, which is the first point at which its type is
+  // known. Writing the name onto the facet — the same object the breadcrumb
+  // and the heading read — keeps every mention of it in step, including on a
+  // later return to this entry, when the triples are no longer at hand.
+  _recordTypeName(facet, results) {
+    if (facet.type !== 'named-node') return;
+    const uri = facet.term?.value;
+    const fromResults = (results?.quads || [])
+      .filter(q => q.subject?.value === uri && q.predicate?.value === RDF_TYPE)
+      .map(q => q.object?.value);
+    // A resource the query returned nothing about — a backlink target outside
+    // the notice, say — may still have been typed by the notice itself.
+    const name = fromResults.length
+      ? resourceTypeName(fromResults, getClassHierarchy())
+      : this.typeNameFor(uri);
+    // In memory only: validateFacet drops typeName on the way out of
+    // sessionStorage, since a stored one would be indistinguishable from a
+    // forged one. It is recomputed here on every load anyway.
+    if (name) facet.typeName = name;
+  }
+
   // Shared tail of every navigation method: emit events, persist,
   // and run the query for the newly current facet. Views re-read
   // the breadcrumb off `this.breadcrumb` inside their `facet-changed`
@@ -441,7 +557,13 @@ export class ExplorerController extends EventTarget {
     this._emit('loading-changed');
 
     try {
-      let results = await this._doSPARQL(query, this._sparqlOptions || {});
+      // The ontology's class hierarchy decides what the loaded resource is
+      // called. Fetching it alongside the query costs nothing: it is a small
+      // local file, it is served in parallel, and it is loaded only once.
+      let [results] = await Promise.all([
+        this._doSPARQL(query, this._sparqlOptions || {}),
+        ensureOntologyData(),
+      ]);
       if (token !== this._queryToken) return;
       // The query that produced `results`. Starts as the primary query and
       // is swapped for the fallback below only when the fallback is what
@@ -472,6 +594,8 @@ export class ExplorerController extends EventTarget {
       }
       this.results = results;
       this.executedQuery = effectiveQuery;
+      this._rememberDeclaredTypes(results);
+      this._recordTypeName(facet, results);
       // Clear a stale "not found" flag ONLY now that a notice-number search
       // has actually returned data. Clearing it at search start (before the
       // query resolves) would wipe the badge on a failed, cancelled, or

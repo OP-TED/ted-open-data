@@ -41,7 +41,6 @@ export class QueryResults {
     this.queryEditor = queryEditor;
     this.originalSparqlEndpoint = originalSparqlEndpoint;
     this.resultsDiv = document.getElementById("results");
-    this.copyUrlButton = document.getElementById('copy-url-button');
     this.copyUrlAlert = document.getElementById('copy-url-alert');
     this.queryResultsTab = new bootstrap.Tab(document.getElementById('query-results-tab'));
     this.chartView = new ChartView();
@@ -51,13 +50,30 @@ export class QueryResults {
 
   /**
    * Initialize event listeners.
-   * Wires the Copy URL button and every dropdown item in the
+   * Wires the Connect dialog and every dropdown item in the
    * "Download as…" menu. Each download item carries a
    * data-download-format attribute with the MIME type to request.
    */
   initEventListeners() {
-    this.copyUrlButton.addEventListener('click', this.onCopyUrl.bind(this));
+    // The Connect panel hangs off its button as a popover rather than taking
+    // the screen: what it describes is the query whose results are on show
+    // behind it. The markup lives in the page and is handed to Bootstrap as
+    // the popover's content, so these listeners are wired once and survive
+    // the panel being shown and hidden.
+    // Held rather than looked up later: once the popover has been shown and
+    // hidden, Bootstrap has detached its tip and the panel with it, so the
+    // panel is no longer findable in the document.
+    const panel = document.getElementById('connect-panel');
+    this._connectPanel = panel;
+    if (panel) {
+      panel.querySelectorAll('[data-connect-copy]').forEach(button => {
+        button.addEventListener('click', () => this.onConnectCopy(button.dataset.connectCopy));
+      });
+      document.getElementById('connect-button')
+        ?.addEventListener('click', () => this.toggleConnectPanel());
+    }
 
+    // Download as… dropdown items
     document.querySelectorAll('#copy-url-alert [data-download-format]').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -67,25 +83,8 @@ export class QueryResults {
   }
 
   /**
-   * Generate a shareable URL for the current query.
-   * Always emits a SPARQL Results JSON URL — that's the most
-   * machine-friendly format for Excel, Power BI and custom apps,
-   * and matches what the editor renders on screen.
-   * @returns {string} - The generated URL.
-   */
-  generateUrl() {
-    const query = this.queryEditor.getQuery();
-    const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
-    // Always emits a JSON URL — that's the most machine-friendly
-    // format for Excel, Power BI and custom apps. The `originalSparqlEndpoint`
-    // field is the public endpoint (not the dev-mode /proxy wrapper),
-    // so the copied URL is usable outside the app.
-    return buildSparqlUrl(this.originalSparqlEndpoint, minifiedQuery);
-  }
-
-  /**
    * Show or hide the slim results toolbar (the strip above the table
-   * that holds the hint, the Copy endpoint URL button and the
+   * that holds the hint, the Connect your app button and the
    * Download as… menu). Centralised here so every lane that needs to
    * toggle it (displayJsonResults, displayTextResults, the SELECT
    * submit paths in QueryEditor) goes through one place.
@@ -206,6 +205,32 @@ export class QueryResults {
   }
 
   /**
+   * Build a ready-to-paste cURL command that reproduces a SPARQL POST
+   * request. The body is a URL-encoded `application/x-www-form-urlencoded`
+   * string (from `buildSparqlBody`); it is wrapped in single quotes for
+   * the shell, so any literal single quote inside it (e.g. from a SPARQL
+   * string literal like `FILTER(?name = 'John')`) is percent-encoded to
+   * %27 first — otherwise it would prematurely close the shell's quoted
+   * argument and corrupt or break the command.
+   *
+   * The Accept header states the format the body asks for. Sending one that
+   * contradicts it is not merely untidy: the endpoint answers 406 Not
+   * Acceptable and the command returns nothing at all.
+   *
+   * @param {string} endpoint - The SPARQL endpoint URL.
+   * @param {string} body - The url-encoded POST body (from buildSparqlBody).
+   * @param {string} format - The MIME type that body asks for.
+   * @returns {string} - The full curl command, ready to paste into a terminal.
+   */
+  static _buildCurlCommand(endpoint, body, format) {
+    const safeBody = body.replace(/'/g, '%27');
+    return `curl -X POST '${endpoint}' \\\n`
+      + `  -H 'Content-Type: application/x-www-form-urlencoded' \\\n`
+      + `  -H 'Accept: ${format}' \\\n`
+      + `  -d '${safeBody}'`;
+  }
+
+  /**
    * Display text results.
    * @param {string} content - The text content.
    * @param {string} type - The content type (e.g., 'xml', 'csv', 'text').
@@ -234,30 +259,309 @@ export class QueryResults {
   }
 
   /**
-   * Handle copy URL button click event.
-   * Generates a URL for the current query and copies it to the
-   * clipboard. Uses the shared `copyToClipboard` helper so insecure
-   * contexts (non-HTTPS, older browsers) get the execCommand
-   * fallback instead of a synchronous throw, and a real failure
-   * surfaces via the shared toast instead of a silent
-   * console.error.
+   * The formats a SELECT query can be asked for from another application.
+   *
+   * The Download menu's list less "Spreadsheet", which is not a format: the
+   * endpoint returns the same HTML page it returns for text/html, labelled
+   * application/vnd.ms-excel so that a browser hands the file to Excel
+   * instead of rendering it. That is a download convention, and it reads
+   * sensibly on a Download menu. A link built from it returns markup, which
+   * is not what anyone connecting an application is asking for.
    */
-  async onCopyUrl() {
-    const url = this.generateUrl();
-    const copied = await copyToClipboard(url);
-    if (copied) {
-      // SELECT-lane specific success copy: the URL is a JSON
-      // endpoint, consumable by Excel / Power BI / any HTTP client.
-      showToast(
-        'Query URL copied',
-        'You can use it in any app that can load JSON data from the web like Excel, Power BI, etc.',
-      );
+  static CONNECT_FORMATS = [
+    { mime: 'application/sparql-results+json', label: 'JSON' },
+    { mime: 'text/csv', label: 'CSV' },
+    { mime: 'text/tab-separated-values', label: 'TSV' },
+    { mime: 'application/sparql-results+xml', label: 'XML' },
+  ];
+
+  /**
+   * Build a ready-to-paste PowerShell command.
+   *
+   * Not a cURL command in disguise: inside PowerShell, `curl` is an alias for
+   * Invoke-WebRequest and takes different arguments, so a pasted cURL line
+   * fails there with an error that says nothing useful. Invoke-RestMethod is
+   * what a Windows user actually has, and it parses the response rather than
+   * handing back text.
+   *
+   * A PowerShell single-quoted string escapes a quote by doubling it.
+   *
+   * @param {string} endpoint - The SPARQL endpoint URL.
+   * @param {string} body - The url-encoded POST body (from buildSparqlBody).
+   * @returns {string}
+   */
+  /**
+   * Build a ready-to-paste wget command.
+   *
+   * Not redundant beside cURL: a minimal Debian ships wget and not curl, which
+   * is the sort of machine a scheduled job runs on. `-O -` writes to the
+   * screen rather than to a file, which is what wget would otherwise do.
+   *
+   * Single quotes in the body are percent-encoded for the same reason as in
+   * the cURL command: they would close the shell's quoted argument.
+   *
+   * @param {string} endpoint - The SPARQL endpoint URL.
+   * @param {string} body - The url-encoded POST body (from buildSparqlBody).
+   * @returns {string}
+   */
+  static _buildWgetCommand(endpoint, body, format) {
+    const safeBody = body.replace(/'/g, '%27');
+    return `wget -qO - '${endpoint}' \\\n`
+      + `  --header='Content-Type: application/x-www-form-urlencoded' \\\n`
+      + `  --header='Accept: ${format}' \\\n`
+      + `  --post-data='${safeBody}'`;
+  }
+
+  static _buildPowerShellCommand(endpoint, body, format) {
+    const quoted = (value) => `'${String(value).replace(/'/g, "''")}'`;
+    return `Invoke-RestMethod -Method Post -Uri ${quoted(endpoint)} \`
+`
+      + `  -ContentType 'application/x-www-form-urlencoded' \`
+`
+      + `  -Headers @{ Accept = ${quoted(format)} } \`
+`
+      + `  -Body ${quoted(body)}`;
+  }
+
+  /**
+   * What one button of the Connect dialog puts on the clipboard.
+   *
+   * Built when the button is pressed rather than held: each button carries its
+   * own format, and the query can change while the dialog is open.
+   *
+   * @param {string} key - link | curl | powershell | sparql
+   * @param {string} format - A MIME type. Ignored for `sparql`, which is the
+   *   query text and the same whatever the endpoint is asked to return.
+   * @returns {string}
+   */
+  buildConnectSnippet(key, format) {
+    const query = this.queryEditor.getQuery();
+    if (key === 'sparql') return query;
+
+    const minifiedQuery = this.queryEditor.minifySparqlQuery(query);
+    if (key === 'link') {
+      return buildSparqlUrl(this.originalSparqlEndpoint, minifiedQuery, format);
+    }
+
+    const body = buildSparqlBody(minifiedQuery, format);
+    const build = {
+      curl: QueryResults._buildCurlCommand,
+      wget: QueryResults._buildWgetCommand,
+      powershell: QueryResults._buildPowerShellCommand,
+    }[key];
+    return build ? build(this.originalSparqlEndpoint, body, format) : '';
+  }
+
+  /**
+   * Fill the Connect dialog's format menus, and show what each button will
+   * return.
+   *
+   * Every button that has a format carries its own, so a button states what
+   * it produces rather than inheriting a choice made elsewhere in the dialog.
+   * The menus are written once and then left alone, so a choice survives the
+   * dialog being closed and opened again.
+   */
+  fillConnectDialog() {
+    // Within the panel, not the document: while the popover is hidden the
+    // panel is detached, and its contents are not reachable from either.
+    const panel = this._connectPanel;
+    if (!panel) return;
+
+    // The link's split button: the format is a choice it carries, so that
+    // copying stays one click for whoever already has the format they want.
+    for (const menu of panel.querySelectorAll('[data-connect-format-menu]')) {
+      const key = menu.dataset.connectFormatMenu;
+
+      if (!menu.children.length) {
+        // The same stem as the commands: "link to get JSON". The format is
+        // what the link fetches, not what the link is.
+        const header = document.createElement('li');
+        header.innerHTML = '<h6 class="dropdown-header">Link to get</h6>';
+        menu.appendChild(header);
+
+        for (const { mime, label } of QueryResults.CONNECT_FORMATS) {
+          menu.appendChild(this._connectMenuItem(label, () => {
+            // Choosing a format copies, as it does on the command menus. It is
+            // also remembered, so the button's own half becomes a one-click
+            // repeat of whatever was used last.
+            this._connectFormats[key] = mime;
+            this.fillConnectDialog();
+            this.onConnectCopy(key, mime);
+          }));
+        }
+      }
+
+      const format = this.connectFormatFor(key);
+      const chosen = QueryResults.CONNECT_FORMATS.find(f => f.mime === format);
+      const name = panel.querySelector(`[data-connect-format-name="${key}"]`);
+      if (name) name.textContent = chosen ? chosen.label : format;
+    }
+
+    // The commands: each item copies in that format, so nothing is carried
+    // and nothing is assumed.
+    for (const menu of panel.querySelectorAll('[data-connect-copy-menu]')) {
+      if (menu.children.length) continue;
+      const key = menu.dataset.connectCopyMenu;
+
+      // A stem the items complete: "command to get JSON". Not "copy as JSON",
+      // which says the clipboard gets JSON; it gets a command, and JSON is
+      // what running the command fetches.
+      const header = document.createElement('li');
+      header.innerHTML = '<h6 class="dropdown-header">Command to get</h6>';
+      menu.appendChild(header);
+
+      for (const { mime, label } of QueryResults.CONNECT_FORMATS) {
+        menu.appendChild(this._connectMenuItem(label, () => this.onConnectCopy(key, mime)));
+      }
+    }
+  }
+
+  /** One item of a Connect menu. */
+  _connectMenuItem(label, onClick) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dropdown-item';
+    button.textContent = label;
+    button.addEventListener('click', onClick);
+    item.appendChild(button);
+    return item;
+  }
+
+  /** The format a given Connect button will return; the first one until chosen. */
+  connectFormatFor(key) {
+    this._connectFormats ??= {};
+    return this._connectFormats[key] ?? QueryResults.CONNECT_FORMATS[0].mime;
+  }
+
+  /**
+   * Show or hide the Connect panel.
+   *
+   * The popover is built on first use and kept, so the panel element is moved
+   * in and out of it rather than rebuilt — which is what lets the listeners
+   * wired at start-up go on working.
+   */
+  toggleConnectPanel() {
+    const button = document.getElementById('connect-button');
+    const panel = this._connectPanel;
+    if (!button || !panel || typeof bootstrap === 'undefined' || !bootstrap.Popover) return;
+
+    if (!this._connectPopover) {
+      this._connectPopover = new bootstrap.Popover(button, {
+        content: panel,
+        html: true,
+        sanitize: false,
+        placement: 'bottom',
+        trigger: 'manual',
+        container: 'body',
+        customClass: 'connect-popover',
+        offset: [0, 14],
+      });
+
+      // Dismiss on a click outside it. Clicks within stay: the format menus
+      // live inside the panel, and choosing one must not close it.
+      document.addEventListener('click', (e) => {
+        if (!this._connectPopoverShown) return;
+        const tip = this._connectPopover.tip;
+        if (tip?.contains(e.target) || button.contains(e.target)) return;
+        this.hideConnectPanel();
+      }, true);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.hideConnectPanel();
+      });
+    }
+
+    if (this._connectPopoverShown) {
+      this.hideConnectPanel();
+      return;
+    }
+
+    this.fillConnectDialog();
+    this._connectPopover.show();
+    this._connectPopoverShown = true;
+    // While the panel is open the call to action is inside it. The button that
+    // opened it steps back rather than competing with its own Copy link.
+    button.classList.add('connect-open');
+    button.setAttribute('aria-expanded', 'true');
+
+    // The popover is appended to the body, far from the button in tab order,
+    // so tabbing from the button walks past the panel into the rest of the
+    // page. Focus is moved in, and put back on the button when it closes.
+    const tip = this._connectPopover.tip;
+    if (tip) {
+      tip.setAttribute('role', 'dialog');
+      tip.setAttribute('aria-label', 'Connect your app');
+      tip.querySelector('button, [href], select, input')?.focus();
+    }
+  }
+
+  hideConnectPanel() {
+    if (!this._connectPopoverShown) return;
+    const button = document.getElementById('connect-button');
+    // Before the popover goes: focus inside it is about to be destroyed, and
+    // the browser would drop it on the body.
+    if (button && this._connectPopover.tip?.contains(document.activeElement)) {
+      button.focus();
+    }
+    this._connectPopover.hide();
+    this._connectPopoverShown = false;
+    button?.classList.remove('connect-open');
+    button?.setAttribute('aria-expanded', 'false');
+  }
+
+  /**
+   * Copy the query link without going through the panel.
+   *
+   * For the timeout recovery message, which offers this when a query took too
+   * long for the browser. The results toolbar is hidden on any error, and the
+   * panel hangs off a button inside it — so there is nothing to hang it from
+   * at the one moment it is most wanted. The link is the whole of what that
+   * message is offering anyway.
+   */
+  copyQueryLink() {
+    return this.onConnectCopy('link');
+  }
+
+  /**
+   * Copy one snippet from the Connect dialog.
+   *
+   * @param {string} key - link | curl | powershell | sparql
+   * @param {string} [format] - A MIME type. The commands name one at the
+   *   moment of copying; the link carries the one shown on its button.
+   */
+  async onConnectCopy(key, format = undefined) {
+    const query = this.queryEditor.getQuery();
+    if (!query || !query.trim()) {
+      showToast('Nothing to copy', 'Write a query first, then try again.', { variant: 'warning' });
+      return;
+    }
+
+    const chosenFormat = format ?? this.connectFormatFor(key);
+    const value = this.buildConnectSnippet(key, chosenFormat);
+    if (!value) return;
+
+    // The format is named back, because it was chosen a moment ago in a menu
+    // that has already closed. The query carries none: it is the same text
+    // whatever the endpoint is asked to return.
+    const label = QueryResults.CONNECT_FORMATS.find(f => f.mime === chosenFormat)?.label;
+    const returns = key === 'sparql' || !label ? '' : ` It returns ${label}.`;
+
+    const said = {
+      link: ['Link copied', 'Paste it into Excel, Power BI, or anything that reads data from the web.'],
+      curl: ['cURL command copied', 'Paste it into a terminal on macOS or Linux.'],
+      wget: ['wget command copied', 'Paste it into a terminal on Linux.'],
+      powershell: ['PowerShell command copied', 'Paste it into PowerShell on Windows.'],
+      sparql: ['SPARQL query copied', 'Paste it into an app that speaks SPARQL to run the same query.'],
+    }[key];
+
+    if (await copyToClipboard(value)) {
+      // The panel has done its job; leaving it open covers the results it
+      // describes and asks the user to dismiss something they are finished with.
+      this.hideConnectPanel();
+      showToast(said[0], said[1] + returns);
     } else {
-      showToast(
-        'Copy failed',
-        'Could not copy the URL to the clipboard. Please copy it manually from the address bar after clicking Run Query.',
-        { variant: 'danger' },
-      );
+      showToast('Copy failed', 'Could not copy to the clipboard. Please try again.', { variant: 'danger' });
     }
   }
 

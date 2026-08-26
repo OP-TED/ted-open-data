@@ -18,7 +18,7 @@
 // The module keeps a reference to the ExplorerController so that default
 // click handlers can navigate without the caller plumbing it through.
 
-import { shortLabel, splitEpoResource } from './utils/namespaces.js';
+import { resourceIdentifier, resourceUuid, shortLabel } from './utils/namespaces.js';
 import { isLabelEligible, requestLabel } from './services/labelService.js';
 
 const BADGE_CLICKABLE = 'badge tree-type-badge tree-badge-solid';
@@ -34,7 +34,7 @@ function setController(controller) {
 // term's kind (named node → <a>, blank node → plain span, literal → span
 // with datatype / language suffixes).
 function renderTerm(term, options = {}) {
-  const { clickable = true, onClick = null } = options;
+  const { clickable = true, onClick = null, viaPath = [], viaRoot = null, viaRootPattern = null, typeName = null } = options;
 
   if (!term || !term.value) {
     const span = document.createElement('span');
@@ -51,7 +51,7 @@ function renderTerm(term, options = {}) {
   }
 
   if (termType === 'NamedNode') {
-    return _renderNamedNode(term, clickable, onClick);
+    return _renderNamedNode(term, clickable, onClick, { viaPath, viaRoot, viaRootPattern }, typeName);
   }
 
   return _renderLiteral(term);
@@ -75,29 +75,48 @@ function _isNavigableHref(value) {
     && (value.startsWith('http://') || value.startsWith('https://'));
 }
 
-function _renderNamedNode(term, clickable, onClick) {
+// Fill in the split pill an ePO resource URI renders as: the class on the
+// left, the identifier on the right.
+//
+// Either half can be missing.
+//
+// A resource the current data only refers to has no type here — none of its
+// triples are loaded — and the left half is then left off rather than filled
+// in from the URI's class segment (issue #74). A resource the source data
+// gives no identifier of, a notice among them, has no right half; its uuid
+// stands in only when there is no type either, so that the badge still says
+// something rather than nothing.
+function _fillSplitBadge(el, { uuid, identifier }, typeName) {
+  if (typeName) {
+    const typeSpan = document.createElement('span');
+    typeSpan.className = 'split-badge-type';
+    typeSpan.textContent = typeName;
+    el.appendChild(typeSpan);
+  }
+
+  const shown = identifier || (typeName ? null : uuid);
+  if (shown) {
+    const idSpan = document.createElement('span');
+    idSpan.className = 'split-badge-id';
+    idSpan.textContent = shown;
+    el.appendChild(idSpan);
+  }
+}
+
+function _renderNamedNode(term, clickable, onClick, via = {}, typeName = null) {
   // ePO resources get the same split pill as subject badges.
-  const parts = splitEpoResource(term.value);
-  if (parts) {
+  const uuid = resourceUuid(term.value);
+  if (uuid) {
     const el = document.createElement(clickable ? 'a' : 'span');
     el.className = 'split-badge' + (clickable ? ' split-badge-clickable' : '');
     el.title = term.value;
 
-    const typeSpan = document.createElement('span');
-    typeSpan.className = 'split-badge-type';
-    typeSpan.textContent = parts.type;
-
-    const idSpan = document.createElement('span');
-    idSpan.className = 'split-badge-id';
-    idSpan.textContent = parts.id;
-
-    el.appendChild(typeSpan);
-    el.appendChild(idSpan);
+    _fillSplitBadge(el, { uuid, identifier: resourceIdentifier(term.value) }, typeName);
 
     if (clickable && _isNavigableHref(term.value)) {
       el.href = term.value;
     }
-    _attachNavigationHandler(el, term, clickable, onClick);
+    _attachNavigationHandler(el, term, clickable, onClick, via, typeName);
     return el;
   }
 
@@ -115,13 +134,21 @@ function _renderNamedNode(term, clickable, onClick) {
     });
   }
 
-  _attachNavigationHandler(el, term, clickable, onClick);
+  _attachNavigationHandler(el, term, clickable, onClick, via, typeName);
   return el;
 }
 
 // Wires up the click behaviour for a NamedNode element. Blank-node-like
 // identifiers (no http scheme) render as non-clickable plain text.
-function _attachNavigationHandler(el, term, clickable, onClick) {
+//
+// `via` describes how this term was reached: the chain of predicate URIs
+// walked (`viaPath`), the root subject that chain starts at (`viaRoot`), and
+// the pattern binding that root (`viaRootPattern`). All three ride along on
+// the facet that ExplorerController pushes onto the breadcrumb, so the
+// breadcrumb records not just *which* resources were visited but *how* —
+// which is what lets DataView.navigationPath() reconstruct the whole route
+// and detect when it does not actually join up.
+function _attachNavigationHandler(el, term, clickable, onClick, via = {}, typeName = null) {
   const isNavigable = _isNavigableHref(term.value);
 
   if (!isNavigable || !clickable) {
@@ -144,6 +171,10 @@ function _attachNavigationHandler(el, term, clickable, onClick) {
       _controller.navigateTo({
         type: 'named-node',
         term: { termType: 'NamedNode', value: term.value },
+        viaPath: via.viaPath || [],
+        viaRoot: via.viaRoot ?? null,
+        viaRootPattern: via.viaRootPattern ?? null,
+        typeName,
         timestamp: Date.now(),
       });
     });
@@ -185,27 +216,17 @@ function _renderLiteral(term) {
 // _renderNamedNode helper — and then this function would issue a second
 // one after overwriting the text. One badge, one request.
 function renderSubjectBadge(subjectUri, options = {}) {
-  const { clickable = true, badgeClass, onClick = null } = options;
+  const { clickable = true, badgeClass, onClick = null, viaPath = [], viaRoot = null, viaRootPattern = null, typeName = null } = options;
 
   const term = { termType: 'NamedNode', value: subjectUri };
   const badge = document.createElement(clickable ? 'a' : 'span');
   badge.title = subjectUri;
 
-  const parts = splitEpoResource(subjectUri);
-  if (parts) {
+  const uuid = resourceUuid(subjectUri);
+  if (uuid) {
     // Split badge: type (left, grey) + identifier (right, blue).
     badge.className = 'split-badge' + (clickable ? ' split-badge-clickable' : '');
-
-    const typeSpan = document.createElement('span');
-    typeSpan.className = 'split-badge-type';
-    typeSpan.textContent = parts.type;
-
-    const idSpan = document.createElement('span');
-    idSpan.className = 'split-badge-id';
-    idSpan.textContent = parts.id;
-
-    badge.appendChild(typeSpan);
-    badge.appendChild(idSpan);
+    _fillSplitBadge(badge, { uuid, identifier: resourceIdentifier(subjectUri) }, typeName);
   } else {
     badge.className = badgeClass || (clickable ? BADGE_CLICKABLE : BADGE_READONLY);
     badge.textContent = shortLabel(subjectUri);
@@ -218,7 +239,7 @@ function renderSubjectBadge(subjectUri, options = {}) {
     if (_isNavigableHref(subjectUri)) {
       badge.href = subjectUri;
     }
-    _attachNavigationHandler(badge, term, /* clickable */ true, onClick);
+    _attachNavigationHandler(badge, term, /* clickable */ true, onClick, { viaPath, viaRoot, viaRootPattern }, typeName);
   }
 
   return badge;

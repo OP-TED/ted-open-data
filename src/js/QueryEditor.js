@@ -22,13 +22,41 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap,
         searchKeymap, highlightSelectionMatches,
         linter, lintGutter, lintKeymap,
+        syntaxTree, ensureSyntaxTree,
         sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 import {copyToClipboard} from './utils/clipboardCopy.js';
+import {invalidMomentLiterals} from './utils/validDate.js';
+import {showToast} from './utils/toast.js';
 import {formatElapsedTime} from './utils/formatTime.js';
+
+/**
+ * How long the parser may run to read a query through to its end.
+ *
+ * Parsing the whole document costs in proportion to its size — around
+ * 15ms for 10KB, and near a second for a megabyte. On submission that is
+ * a one-off cost worth paying for a complete answer. While someone is
+ * typing it would be paid on every keystroke, so the live checks take
+ * whatever the editor has already parsed and give up quickly if it has
+ * to be extended; submission is where the query is read in full.
+ */
+const SUBMIT_PARSE_BUDGET_MS = 5000;
+const LIVE_PARSE_BUDGET_MS = 50;
+
+/**
+ * What each datatype was supposed to be, said to whoever wrote it.
+ *
+ * The shape rather than the fault: a reader can see that the 31st of
+ * February is underlined, and what they need is the rule it broke.
+ */
+const WANTED = {
+  date: 'is not a valid date. The format is YYYY-MM-DD, with a month from 01 to 12 and a day within that month.',
+  time: 'is not a valid time. The format is hh:mm:ss, from 00:00:00 to 24:00:00.',
+  dateTime: 'is not a valid date and time. The format is YYYY-MM-DDThh:mm:ss.',
+};
 
 /**
  * Class representing the Query Editor.
@@ -117,6 +145,26 @@ export class QueryEditor {
             }
           }
         }
+      }
+
+      // A date that is not a real date makes a query return nothing rather
+      // than fail, so the endpoint reports no error and the empty result
+      // looks like an answer. Reported here whatever put it there: typing,
+      // pasting, or editing a query from the library.
+      //
+      // Markers are drawn over whatever the editor has parsed so far. A
+      // date beyond that point goes unmarked for now and is marked as the
+      // parse catches up; the check on submission is what guarantees none
+      // is missed.
+      const parsed = ensureSyntaxTree(view.state, view.state.doc.length, LIVE_PARSE_BUDGET_MS)
+        || syntaxTree(view.state);
+      for (const bad of invalidMomentLiterals(parsed, view.state.doc)) {
+        diagnostics.push({
+          from: bad.from,
+          to: bad.to,
+          severity: "error",
+          message: `"${bad.value}" ${WANTED[bad.kind]}`
+        });
       }
 
       return diagnostics;
@@ -241,7 +289,7 @@ export class QueryEditor {
   /**
    * Initialize event listeners.
    * Sets up event listeners for form submission and the stop button.
-   * The Copy URL button is owned by `QueryResults`, which binds its
+   * The Connect your app button is owned by `QueryResults`, which binds its
    * own handler — we no longer double-bind here.
    */
   initEventListeners() {
@@ -278,13 +326,43 @@ export class QueryEditor {
 
   /**
    * Handle editor change event.
-   * Updates the run query button state based on syntax validity.
+   * Updates the run query button state based on syntax validity and on
+   * whether the query carries an impossible date, so that the button
+   * agrees with the markers the editor is showing.
    */
+  /**
+   * The impossible dates in the query as it now stands.
+   *
+   * The editor parses lazily: syntaxTree() returns as much of the tree as
+   * it has got to, which on a long query stops well short of the end and
+   * would report a clean bill of health for a date it never reached. So
+   * the parse is driven on towards the last character, within the budget
+   * the caller can afford.
+   *
+   * Where the budget runs out the partial tree is used rather than
+   * nothing. Missing a date leaves the query no worse off than before
+   * this check existed, whereas refusing to run a query we have failed to
+   * read would be a new way to lose work. Submission passes a budget
+   * large enough that this does not arise.
+   *
+   * @param {number} budgetMs how long the parser may run
+   * @returns {Array<{value: string, from: number, to: number}>}
+   */
+  invalidMoments(budgetMs) {
+    const {state} = this.editor;
+    const tree = ensureSyntaxTree(state, state.doc.length, budgetMs) || syntaxTree(state);
+    return invalidMomentLiterals(tree, state.doc);
+  }
+
   onEditorChange() {
     if (this.isQueryRunning) return;
     const query = this.getQuery();
-    const error = this.checkSparqlSyntax(query);
-    const disabled = error ? true : !query.trim();
+    // A syntax error disables the button on its own, so a query that has
+    // one is not searched for dates as well — which spares the second
+    // parse for exactly the keystrokes that produce a half-written query.
+    const disabled = this.checkSparqlSyntax(query)
+      ? true
+      : !query.trim() || this.invalidMoments(LIVE_PARSE_BUDGET_MS).length > 0;
     this.queryForm.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = disabled);
   }
 
@@ -297,6 +375,22 @@ export class QueryEditor {
   async onSubmit(event) {
     event.preventDefault();
     if (this.isQueryRunning) return;
+
+    // A disabled button is not a guard. The query library submits this form
+    // directly, so the check has to be here as well as on the button, or a
+    // query holding an impossible date runs and returns an empty result
+    // that looks like an answer.
+    const impossible = this.invalidMoments(SUBMIT_PARSE_BUDGET_MS);
+    if (impossible.length > 0) {
+      showToast(
+        'Query not run',
+        impossible.length === 1
+          ? 'The query contains a date or time that does not exist.'
+          : `The query contains ${impossible.length} dates or times that do not exist.`,
+        { variant: 'danger', detail: impossible.map(d => d.value).join(', ') },
+      );
+      return;
+    }
 
     // Mark the editor busy up-front, before the CONSTRUCT/DESCRIBE
     // routing branch. Previously the `isQueryRunning` flag was only
@@ -443,7 +537,7 @@ export class QueryEditor {
         try {
           const result = JSON.parse(responseText);
           this.queryResults.displayJsonResults(result);
-        } catch (parseError) {
+        } catch {
           this.queryResults.displayTextResults(responseText, 'text');
         }
 
@@ -510,17 +604,18 @@ export class QueryEditor {
     // re-rendering.
     this.resultsErrorMessage.textContent = friendly;
     if (action?.kind === 'copy-select-url') {
-      // Append a space + inline link + period to the friendly
-      // sentence. Clicking the link calls the existing Copy URL
-      // handler on QueryResults so the user gets the same toast
-      // and the same JSON-format URL we offer from the toolbar.
+      // Append a space + inline link + period to the friendly sentence.
+      // Clicking it copies the query link: the query timed out here, so what
+      // the user needs is a way to run it from a tool without this page's
+      // patience. Not the Connect panel, which hangs off a button in the
+      // results toolbar — and the toolbar is hidden whenever there is an error.
       this.resultsErrorMessage.appendChild(document.createTextNode(' You can still '));
       const link = document.createElement('a');
       link.href = '#';
       link.textContent = action.label;
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        this.queryResults?.onCopyUrl();
+        this.queryResults?.copyQueryLink();
       });
       this.resultsErrorMessage.appendChild(link);
       this.resultsErrorMessage.appendChild(document.createTextNode(' to use the query from a tool that can handle long-running requests.'));
@@ -555,7 +650,7 @@ export class QueryEditor {
 
   /**
    * Minify the SPARQL query. The return value is fed directly into
-   * `encodeURIComponent` for Copy URL / Share view, so it must never
+   * `encodeURIComponent` for the connect link / Share view, so it must never
    * throw — a parse failure would bubble out of the click handler as
    * an unhandled rejection and leave the button in a broken state.
    * On parse failure, fall back to the raw query: the resulting URL
