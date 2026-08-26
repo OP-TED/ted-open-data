@@ -21,6 +21,7 @@
 // slot holds and what SPARQL will accept in its place.
 
 import { escapeLiteral, applyEdits } from './sparqlTree.js';
+import { isRealMoment } from './validDate.js';
 
 /** @typedef {import('./queryParameters.js').ParameterSlot} ParameterSlot */
 /** @typedef {import('./queryParameters.js').QueryParameter} QueryParameter */
@@ -60,9 +61,16 @@ const SPARQL_NUMBER =
  * inside its quotes. A bare one has no such wall: it becomes part of the
  * query itself, so it has to be a literal of that kind and nothing else.
  */
+/** Said beneath the field itself, so it names no field. */
+const NOT_A_MOMENT = new Map([
+  ['date', 'Not a valid date.'],
+  ['time', 'Not a valid time.'],
+  ['dateTime', 'Not a valid date and time.'],
+]);
+
 const BARE = {
-  number: { shape: SPARQL_NUMBER, wanted: 'must be a number.' },
-  boolean: { shape: /^(true|false)$/, wanted: 'must be true or false.' },
+  number: { shape: SPARQL_NUMBER, wanted: 'Must be a number.' },
+  boolean: { shape: /^(true|false)$/, wanted: 'Must be true or false.' },
 };
 
 /**
@@ -76,12 +84,25 @@ const BARE = {
 export function valueProblem(slot, value) {
   // Only a plain string may be empty, since `""` is a literal and
   // `""^^xsd:date` is not a date.
-  if (value === '') return slot.kind === 'text' ? null : 'needs a value.';
+  if (value === '') return slot.kind === 'text' ? null : 'A value is required.';
+
+  // Judged as it will be written, not as the control happened to hand it
+  // over: `datetime-local` drops the seconds off a round minute, so the
+  // control says `2024-11-04T00:00` where the query will say
+  // `2024-11-04T00:00:00`. Reading the control's own words would refuse a
+  // published query for a moment it does not name.
+  const lexical = lexicalForm(slot, value);
+
+  // A moment is asked about before the quoting is, because quoting makes a
+  // value safe to write and says nothing about whether it ever happened.
+  // The editor refuses such a query on submission either way; asking here
+  // names the field while the dialog is still open to correct it in.
+  if (!isRealMoment(slot.kind, lexical)) return NOT_A_MOMENT.get(slot.kind);
   // Quoting and escaping keep a value inside its literal whatever it says.
   if (slot.quoted) return null;
   const bare = BARE[slot.kind];
-  if (!bare) return 'cannot be written without quotes.';
-  return bare.shape.test(value) ? null : bare.wanted;
+  if (!bare) return 'Cannot be used without quotes.';
+  return bare.shape.test(lexical) ? null : bare.wanted;
 }
 
 /**

@@ -87,7 +87,6 @@ export class QueryLibrary {
     this.parametersFields = document.getElementById('query-parameters-fields');
     this.parametersModal = document.getElementById('query-parameters-modal');
     this.parametersRunButton = document.getElementById('query-parameters-run');
-    this.parametersError = document.getElementById('query-parameters-error');
     this.selectedQueryElement = null;
     this.queries = [];
     /** The selected query, exactly as published. */
@@ -447,7 +446,7 @@ export class QueryLibrary {
     for (const [input, slot] of this.slotOf) {
       if (input.type === 'checkbox') continue;
       const problem = valueProblem(slot, input.value);
-      if (problem) problems.push({ message: `${this._nameOf(input)} ${problem}`, inputs: [input] });
+      if (problem) problems.push({ message: problem, inputs: [input] });
     }
     if (problems.length > 0) return problems;
 
@@ -458,18 +457,17 @@ export class QueryLibrary {
 
       const order = compareValues(range.lower.kind, lower.value, upper.value);
       if (order === null) continue;
-      // Both ends belong to one named group, so the group is what the
-      // message names. Naming each end instead repeats the whole label
-      // twice in a sentence that then reads as broken English.
+      // The complaint is about the pair, and is shown once under the group
+      // both ends belong to rather than twice, once beneath each.
       if (order === 1) {
         problems.push({
-          message: `${this._rangeNameOf(lower)}: the two ends are the wrong way round.`,
+          message: 'The two values are in the wrong order.',
           inputs: [lower, upper],
         });
       } else if (order === 0 && range.strict) {
         // `>` or `<` at either end leaves nothing between two equal values.
         problems.push({
-          message: `${this._rangeNameOf(lower)}: both ends are the same, and this query excludes that value.`,
+          message: 'The two values are the same, and this query excludes that value.',
           inputs: [lower, upper],
         });
       }
@@ -483,28 +481,43 @@ export class QueryLibrary {
     return null;
   }
 
-  /** What the group of controls a range fills is called. @private */
-  _rangeNameOf(input) {
-    const legend = input.closest('fieldset')?.querySelector('legend');
-    return legend?.textContent.trim() || this._nameOf(input);
-  }
-
-  /** What a control is called, as the reader sees it. @private */
-  _nameOf(input) {
-    const labelled = input.id && document.querySelector(`label[for="${input.id}"]`);
-    return input.getAttribute('aria-label') || labelled?.textContent.trim() || 'This value';
-  }
-
   /**
    * Say what is wrong, and mark it.
    * @private
    */
   _showParameterProblems(problems) {
-    for (const { inputs } of problems) inputs.forEach(i => i.classList.add('is-invalid'));
-    this.parametersError.textContent = problems.length === 1
-      ? problems[0].message
-      : problems.map(p => p.message).join(' ');
-    this.parametersError.classList.remove('d-none');
+    // Whatever was said last time first: asking again without changing
+    // anything is answered the same way, and answering it twice leaves the
+    // dialog saying it twice.
+    this._clearParameterError();
+
+    // Gathered by the group each belongs to first: a range whose two ends
+    // are both empty has two complaints and one place to put them, and the
+    // ends are laid out side by side with nothing beneath either alone.
+    const grouped = new Map();
+    for (const { message, inputs } of problems) {
+      inputs.forEach(input => input.classList.add('is-invalid'));
+      const group = inputs[0].closest('.col-12');
+      if (!group) continue;
+      const said = grouped.get(group) || { messages: [], inputs: [] };
+      said.messages.push(message);
+      said.inputs.push(...inputs);
+      grouped.set(group, said);
+    }
+
+    let index = 0;
+    for (const [group, { messages, inputs }] of grouped) {
+      const note = document.createElement('div');
+      // d-block because Bootstrap shows this class only next to the control
+      // it follows, and here it follows the group rather than any one of
+      // them. The reader is told by the control's own aria-describedby.
+      note.className = 'invalid-feedback d-block parameter-problem';
+      note.id = `query-parameter-problem-${index++}`;
+      note.textContent = [...new Set(messages)].join(' ');
+      group.appendChild(note);
+      inputs.forEach(input => input.setAttribute('aria-describedby', note.id));
+    }
+
     problems[0].inputs[0].focus();
   }
 
@@ -513,9 +526,13 @@ export class QueryLibrary {
    * @private
    */
   _clearParameterError() {
-    if (this.parametersError.classList.contains('d-none')) return;
-    this.parametersError.classList.add('d-none');
-    for (const input of this.slotOf.keys()) input.classList.remove('is-invalid');
+    const shown = this.parametersModal.querySelectorAll('.parameter-problem');
+    if (shown.length === 0) return;
+    shown.forEach(note => note.remove());
+    for (const input of this.slotOf.keys()) {
+      input.classList.remove('is-invalid');
+      input.removeAttribute('aria-describedby');
+    }
   }
 
   /**

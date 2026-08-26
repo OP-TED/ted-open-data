@@ -173,22 +173,48 @@ test('refuses to write a bare value that is not one', () => {
 test('valueProblem names what a slot will not take', () => {
   const number = { kind: 'number', quoted: false, suffix: '' };
   assert.strictEqual(valueProblem(number, '3.e2'), null);
-  assert.strictEqual(valueProblem(number, 'abc'), 'must be a number.');
-  assert.strictEqual(valueProblem(number, '1) . ?x ?p ?o . FILTER(1'), 'must be a number.');
-  assert.strictEqual(valueProblem(number, 'INF'), 'must be a number.');
-  assert.strictEqual(valueProblem(number, ''), 'needs a value.');
+  assert.strictEqual(valueProblem(number, 'abc'), 'Must be a number.');
+  assert.strictEqual(valueProblem(number, '1) . ?x ?p ?o . FILTER(1'), 'Must be a number.');
+  assert.strictEqual(valueProblem(number, 'INF'), 'Must be a number.');
+  assert.strictEqual(valueProblem(number, ''), 'A value is required.');
 
-  assert.strictEqual(valueProblem({ kind: 'boolean', quoted: false }, 'yes'), 'must be true or false.');
+  assert.strictEqual(valueProblem({ kind: 'boolean', quoted: false }, 'yes'), 'Must be true or false.');
   assert.strictEqual(valueProblem({ kind: 'boolean', quoted: false }, 'false'), null);
 
   // A quoted slot takes anything but emptiness, and plain text takes that.
-  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, 'whatever'), null);
-  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, ''), 'needs a value.');
+  assert.strictEqual(valueProblem({ kind: 'text', quoted: true }, 'whatever'), null);
+  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, ''), 'A value is required.');
   assert.strictEqual(valueProblem({ kind: 'text', quoted: true }, ''), null);
+
+  // Except a moment, which is held to the calendar and the clock however it
+  // is written: quoting makes a value safe to put in a query and says
+  // nothing about whether it ever happened.
+  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, 'whatever'),
+    'Not a valid date.');
+  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, '2024-02-31'),
+    'Not a valid date.');
+  assert.strictEqual(valueProblem({ kind: 'date', quoted: true }, '2024-02-29'), null);
+  assert.strictEqual(valueProblem({ kind: 'time', quoted: true }, '25:00:00'),
+    'Not a valid time.');
+  assert.strictEqual(valueProblem({ kind: 'time', quoted: true }, '24:00:00'), null);
+  assert.strictEqual(valueProblem({ kind: 'dateTime', quoted: true }, '2023-02-29T10:00:00'),
+    'Not a valid date and time.');
+  assert.strictEqual(valueProblem({ kind: 'dateTime', quoted: true }, '2024-02-29T10:00:00'), null);
+
+  // A control drops the seconds off a round minute, and the value is judged
+  // as the query will write it rather than as the control handed it over.
+  // `named-graphs-per-period` opens with exactly this and must still run.
+  assert.strictEqual(valueProblem({ kind: 'dateTime', quoted: true }, '2024-11-04T00:00'), null);
+  assert.strictEqual(valueProblem({ kind: 'time', quoted: true }, '09:30'), null);
+  // Restoring the seconds does not make a moment of one that never was.
+  assert.strictEqual(valueProblem({ kind: 'dateTime', quoted: true }, '2023-02-29T00:00'),
+    'Not a valid date and time.');
+  assert.strictEqual(valueProblem({ kind: 'time', quoted: true }, '25:30'),
+    'Not a valid time.');
 
   // A bare kind nothing knows how to write is refused rather than guessed.
   assert.strictEqual(valueProblem({ kind: 'iri', quoted: false }, 'ex:thing'),
-    'cannot be written without quotes.');
+    'Cannot be used without quotes.');
 });
 
 // A single-quoted literal is rewritten double-quoted, which is the one
