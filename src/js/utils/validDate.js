@@ -23,11 +23,9 @@
 // those questions are answered by asking its syntax tree rather than by
 // reading the text again.
 
-/** The namespace `xsd` stands for when a query does not say otherwise. */
-const XSD_NAMESPACE = 'http://www.w3.org/2001/XMLSchema#';
-
-/** The one datatype this module has an opinion about. */
-const XSD_DATE = `${XSD_NAMESPACE}date`;
+import {
+  XSD_NAMESPACE, textReader, literalValue, readPrologue, datatypeOf,
+} from './sparqlTree.js';
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -71,149 +69,175 @@ function isRealDate(year, month, day) {
  * @param {string} value the literal's value, with its escapes resolved
  * @returns {boolean}
  */
-function isValidXsdDate(value) {
-  const match = value.match(/^(-?)(\d{4,})-(\d{2})-(\d{2})(Z|[+-]\d{2}:\d{2})?$/);
+/**
+ * A value split into what it says and the timezone it carries, if any.
+ *
+ * The offset is the same suffix on all three datatypes, and it is the only
+ * part of a dateTime that belongs to the whole value rather than to the
+ * date or the time within it.
+ *
+ * @param {string} value
+ * @returns {[string, string]} the value without its offset, and the offset
+ */
+function splitTimezone(value) {
+  const match = value.match(/(Z|[+-]\d{2}:\d{2})$/);
+  return match ? [value.slice(0, -match[0].length), match[0]] : [value, ''];
+}
+
+/**
+ * Whether an offset is one a timezone can have.
+ *
+ * @param {string} timezone the offset, or '' for a value without one
+ */
+function isRealTimezone(timezone) {
+  if (timezone === '' || timezone === 'Z') return true;
+  const [hours, minutes] = timezone.slice(1).split(':').map(Number);
+  // The offset runs to ±14:00, and 14:00 is the only offset at that hour.
+  return hours <= 14 && minutes <= 59 && !(hours === 14 && minutes !== 0);
+}
+
+/**
+ * Whether a string names a day, offset aside.
+ *
+ * @param {string} value
+ */
+function isRealDay(value) {
+  const match = value.match(/^(-?)(\d{4,})-(\d{2})-(\d{2})$/);
   if (!match) return false;
-  const [, sign, year, month, day, timezone] = match;
+  const [, sign, year, month, day] = match;
 
   // A year is four digits, or more with no zero padding it out.
   if (year.length > 4 && year.startsWith('0')) return false;
 
-  if (timezone && timezone !== 'Z') {
-    const [hours, minutes] = timezone.slice(1).split(':').map(Number);
-    // The offset runs to ±14:00, and 14:00 is the only offset at that hour.
-    if (hours > 14 || minutes > 59 || (hours === 14 && minutes !== 0)) return false;
+  const numbered = BigInt(sign + year);
+  // XSD 1.0 had no year zero and XSD 1.1 added one, so `0000` is a date in
+  // the later reading and not in the earlier. Neither reading has `-0000`,
+  // and nothing was procured in either — a query naming that year has gone
+  // wrong whichever spec is held to, which is what this module reports.
+  if (numbered === 0n) return false;
+
+  return isRealDate(numbered, Number(month), Number(day));
+}
+
+/**
+ * Whether a string names a time of day, offset aside.
+ *
+ * Hour 24 is the end of a day rather than a 25th hour, so it is written
+ * only as the moment the day ends: any minute or second past it names a
+ * time that does not exist. Seconds may carry a fraction, and XSD has no
+ * leap second, so 60 is out whatever the almanac says.
+ *
+ * @param {string} value
+ */
+function isRealClock(value) {
+  const match = value.match(/^(\d{2}):(\d{2}):(\d{2})(\.\d+)?$/);
+  if (!match) return false;
+  const [, hours, minutes, seconds, fraction] = match;
+
+  if (Number(minutes) > 59 || Number(seconds) > 59) return false;
+  if (Number(hours) === 24) {
+    return minutes === '00' && seconds === '00' && (!fraction || /^\.0+$/.test(fraction));
   }
-
-  return isRealDate(BigInt(sign + year), Number(month), Number(day));
+  return Number(hours) <= 23;
 }
 
-/** The characters SPARQL's \-escapes stand for, apart from \u and \U. */
-const ESCAPES = { t: '\t', b: '\b', n: '\n', r: '\r', f: '\f', '"': '"', "'": "'", '\\': '\\' };
-
 /**
- * A SPARQL string literal's value: its quotes removed and its escapes
- * resolved.
+ * Whether a string is a valid xsd:date value.
  *
- * What a literal holds is what its escapes mean, not how they are written.
- * "2024\u002D11\u002D05" is the date 2024-11-05, and judging it as written
- * would report a good query as a bad one.
+ * Wider than a date picker's YYYY-MM-DD, because XSD is: a date may carry
+ * a timezone, and its year may be negative or longer than four digits.
+ * None of those will come out of this application, but a query is free to
+ * contain one and reporting it as a mistake would be wrong.
  *
- * @param {string} text the literal as it appears in the query, quotes included
- * @returns {string}
+ * @param {string} value the literal's value, with its escapes resolved
+ * @returns {boolean}
  */
-function literalValue(text) {
-  const quote = text.startsWith('"""') || text.startsWith("'''") ? 3 : 1;
-  const body = text.slice(quote, -quote);
-  if (!body.includes('\\')) return body;
-  return body.replace(
-    /\\(u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|[tbnrf"'\\])/g,
-    (whole, escape) => {
-      if (escape[0] !== 'u' && escape[0] !== 'U') return ESCAPES[escape];
-      const code = parseInt(escape.slice(1), 16);
-      // Beyond the last code point, or a lone surrogate: not a character.
-      // The escape is left as written, which no date will match.
-      if (code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF)) return whole;
-      return String.fromCodePoint(code);
-    },
-  );
+function isValidXsdDate(value) {
+  const [day, timezone] = splitTimezone(value);
+  return isRealDay(day) && isRealTimezone(timezone);
 }
 
 /**
- * The IRI a `<...>` in the query denotes, resolved against BASE if it is
- * relative, or null if it cannot be resolved.
+ * Whether a string is a valid xsd:time value.
  *
- * @param {string} text the IRI as written, angle brackets included
- * @param {string|null} base
- * @returns {string|null}
+ * @param {string} value the literal's value, with its escapes resolved
+ * @returns {boolean}
  */
-function resolveIri(text, base) {
-  const iri = literalValue(`"${text.slice(1, -1)}"`);
-  try {
-    return base ? new URL(iri, base).href : new URL(iri).href;
-  } catch {
-    return null;
-  }
+function isValidXsdTime(value) {
+  const [clock, timezone] = splitTimezone(value);
+  return isRealClock(clock) && isRealTimezone(timezone);
 }
 
 /**
- * Read a query's prologue: the BASE it resolves relative IRIs against and
- * the namespace each prefix is bound to.
+ * Whether a string is a valid xsd:dateTime value.
  *
- * @param {import('@lezer/common').Tree} tree
- * @param {(node: {from: number, to: number}) => string} text
- * @returns {{base: string|null, prefixes: Map<string, string|null>}}
- */
-function readPrologue(tree, text) {
-  const prefixes = new Map();
-  let base = null;
-
-  tree.iterate({
-    enter(node) {
-      if (node.name === 'BaseDecl') {
-        const iri = node.node.getChild('IriRef');
-        // A second BASE replaces the first, and a relative one resolves
-        // against it.
-        if (iri) base = resolveIri(text(iri), base);
-        return;
-      }
-      if (node.name !== 'PrefixDecl') return;
-      const label = node.node.getChild('Pname_ns');
-      const iri = node.node.getChild('IriRef');
-      if (!label || !iri) return;
-      // Pname_ns includes its colon; the prefix is what comes before it.
-      const prefix = text(label).slice(0, -1);
-      // Declaring a prefix twice binds it to the second namespace, which is
-      // what the endpoint will use. The tree is walked in source order, so
-      // the later declaration simply overwrites the earlier one — resolved
-      // against whatever BASE is in force where it stands.
-      prefixes.set(prefix, resolveIri(text(iri), base));
-    },
-  });
-
-  return { base, prefixes };
-}
-
-/**
- * The datatype of an RDFLiteral node, as a full IRI, or null when the
- * literal has no datatype or its datatype cannot be resolved.
+ * A day and a time of day with a `T` between them, each held to what it
+ * would have to be on its own. The day is read as written even when the
+ * time is the end of one: `2024-02-29T24:00:00` names the close of a
+ * leap day, and is a date that does not exist in any other year.
  *
- * @param {import('@lezer/common').SyntaxNode} literal
- * @param {(node: {from: number, to: number}) => string} text
- * @param {{base: string|null, prefixes: Map<string, string>}} prologue
- * @returns {string|null}
+ * @param {string} value the literal's value, with its escapes resolved
+ * @returns {boolean}
  */
-function datatypeOf(literal, text, prologue) {
-  const iri = literal.getChild('Iri');
-  if (!iri) return null; // a plain or language-tagged literal
+function isValidXsdDateTime(value) {
+  const [moment, timezone] = splitTimezone(value);
+  const separator = moment.indexOf('T');
+  if (separator === -1) return false;
+  return isRealDay(moment.slice(0, separator))
+    && isRealClock(moment.slice(separator + 1))
+    && isRealTimezone(timezone);
+}
 
-  const prefixed = iri.getChild('PrefixedName');
-  if (!prefixed) return resolveIri(text(iri), prologue.base);
+/** How each kind of moment is held to what it has to be. */
+const BY_KIND = new Map([
+  ['date', isValidXsdDate],
+  ['time', isValidXsdTime],
+  ['dateTime', isValidXsdDateTime],
+]);
 
-  const name = text(prefixed);
-  const colon = name.indexOf(':');
-  const prefix = name.slice(0, colon);
-  const local = name.slice(colon + 1);
+/**
+ * The datatypes this module has an opinion about, and which kind each is.
+ *
+ * The kind travels with the answer because a reader told only that a value
+ * is wrong is not told what it should have been, and what it should have
+ * been differs for each of the three.
+ */
+const KIND_OF = new Map([
+  [`${XSD_NAMESPACE}date`, 'date'],
+  [`${XSD_NAMESPACE}time`, 'time'],
+  [`${XSD_NAMESPACE}dateTime`, 'dateTime'],
+]);
 
-  const namespace = prologue.prefixes.get(prefix);
-  if (namespace !== undefined) return namespace === null ? null : namespace + local;
-  // An undeclared prefix does not parse, so a query reaching here has one
-  // only while it is being typed. `xsd` is worth reading by convention
-  // until the declaration arrives; anything else is left alone.
-  return prefix === 'xsd' ? XSD_NAMESPACE + local : null;
+/**
+ * Whether a value is a moment of the kind it is offered as.
+ *
+ * The same judgement the editor makes of a query's own literals, asked of
+ * one value at a time — so a form collecting a moment can say which field
+ * is wrong while it is still open, rather than leaving it to the check on
+ * submission to refuse the whole query afterwards.
+ *
+ * @param {string} kind one of `date`, `time`, `dateTime`; anything else is
+ *   not a moment and is nothing this module has an opinion about
+ * @param {string} value
+ * @returns {boolean} true unless it is a kind we judge and the value fails
+ */
+export function isRealMoment(kind, value) {
+  const isValid = BY_KIND.get(kind);
+  return isValid ? isValid(value) : true;
 }
 
 /**
- * The xsd:date literals in a parsed query that are not real calendar dates.
+ * The dated literals in a parsed query that are not a real date or time.
  *
  * @param {import('@lezer/common').Tree} tree the query's syntax tree, as the
  *   editor has already parsed it
  * @param {import('@codemirror/state').Text} doc the document the tree is of
- * @returns {Array<{value: string, from: number, to: number}>} each offending
- *   literal with the range of the literal and its datatype, for a marker.
+ * @returns {Array<{value: string, kind: string, from: number, to: number}>}
+ *   each offending literal with the range of the literal and its datatype,
+ *   for a marker, and which of the three it was written as.
  */
-export function invalidDateLiterals(tree, doc) {
-  const text = (node) => doc.sliceString(node.from, node.to);
+export function invalidMomentLiterals(tree, doc) {
+  const text = textReader(doc);
   const prologue = readPrologue(tree, text);
   const found = [];
 
@@ -221,14 +245,15 @@ export function invalidDateLiterals(tree, doc) {
     enter(node) {
       if (node.name !== 'RDFLiteral') return;
       const literal = node.node;
-      if (datatypeOf(literal, text, prologue) !== XSD_DATE) return;
+      const kind = KIND_OF.get(datatypeOf(literal, text, prologue));
+      if (!kind) return;
 
       const string = literal.getChild('String');
       if (!string) return;
 
       const value = literalValue(text(string));
-      if (!isValidXsdDate(value)) {
-        found.push({ value, from: literal.from, to: literal.to });
+      if (!isRealMoment(kind, value)) {
+        found.push({ value, kind, from: literal.from, to: literal.to });
       }
     },
   });

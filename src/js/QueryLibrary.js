@@ -18,10 +18,21 @@ import {EditorView, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         defaultKeymap,
         bracketMatching, foldGutter, foldKeymap,
         syntaxHighlighting, defaultHighlightStyle,
+        ensureSyntaxTree, syntaxTree,
         sparql} from '../vendor/codemirror-bundle.js';
 import {eclipseTheme, eclipseHighlightStyle} from './utils/cmTheme.js';
 import { showToast } from './utils/toast.js';
 import { copyToClipboard } from './utils/clipboardCopy.js';
+import { queryParameters } from './utils/queryParameters.js';
+import { rangeEnds, rangeWording, parameterRanges } from './utils/parameterRanges.js';
+import { fillQuery, controlKind, compareValues, valueProblem } from './utils/parameterValues.js';
+
+/**
+ * How long the parser may run to read a query through to its end. A library
+ * query is a few kilobytes and parses in single-digit milliseconds; this is
+ * the ceiling for one that does not.
+ */
+const PARSE_BUDGET_MS = 5000;
 
 /**
  * Class representing the Query Library.
@@ -73,8 +84,17 @@ export class QueryLibrary {
     this.customiseQueryButton = document.getElementById('customise-query-button');
     this.tryQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-try-btn');
     this.customiseQueryButtonBottom = document.querySelector('#query-action-buttons-bottom .query-customise-btn');
+    this.parametersFields = document.getElementById('query-parameters-fields');
+    this.parametersModal = document.getElementById('query-parameters-modal');
+    this.parametersRunButton = document.getElementById('query-parameters-run');
     this.selectedQueryElement = null;
     this.queries = [];
+    /** The selected query, exactly as published. */
+    this.currentQueryText = '';
+    /** Its parameters, whose slots index into that text. */
+    this.currentParams = [];
+    /** Which slot each form control fills. Rebuilt with the form. */
+    this.slotOf = new Map();
 
     this.initEventListeners();
     this.loadQueries();
@@ -113,6 +133,8 @@ export class QueryLibrary {
         }, 2000);
       });
     }
+
+    this.parametersRunButton?.addEventListener('click', () => this._runWithFormValues());
   }
 
   /**
@@ -328,6 +350,8 @@ export class QueryLibrary {
     this.queryTitle.textContent = selectedQuery.title;
     this.queryDescription.textContent = selectedQuery.description;
     this.setSparqlEditorValue(querySparqlText);
+    this.currentQueryText = querySparqlText;
+    this._readParameters(querySparqlText);
     const queryRunning = this.queryEditor.isQueryRunning;
     this.tryQueryButton.disabled = queryRunning;
     if (this.customiseQueryButton) this.customiseQueryButton.disabled = queryRunning;
@@ -346,33 +370,394 @@ export class QueryLibrary {
 
   /**
    * Handle "Try this query" click: load the query into the editor
-   * and immediately run it. The user lands on the Reuse tab (via
-   * QueryEditor's auto-routing) without a detour through the
-   * Customize tab — this is for users who want to see the result,
-   * not to modify the query. Customise is the separate path for
-   * editing.
+   * and immediately run it. If the query has parameters, inject the
+   * form values before execution. The user lands on the Reuse tab
+   * (via QueryEditor's auto-routing) without a detour through the
+   * Customize tab.
    */
   onTryQuery() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
+    // A query offering values to change asks for them first. One that
+    // offers none runs straight away, as it always has.
+    if (this.currentParams.length > 0) {
+      this._askForParameters();
+      return;
+    }
+    this._runQuery(this.currentQueryText);
+  }
+
+  /**
+   * Offer the query's values for changing, then run it.
+   * @private
+   */
+  _askForParameters() {
+    this.parametersFields.replaceChildren();
+    this.slotOf.clear();
+    this.currentParams.forEach((parameter, index) => {
+      this.parametersFields.appendChild(this._parameterField(parameter, index));
+    });
+
+    this._clearParameterError();
+
+    const modal = bootstrap.Modal.getOrCreateInstance(this.parametersModal);
+    // Enter runs the query, so re-running with the same values costs one
+    // keystroke rather than a form to fill.
+    this.parametersModal.addEventListener('shown.bs.modal', () => {
+      this.parametersRunButton.focus();
+    }, { once: true });
+    modal.show();
+  }
+
+  /**
+   * Run the query the dialog was opened for, with the values it collected.
+   * @private
+   */
+  _runWithFormValues() {
+    const problems = this._parameterProblems();
+    if (problems.length > 0) {
+      this._showParameterProblems(problems);
+      return;
+    }
+    const queryText = this._getQueryWithInjectedParams();
+    bootstrap.Modal.getOrCreateInstance(this.parametersModal).hide();
+    this._runQuery(queryText);
+  }
+
+  /**
+   * What is wrong with the values as they stand, if anything.
+   *
+   * Two things are worth refusing. A value the query needs and does not
+   * have makes a query that cannot run — an empty date is not a date, and
+   * an empty number is not even SPARQL. And a range the wrong way round
+   * describes an empty period: the query runs, matches nothing, and
+   * returns a result that reads as an answer.
+   *
+   * Nothing else is judged. Where two values cannot be ordered soundly no
+   * order is asserted, and a value that is merely surprising is the
+   * reader's business.
+   *
+   * @returns {Array<{message: string, inputs: HTMLInputElement[]}>}
+   * @private
+   */
+  _parameterProblems() {
+    const problems = [];
+
+    // A value the query cannot do without, or one it cannot be written
+    // with. A checkbox has only the two values its slot allows.
+    for (const [input, slot] of this.slotOf) {
+      if (input.type === 'checkbox') continue;
+      const problem = valueProblem(slot, input.value);
+      if (problem) problems.push({ message: problem, inputs: [input] });
+    }
+    if (problems.length > 0) return problems;
+
+    for (const range of parameterRanges(this.currentParams)) {
+      const lower = this._inputFor(range.lower);
+      const upper = this._inputFor(range.upper);
+      if (!lower || !upper) continue;
+
+      const order = compareValues(range.lower.kind, lower.value, upper.value);
+      if (order === null) continue;
+      // The complaint is about the pair, and is shown once under the group
+      // both ends belong to rather than twice, once beneath each.
+      if (order === 1) {
+        problems.push({
+          message: 'The two values are in the wrong order.',
+          inputs: [lower, upper],
+        });
+      } else if (order === 0 && range.strict) {
+        // `>` or `<` at either end leaves nothing between two equal values.
+        problems.push({
+          message: 'The two values are the same, and this query excludes that value.',
+          inputs: [lower, upper],
+        });
+      }
+    }
+    return problems;
+  }
+
+  /** The control filling a given slot. @private */
+  _inputFor(slot) {
+    for (const [input, candidate] of this.slotOf) if (candidate === slot) return input;
+    return null;
+  }
+
+  /**
+   * Say what is wrong, and mark it.
+   * @private
+   */
+  _showParameterProblems(problems) {
+    // Whatever was said last time first: asking again without changing
+    // anything is answered the same way, and answering it twice leaves the
+    // dialog saying it twice.
+    this._clearParameterError();
+
+    // Gathered by the group each belongs to first: a range whose two ends
+    // are both empty has two complaints and one place to put them, and the
+    // ends are laid out side by side with nothing beneath either alone.
+    const grouped = new Map();
+    for (const { message, inputs } of problems) {
+      inputs.forEach(input => input.classList.add('is-invalid'));
+      const group = inputs[0].closest('.col-12');
+      if (!group) continue;
+      const said = grouped.get(group) || { messages: [], inputs: [] };
+      said.messages.push(message);
+      said.inputs.push(...inputs);
+      grouped.set(group, said);
+    }
+
+    let index = 0;
+    for (const [group, { messages, inputs }] of grouped) {
+      const note = document.createElement('div');
+      // d-block because Bootstrap shows this class only next to the control
+      // it follows, and here it follows the group rather than any one of
+      // them. The reader is told by the control's own aria-describedby.
+      note.className = 'invalid-feedback d-block parameter-problem';
+      note.id = `query-parameter-problem-${index++}`;
+      note.textContent = [...new Set(messages)].join(' ');
+      group.appendChild(note);
+      inputs.forEach(input => input.setAttribute('aria-describedby', note.id));
+    }
+
+    problems[0].inputs[0].focus();
+  }
+
+  /**
+   * Take the error down once the reader changes anything.
+   * @private
+   */
+  _clearParameterError() {
+    const shown = this.parametersModal.querySelectorAll('.parameter-problem');
+    if (shown.length === 0) return;
+    shown.forEach(note => note.remove());
+    for (const input of this.slotOf.keys()) {
+      input.classList.remove('is-invalid');
+      input.removeAttribute('aria-describedby');
+    }
+  }
+
+  /**
+   * Put a query into the editor and run it.
+   * @param {string} queryText
+   * @private
+   */
+  _runQuery(queryText) {
     this.queryEditor.setValue(queryText);
-    // Submit the form programmatically. QueryEditor.onSubmit takes
-    // care of everything: syntax check, POST, auto-route to either
-    // the SELECT lane (`#query-results`) or the graph lane
-    // (`#app-tab-explorer`) of the Reuse tab.
     document.getElementById('query-form')?.dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );
   }
 
   /**
-   * Handle "Customise" click: load the query into the editor and
-   * switch to the Editor tab so the user can edit it before running.
-   * This is the old Try-this-query behaviour, now a separate path.
+   * Handle "Customise" click: load the query (with injected params)
+   * into the editor and switch to the Editor tab so the user can
+   * edit it before running.
    */
   onCustomise() {
-    const queryText = this.querySparqlEditor.state.doc.toString();
-    this.queryEditor.setValue(queryText);
+    this.queryEditor.setValue(this.currentQueryText);
     const queryEditorTab = new bootstrap.Tab(document.getElementById('query-editor-tab'));
     queryEditorTab.show();
+  }
+  /**
+   * Read what the selected query offers to have changed.
+   *
+   * The query itself says: a variable annotated in a comment, and the
+   * literal it is compared to or bound to. Nothing is declared anywhere
+   * else, so there is no second copy of the query to fall out of step with
+   * the published one.
+   *
+   * The form is not shown here. The values are asked for at the moment of
+   * running, where they are about to matter, so a query that declares none
+   * changes nothing about the page beyond what the Run button is called.
+   *
+   * @param {string} queryText - The query, exactly as published.
+   * @private
+   */
+  _readParameters(queryText) {
+    this.currentParams = this._parametersIn(queryText);
+    this._nameRunButtons();
+  }
+
+  /**
+   * Say on the button which of its two jobs it is about to do.
+   *
+   * One button runs two ways: a query with values to change asks for them
+   * first, and one without goes straight to the results. A trailing
+   * ellipsis is the usual way a command says it wants something from you
+   * before it can finish, and without it nothing tells the reader which
+   * they are about to get.
+   *
+   * @private
+   */
+  _nameRunButtons() {
+    const name = this.currentParams.length > 0 ? 'Run query…' : 'Run query';
+    for (const button of [this.tryQueryButton, this.tryQueryButtonBottom]) {
+      if (button) button.textContent = name;
+    }
+  }
+
+  /**
+   * The parameters a query declares.
+   *
+   * Parsed here rather than in the preview editor, whose text is replaced
+   * with the filled query as the form is used; the slots have to keep
+   * pointing into the query as published.
+   *
+   * @param {string} queryText
+   * @returns {import('./utils/queryParameters.js').QueryParameter[]}
+   * @private
+   */
+  _parametersIn(queryText) {
+    const state = EditorState.create({ doc: queryText, extensions: [sparql()] });
+    const tree = ensureSyntaxTree(state, state.doc.length, PARSE_BUDGET_MS)
+      || syntaxTree(state);
+    return queryParameters(tree, state.doc);
+  }
+
+  /**
+   * One labelled control per parameter.
+   *
+   * A parameter filling two ends of a range gets one label and two inputs,
+   * marked "from" and "to" — which end each is comes from the comparison
+   * in the query, not from anything the author had to write.
+   *
+   * @param {import('./utils/queryParameters.js').QueryParameter} parameter
+   * @param {number} index
+   * @returns {HTMLElement}
+   * @private
+   */
+  _parameterField(parameter, index) {
+    const ends = rangeEnds(parameter);
+    const title = ends ? `${parameter.label} range` : parameter.label;
+
+    // A range is a group of controls under one name, which is what a
+    // fieldset is for: a screen reader announces the name with each of
+    // them. A single value needs only its own label.
+    const group = document.createElement(ends ? 'fieldset' : 'div');
+    group.className = 'col-12';
+
+    const heading = document.createElement(ends ? 'legend' : 'label');
+    heading.className = 'form-label small mb-1';
+    heading.textContent = title;
+    group.appendChild(heading);
+
+    const inputs = document.createElement('div');
+    inputs.className = 'd-flex align-items-center flex-wrap gap-2';
+    const word = (text) => {
+      const span = document.createElement('span');
+      span.className = 'small text-body-secondary';
+      span.textContent = text;
+      inputs.appendChild(span);
+    };
+
+    if (ends) {
+      const [from, to] = ends;
+      const { opening, joining } = rangeWording(from, to);
+      // The two ends need names of their own: the legend alone would give
+      // both controls the same one.
+      word(opening);
+      inputs.appendChild(this._parameterInput(from, `query-param-${index}-0`, `${title}, from`));
+      word(joining);
+      inputs.appendChild(this._parameterInput(to, `query-param-${index}-1`, `${title}, to`));
+    } else if (parameter.slots.length === 1) {
+      const id = `query-param-${index}-0`;
+      heading.setAttribute('for', id);
+      inputs.appendChild(this._parameterInput(parameter.slots[0], id, title, { hasOwnLabel: true }));
+    } else {
+      // Several values with nothing to tell them apart: numbered, and each
+      // named after its place.
+      parameter.slots.forEach((slot, position) => {
+        word(`${position + 1}:`);
+        inputs.appendChild(
+          this._parameterInput(slot, `query-param-${index}-${position}`, `${title}, ${position + 1}`));
+      });
+    }
+
+    group.appendChild(inputs);
+    return group;
+  }
+
+  /**
+   * The control a slot asks for, carrying the value already in the query.
+   *
+   * @param {import('./utils/queryParameters.js').ParameterSlot} slot
+   * @param {string} id
+   * @param {string} label
+   * @returns {HTMLInputElement}
+   * @private
+   */
+  _parameterInput(slot, id, name, { hasOwnLabel = false } = {}) {
+    const input = document.createElement('input');
+    input.className = 'form-control form-control-sm';
+    input.id = id;
+    input.value = slot.value;
+    // A control inside a range or a numbered list has no <label> of its
+    // own, so it is named here. One that has a label needs no second name.
+    if (!hasOwnLabel) input.setAttribute('aria-label', name);
+
+    switch (controlKind(slot)) {
+      case 'date':
+        input.type = 'date';
+        break;
+      case 'dateTime':
+      case 'time':
+        input.type = slot.kind === 'time' ? 'time' : 'datetime-local';
+        // Seconds are part of an xsd:dateTime and an xsd:time. Without
+        // this the control rounds them off and hides them.
+        input.step = '1';
+        break;
+      case 'number':
+        input.type = 'number';
+        break;
+      case 'boolean':
+        input.type = 'checkbox';
+        input.className = 'form-check-input';
+        input.checked = slot.value === 'true';
+        break;
+      default:
+        input.type = 'text';
+        input.placeholder = name;
+    }
+
+    // controlKind says which values a control should be able to hold; the
+    // browser decides whether it actually will, and a rejected value is
+    // cleared. Asking it directly catches whatever the patterns misjudge,
+    // here or in a browser they were never measured against. A value the
+    // control merely rewrites — seconds dropped from a round time — is not
+    // rejected, and is restored when the query is filled.
+    if (input.type !== 'checkbox' && input.value === '' && slot.value !== '') {
+      input.type = 'text';
+      input.removeAttribute('step');
+      input.className = 'form-control form-control-sm';
+      input.value = slot.value;
+      input.placeholder = name;
+    }
+
+    this.slotOf.set(input, slot);
+    input.addEventListener('input', () => this._clearParameterError());
+    return input;
+  }
+
+  /**
+   * The value each slot should take, read from the form.
+   *
+   * @returns {Map<import('./utils/queryParameters.js').ParameterSlot, string>}
+   * @private
+   */
+  _collectFormValues() {
+    const values = new Map();
+    for (const [input, slot] of this.slotOf) {
+      values.set(slot, input.type === 'checkbox' ? String(input.checked) : input.value);
+    }
+    return values;
+  }
+
+  /**
+   * The query with the form's values in place of its own.
+   * @returns {string}
+   * @private
+   */
+  _getQueryWithInjectedParams() {
+    if (this.currentParams.length === 0) return this.currentQueryText;
+    return fillQuery(this.currentQueryText, this.currentParams, this._collectFormValues());
   }
 }

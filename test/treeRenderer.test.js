@@ -35,7 +35,6 @@ const REVIEWER     = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8
 const ORGANISATION = 'http://data.europa.eu/a4g/resource/id_6497924e-6920-4348-8ecb-71530f802aef_Organisation_ORG-0002';
 const RDF_TYPE    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 const EPO_CONCERNS_PROC = 'http://data.europa.eu/a4g/ontology#concernsProcedure';
-const EPO_HAS_LOT_REF   = 'http://data.europa.eu/a4g/ontology#hasLotReference';
 const EPO_NOTICE_CLASS  = 'http://data.europa.eu/a4g/ontology#Notice';
 const EPO_ANNOUNCES_ROLE   = 'http://data.europa.eu/a4g/ontology#announcesRole';
 const EPO_PLAYED_BY        = 'http://data.europa.eu/a4g/ontology#playedBy';
