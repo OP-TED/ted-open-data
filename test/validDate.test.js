@@ -29,7 +29,7 @@ import { EditorState } from '@codemirror/state';
 import { syntaxTree, ensureSyntaxTree } from '@codemirror/language';
 import { sparql } from 'codemirror-lang-sparql';
 
-import { invalidDateLiterals } from '../src/js/utils/validDate.js';
+import { invalidMomentLiterals } from '../src/js/utils/validDate.js';
 
 /**
  * The offending literals in a query, as the editor would find them.
@@ -41,7 +41,7 @@ import { invalidDateLiterals } from '../src/js/utils/validDate.js';
 function findIn(query) {
   const state = EditorState.create({ doc: query, extensions: [sparql()] });
   const tree = ensureSyntaxTree(state, state.doc.length, 5000) || syntaxTree(state);
-  return invalidDateLiterals(tree, state.doc);
+  return invalidMomentLiterals(tree, state.doc);
 }
 
 /** Just the values, for the many cases that are only about which. */
@@ -162,9 +162,133 @@ test('leaves alone a date-shaped value that is not typed as a date', () => {
 
 // xsd:dateTime starts with xsd:date. It is a different datatype, and its
 // values are not checked here.
-test('does not treat xsd:dateTime as xsd:date', () => {
-  assert.deepEqual(invalidIn(query(`BIND("2024-13-01"^^xsd:dateTime AS ?a)`)), []);
-  assert.deepEqual(invalidIn(query(`BIND("2024-13-01T00:00:00"^^xsd:dateTime AS ?a)`)), []);
+test('holds each datatype to its own shape', () => {
+  // A moment written under the wrong datatype is not that datatype's value,
+  // however well formed it is under another.
+  assert.deepStrictEqual(
+    invalidIn(query(`BIND("2024-11-27T10:00:00"^^xsd:date AS ?a)`)), ['2024-11-27T10:00:00']);
+  assert.deepStrictEqual(
+    invalidIn(query(`BIND("2024-11-27"^^xsd:dateTime AS ?a)`)), ['2024-11-27']);
+  assert.deepStrictEqual(
+    invalidIn(query(`BIND("2024-11-27"^^xsd:time AS ?a)`)), ['2024-11-27']);
+  // Nothing else is judged at all.
+  assert.deepStrictEqual(invalidIn(query(`BIND("2024-13-01"^^xsd:gMonthDay AS ?a)`)), []);
+  assert.deepStrictEqual(invalidIn(query(`BIND("2024-13-01" AS ?a)`)), []);
+});
+
+test('rejects year zero, written either way', () => {
+  // XSD 1.0 had no year zero; XSD 1.1 added one. Nothing was procured in it
+  // under either reading, and `-0000` is a year in neither.
+  for (const value of ['0000-01-01', '-0000-01-01']) {
+    assert.ok(!accepts(value), `${value} is not a date`);
+    assert.ok(!acceptsDateTime(`${value}T10:00:00`), `${value} is not a dateTime either`);
+  }
+  // The years either side of it stand.
+  assert.ok(accepts('0001-01-01'), '0001 is a year');
+  assert.ok(accepts('-0001-01-01'), 'so is the one before it');
+});
+
+// ── the clock ──────────────────────────────────────────────────────
+
+/** Whether a value passes as an xsd:time, asked as the editor asks it. */
+const acceptsTime = (value) =>
+  invalidIn(query(`BIND("${value}"^^xsd:time AS ?a)`)).length === 0;
+
+test('accepts times of day', () => {
+  for (const value of ['00:00:00', '23:59:59', '12:30:45', '09:05:01']) {
+    assert.ok(acceptsTime(value), `${value} is a time`);
+  }
+});
+
+test('accepts the moment a day ends, and only as that moment', () => {
+  // 24:00:00 is the close of a day rather than a 25th hour, so nothing
+  // stands past it.
+  assert.ok(acceptsTime('24:00:00'), '24:00:00 ends the day');
+  assert.ok(acceptsTime('24:00:00.0'), 'a zero fraction is still that moment');
+  for (const value of ['24:00:01', '24:01:00', '24:30:00', '24:00:00.5']) {
+    assert.ok(!acceptsTime(value), `${value} is past the end of the day`);
+  }
+});
+
+test('rejects hours, minutes and seconds that do not exist', () => {
+  // 60 seconds included: XSD has no leap second, whatever the almanac says.
+  for (const value of ['25:00:00', '99:00:00', '10:60:00', '10:00:60']) {
+    assert.ok(!acceptsTime(value), `${value} is not a time`);
+  }
+});
+
+test('rejects a time that is not written as one', () => {
+  for (const value of ['1:00:00', '10:00', '10:00:00:00', '', 'noon', '10-00-00']) {
+    assert.ok(!acceptsTime(value), `${value} is not a time`);
+  }
+});
+
+test('accepts a fraction of a second', () => {
+  for (const value of ['10:00:00.5', '10:00:00.000', '10:00:00.123456789']) {
+    assert.ok(acceptsTime(value), `${value} is a time`);
+  }
+  assert.ok(!acceptsTime('10:00:00.'), 'a fraction needs a digit');
+});
+
+test('reads the timezone on a time by the same rule as on a date', () => {
+  for (const value of ['10:00:00Z', '10:00:00+02:00', '10:00:00-05:30', '10:00:00+14:00']) {
+    assert.ok(acceptsTime(value), `${value} is a time`);
+  }
+  for (const value of ['10:00:00+15:00', '10:00:00+14:30', '10:00:00+2:00', '10:00:00Q']) {
+    assert.ok(!acceptsTime(value), `${value} has no such offset`);
+  }
+});
+
+// ── the two together ───────────────────────────────────────────────
+
+/** Whether a value passes as an xsd:dateTime, asked as the editor asks it. */
+const acceptsDateTime = (value) =>
+  invalidIn(query(`BIND("${value}"^^xsd:dateTime AS ?a)`)).length === 0;
+
+test('accepts a day and a time of day with a T between them', () => {
+  for (const value of [
+    '2024-11-27T10:00:00',
+    '2024-11-27T00:00:00Z',
+    '2024-11-27T10:00:00.123+02:00',
+    '-0044-03-15T12:00:00',
+    '20024-11-27T10:00:00',
+  ]) {
+    assert.ok(acceptsDateTime(value), `${value} is a dateTime`);
+  }
+});
+
+test('judges each half of a dateTime as it would on its own', () => {
+  assert.ok(acceptsDateTime('2024-02-29T10:00:00'), '2024 has a 29 February');
+  assert.ok(!acceptsDateTime('2023-02-29T10:00:00'), '2023 does not');
+  assert.ok(!acceptsDateTime('2024-13-01T00:00:00'), 'there is no 13th month');
+  assert.ok(!acceptsDateTime('2024-11-27T25:00:00'), 'there is no 25th hour');
+});
+
+test('accepts the end of a day, on the day it ends', () => {
+  // The day is read as written: this names the close of a leap day, and
+  // there is no such day to close in the year before it.
+  assert.ok(acceptsDateTime('2024-02-29T24:00:00'), '29 February 2024 ends');
+  assert.ok(!acceptsDateTime('2023-02-29T24:00:00'), '29 February 2023 never came');
+});
+
+test('rejects a dateTime missing either half or the T', () => {
+  for (const value of [
+    '2024-11-27',
+    '10:00:00',
+    '2024-11-27 10:00:00',
+    '2024-11-27T',
+    'T10:00:00',
+    '2024-11-27t10:00:00',
+  ]) {
+    assert.ok(!acceptsDateTime(value), `${value} is not a dateTime`);
+  }
+});
+
+test('reads the offset on a dateTime as belonging to the whole value', () => {
+  assert.ok(acceptsDateTime('2024-11-27T10:00:00-05:00'), 'an offset behind UTC');
+  assert.ok(!acceptsDateTime('2024-11-27T10:00:00+15:00'), 'no offset reaches 15 hours');
+  // The `-` inside the date is not the start of one.
+  assert.ok(acceptsDateTime('2024-11-27T10:00:00'), 'no offset at all');
 });
 
 // ── the datatype, however the query writes it ──────────────────────

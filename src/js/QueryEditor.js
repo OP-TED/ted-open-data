@@ -29,7 +29,7 @@ import {epoCompletionSource, getEpoData} from './epoCompletion.js';
 import {classifyError} from './utils/errorMessages.js';
 import {buildSparqlBody, readSparqlOptions} from './sparqlRequest.js';
 import {copyToClipboard} from './utils/clipboardCopy.js';
-import {invalidDateLiterals} from './utils/validDate.js';
+import {invalidMomentLiterals} from './utils/validDate.js';
 import {showToast} from './utils/toast.js';
 import {formatElapsedTime} from './utils/formatTime.js';
 
@@ -45,6 +45,18 @@ import {formatElapsedTime} from './utils/formatTime.js';
  */
 const SUBMIT_PARSE_BUDGET_MS = 5000;
 const LIVE_PARSE_BUDGET_MS = 50;
+
+/**
+ * What each datatype was supposed to be, said to whoever wrote it.
+ *
+ * The shape rather than the fault: a reader can see that the 31st of
+ * February is underlined, and what they need is the rule it broke.
+ */
+const WANTED = {
+  date: 'is not a valid date. The format is YYYY-MM-DD, with a month from 01 to 12 and a day within that month.',
+  time: 'is not a valid time. The format is hh:mm:ss, from 00:00:00 to 24:00:00.',
+  dateTime: 'is not a valid date and time. The format is YYYY-MM-DDThh:mm:ss.',
+};
 
 /**
  * Class representing the Query Editor.
@@ -146,12 +158,12 @@ export class QueryEditor {
       // is missed.
       const parsed = ensureSyntaxTree(view.state, view.state.doc.length, LIVE_PARSE_BUDGET_MS)
         || syntaxTree(view.state);
-      for (const bad of invalidDateLiterals(parsed, view.state.doc)) {
+      for (const bad of invalidMomentLiterals(parsed, view.state.doc)) {
         diagnostics.push({
           from: bad.from,
           to: bad.to,
           severity: "error",
-          message: `"${bad.value}" is not a valid calendar date. Expected format YYYY-MM-DD with a real month (01-12) and day.`
+          message: `"${bad.value}" ${WANTED[bad.kind]}`
         });
       }
 
@@ -336,10 +348,10 @@ export class QueryEditor {
    * @param {number} budgetMs how long the parser may run
    * @returns {Array<{value: string, from: number, to: number}>}
    */
-  invalidDates(budgetMs) {
+  invalidMoments(budgetMs) {
     const {state} = this.editor;
     const tree = ensureSyntaxTree(state, state.doc.length, budgetMs) || syntaxTree(state);
-    return invalidDateLiterals(tree, state.doc);
+    return invalidMomentLiterals(tree, state.doc);
   }
 
   onEditorChange() {
@@ -350,7 +362,7 @@ export class QueryEditor {
     // parse for exactly the keystrokes that produce a half-written query.
     const disabled = this.checkSparqlSyntax(query)
       ? true
-      : !query.trim() || this.invalidDates(LIVE_PARSE_BUDGET_MS).length > 0;
+      : !query.trim() || this.invalidMoments(LIVE_PARSE_BUDGET_MS).length > 0;
     this.queryForm.querySelectorAll('button[type="submit"]').forEach(b => b.disabled = disabled);
   }
 
@@ -368,14 +380,14 @@ export class QueryEditor {
     // directly, so the check has to be here as well as on the button, or a
     // query holding an impossible date runs and returns an empty result
     // that looks like an answer.
-    const invalidDates = this.invalidDates(SUBMIT_PARSE_BUDGET_MS);
-    if (invalidDates.length > 0) {
+    const impossible = this.invalidMoments(SUBMIT_PARSE_BUDGET_MS);
+    if (impossible.length > 0) {
       showToast(
         'Query not run',
-        invalidDates.length === 1
-          ? 'The query contains a date that does not exist.'
-          : `The query contains ${invalidDates.length} dates that do not exist.`,
-        { variant: 'danger', detail: invalidDates.map(d => d.value).join(', ') },
+        impossible.length === 1
+          ? 'The query contains a date or time that does not exist.'
+          : `The query contains ${impossible.length} dates or times that do not exist.`,
+        { variant: 'danger', detail: impossible.map(d => d.value).join(', ') },
       );
       return;
     }
