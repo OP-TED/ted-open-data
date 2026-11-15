@@ -152,6 +152,15 @@
     </nav>
     </div>
 
+    <!-- Service notice — hidden unless notice.json on the data/service-notice
+         branch says to show it; see src/js/utils/serviceNotice.js. -->
+    <div id="service-notice" class="service-notice" role="status" hidden>
+        <div class="service-notice__content">
+            <i class="bi bi-exclamation-triangle-fill service-notice__icon" aria-hidden="true"></i>
+            <p class="service-notice__text"></p>
+        </div>
+    </div>
+
     <main class="tab-content h-100">
 
         <!-- Home -->

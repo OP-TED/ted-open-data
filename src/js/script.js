@@ -28,6 +28,7 @@ import { ExplorerController } from './ExplorerController.js';
 import { NoticeView } from './NoticeView.js';
 import { SearchPanel } from './SearchPanel.js';
 import { setController } from './TermRenderer.js';
+import { loadServiceNotice } from './utils/serviceNotice.js';
 
 const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
 const REMOTE_QUERIES_URL = 'https://raw.githubusercontent.com/OP-TED/ted-open-data-examples/main/';
@@ -37,6 +38,8 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
 
 document.addEventListener('DOMContentLoaded', function () {
+  loadServiceNotice(document.getElementById('service-notice'));
+
   // Fail loudly if the Bootstrap JS bundle did not load. Tabs,
   // dropdowns, tooltips, collapse panels, carousel and toasts all
   // depend on the global `bootstrap` object; losing it (CDN block,
