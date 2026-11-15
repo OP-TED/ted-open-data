@@ -156,12 +156,17 @@
          branch says to show it; see src/js/utils/serviceNotice.js.
          Styled after the TED design system's Notification: accent bar on a
          tinted surface, bold title, then the message. -->
-    <div id="service-notice" class="service-notice" hidden>
-        <div class="service-notice__content">
-            <i class="bi service-notice__icon" aria-hidden="true"></i>
-            <div class="service-notice__body">
-                <p class="service-notice__title" hidden></p>
-                <p class="service-notice__text"></p>
+    <!-- The live region stays in the page, empty, from load, so that a screen
+         reader is already listening when the notice is filled in (WCAG ARIA22);
+         only the visual banner inside it is hidden. -->
+    <div id="service-notice" role="status">
+        <div class="service-notice" hidden>
+            <div class="service-notice__content">
+                <i class="bi service-notice__icon" aria-hidden="true"></i>
+                <div class="service-notice__body">
+                    <p class="service-notice__title" hidden></p>
+                    <p class="service-notice__text"></p>
+                </div>
             </div>
         </div>
     </div>

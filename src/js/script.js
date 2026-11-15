@@ -129,7 +129,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const scrollableHeader = document.querySelector('.site-header--scrollable');
     const stickyNav = document.querySelector('.sticky-nav');
     const stickyNavHeight = stickyNav?.offsetHeight || 0;
-    const total = (globan?.offsetHeight || 0) + (scrollableHeader?.offsetHeight || 0) + stickyNavHeight;
+    // The service notice sits between the header and <main>, so it counts too (0 while hidden).
+    const serviceNotice = document.getElementById('service-notice');
+    const total = (globan?.offsetHeight || 0) + (scrollableHeader?.offsetHeight || 0) + stickyNavHeight
+      + (serviceNotice?.offsetHeight || 0);
     document.documentElement.style.setProperty('--header-total-height', total + 'px');
     document.documentElement.style.setProperty('--sticky-nav-height', stickyNavHeight + 'px');
     const dataHeader = document.querySelector('.data-sticky-header');
@@ -139,6 +142,12 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   measureHeader();
   window.addEventListener('resize', measureHeader);
+
+  // Re-measure when the service notice appears, or its text wraps to another line.
+  const serviceNotice = document.getElementById('service-notice');
+  if (serviceNotice && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(measureHeader).observe(serviceNotice);
+  }
 
   // Re-measure when the data header changes size (breadcrumb wrap, view-mode toggle).
   const dataHeader = document.querySelector('.data-sticky-header');

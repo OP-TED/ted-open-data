@@ -25,12 +25,12 @@ export const SERVICE_NOTICE_URL =
   'https://raw.githubusercontent.com/OP-TED/ted-open-data/refs/heads/data/service-notice/notice.json';
 const SERVICE_NOTICE_TIMEOUT_MS = 4000;
 // Icon per level, so the level is not told by colour alone. An error is announced
-// at once (role="alert"); the others wait until the user pauses (role="status"),
-// as the TED design system's Notification does.
+// at once (assertive); the others wait until the user pauses (polite), as the TED
+// design system's Notification does.
 const LEVELS = {
-  info: { icon: 'bi-info-circle-fill', role: 'status' },
-  warning: { icon: 'bi-exclamation-triangle-fill', role: 'status' },
-  error: { icon: 'bi-x-circle-fill', role: 'alert' },
+  info: { icon: 'bi-info-circle-fill', live: 'polite' },
+  warning: { icon: 'bi-exclamation-triangle-fill', live: 'polite' },
+  error: { icon: 'bi-x-circle-fill', live: 'assertive' },
 };
 
 /**
@@ -48,11 +48,13 @@ export function parseServiceNotice(data) {
 }
 
 /**
- * Fetch the notice setting and fill in the banner element if it says to show.
- * @param {HTMLElement | null} element - the #service-notice element
+ * Fetch the notice setting and fill in the banner if it says to show.
+ * @param {HTMLElement | null} region - the #service-notice live region, present
+ *   (and empty) from page load so that screen readers announce what is put in it
  */
-export async function loadServiceNotice(element, url = SERVICE_NOTICE_URL) {
-  if (!element) return;
+export async function loadServiceNotice(region, url = SERVICE_NOTICE_URL) {
+  const banner = region?.querySelector('.service-notice');
+  if (!banner) return;
   // AbortController rather than AbortSignal.timeout(), for the reason given in epoCompletion.js.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SERVICE_NOTICE_TIMEOUT_MS);
@@ -62,15 +64,16 @@ export async function loadServiceNotice(element, url = SERVICE_NOTICE_URL) {
     if (!response.ok) return;
     const notice = parseServiceNotice(await response.json());
     if (!notice) return;
-    // Role first, so the text that follows is announced.
-    element.setAttribute('role', LEVELS[notice.level].role);
-    const title = element.querySelector('.service-notice__title');
-    title.textContent = notice.title;
+    // Urgency and the visual banner first, the words last: it is the text arriving
+    // in the live region that screen readers announce.
+    region.setAttribute('aria-live', LEVELS[notice.level].live);
+    banner.dataset.level = notice.level;
+    banner.querySelector('.service-notice__icon').classList.add(LEVELS[notice.level].icon);
+    banner.hidden = false;
+    const title = banner.querySelector('.service-notice__title');
     title.hidden = !notice.title;
-    element.querySelector('.service-notice__text').textContent = notice.message;
-    element.querySelector('.service-notice__icon').classList.add(LEVELS[notice.level].icon);
-    element.dataset.level = notice.level;
-    element.hidden = false;
+    title.textContent = notice.title;
+    banner.querySelector('.service-notice__text').textContent = notice.message;
   } catch (err) {
     console.warn('Service notice unavailable:', err);
   } finally {
