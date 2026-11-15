@@ -24,19 +24,27 @@
 export const SERVICE_NOTICE_URL =
   'https://raw.githubusercontent.com/OP-TED/ted-open-data/refs/heads/data/service-notice/notice.json';
 const SERVICE_NOTICE_TIMEOUT_MS = 4000;
-const LEVELS = ['info', 'warning', 'error'];
+// Icon per level, so the level is not told by colour alone. An error is announced
+// at once (role="alert"); the others wait until the user pauses (role="status"),
+// as the TED design system's Notification does.
+const LEVELS = {
+  info: { icon: 'bi-info-circle-fill', role: 'status' },
+  warning: { icon: 'bi-exclamation-triangle-fill', role: 'status' },
+  error: { icon: 'bi-x-circle-fill', role: 'alert' },
+};
 
 /**
  * Validate the content of notice.json.
  * @param {unknown} data - parsed JSON
- * @returns {{ level: string, message: string } | null} what to show, or null for nothing
+ * @returns {{ level: string, title: string, message: string } | null} what to show, or null for nothing
  */
 export function parseServiceNotice(data) {
   if (!data || typeof data !== 'object' || data.show !== true) return null;
-  const message = typeof data.message === 'string' ? data.message.trim() : '';
+  const text = value => (typeof value === 'string' ? value.trim() : '');
+  const message = text(data.message);
   if (!message) return null;
-  const level = LEVELS.includes(data.level) ? data.level : 'warning';
-  return { level, message };
+  const level = Object.hasOwn(LEVELS, data.level) ? data.level : 'warning';
+  return { level, title: text(data.title), message };
 }
 
 /**
@@ -54,7 +62,13 @@ export async function loadServiceNotice(element, url = SERVICE_NOTICE_URL) {
     if (!response.ok) return;
     const notice = parseServiceNotice(await response.json());
     if (!notice) return;
+    // Role first, so the text that follows is announced.
+    element.setAttribute('role', LEVELS[notice.level].role);
+    const title = element.querySelector('.service-notice__title');
+    title.textContent = notice.title;
+    title.hidden = !notice.title;
     element.querySelector('.service-notice__text').textContent = notice.message;
+    element.querySelector('.service-notice__icon').classList.add(LEVELS[notice.level].icon);
     element.dataset.level = notice.level;
     element.hidden = false;
   } catch (err) {

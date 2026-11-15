@@ -20,7 +20,16 @@ import { parseServiceNotice } from '../src/js/utils/serviceNotice.js';
 test('shows the message when show is true', () => {
   assert.deepEqual(
     parseServiceNotice({ show: true, level: 'info', message: ' Planned maintenance. ' }),
-    { level: 'info', message: 'Planned maintenance.' });
+    { level: 'info', title: '', message: 'Planned maintenance.' });
+});
+
+test('passes the title through, trimmed, and ignores a title that is not text', () => {
+  assert.equal(parseServiceNotice({ show: true, title: ' Service disruption ', message: 'x' }).title, 'Service disruption');
+  assert.equal(parseServiceNotice({ show: true, title: 3, message: 'x' }).title, '');
+});
+
+test('does not take inherited properties for a level', () => {
+  assert.equal(parseServiceNotice({ show: true, level: 'toString', message: 'x' }).level, 'warning');
 });
 
 test('defaults to the warning level when the level is missing or unknown', () => {
