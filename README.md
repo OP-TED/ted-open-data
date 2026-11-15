@@ -29,6 +29,7 @@ directly to the branch.
 {
   "show": true,
   "level": "warning",
+  "title": "Service disruption",
   "message": "We are experiencing temporary technical issues, so some queries may fail or be slow to respond. We are working to restore the service as soon as possible."
 }
 ```
@@ -37,12 +38,18 @@ directly to the branch.
 |-----------|-----------------------------------------------------------------------------------------------|
 | `show`    | `true` shows the banner. Anything else (`false`, missing, `"true"` as text) hides it.        |
 | `level`   | `info` (blue), `warning` (orange) or `error` (red). If missing or unknown, `warning` is used. |
+| `title`   | Optional. A few words in bold above the message, naming what is happening.                  |
 | `message` | The text of the banner, as plain text. HTML is not interpreted. An empty message hides it.   |
 
-- **To switch the banner on**, set `"show": true` and write the message.
+- **To switch the banner on**, set `"show": true` and write the title and message.
 - **To switch it off**, set `"show": false`. Leaving the message in place is fine.
-- Write messages in British English, short enough to read at a glance, and say what users can
-  expect: what is affected and, if known, until when.
+- Write in British English, short enough to read at a glance. The title names what is happening
+  ("Service disruption", "Planned maintenance"); the message says what users can expect: what is
+  affected and, if known, until when.
+
+The banner follows the TED design system's Notification component: an accent bar on a tinted
+surface with an icon per level, so the level is never told by colour alone. An `error` notice is
+read out at once by screen readers; `info` and `warning` are read when the user pauses.
 
 ## How long a change takes
 
