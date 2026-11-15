@@ -89,7 +89,9 @@ body {
     font-family: Inter, Arial, sans-serif;
     font-size: 14px;
     line-height: 28px;
-    height: 28px;
+    /* A minimum, not a fixed height: on a narrow screen the text wraps onto a
+       second line, and a fixed height let it spill over the EU logo below. */
+    min-height: 28px;
     position: relative;
     z-index: 2;
 }
@@ -101,6 +103,7 @@ body {
 }
 
 .eu-globan__flag {
+    flex-shrink: 0;
     max-height: 16px;
     margin: 0 8px 0 16px;
     border: 1px solid rgba(255, 255, 255, 0.25);
@@ -108,6 +111,29 @@ body {
 
 .eu-globan__text {
     color: #fff;
+    min-width: 0;
+}
+
+@media (max-width: 576px) {
+    .eu-globan__text {
+        line-height: 18px;
+        padding: 5px 0;
+    }
+}
+
+/* Too narrow for the text and the button side by side: the button moves to a
+   row of its own, lined up with the text above it. */
+@media (max-width: 374px) {
+    .eu-globan__content {
+        flex-wrap: wrap;
+    }
+    .eu-globan .eu-globan__text {
+        flex: 1 1 calc(100% - 47px); /* the whole row after the flag */
+    }
+    .eu-globan .eu-globan__button {
+        /* 47px to the text, less the button's 3px border and 7px padding */
+        margin: 0 0 3px 37px;
+    }
 }
 
 .eu-globan__button {
@@ -126,6 +152,8 @@ body {
     cursor: pointer;
     outline: none;
     white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 8px;
 }
 
 .eu-globan__button:hover {
