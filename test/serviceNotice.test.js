@@ -28,8 +28,10 @@ test('passes the title through, trimmed, and ignores a title that is not text', 
   assert.equal(parseServiceNotice({ show: true, title: 3, message: 'x' }).title, '');
 });
 
-test('does not take inherited properties for a level', () => {
-  assert.equal(parseServiceNotice({ show: true, level: 'toString', message: 'x' }).level, 'warning');
+test('falls back to warning for a level that is not a known string', () => {
+  for (const level of ['toString', ['error'], { toString: 'warning' }, { toString: () => 'error' }, 3, null]) {
+    assert.equal(parseServiceNotice({ show: true, level, message: 'x' }).level, 'warning');
+  }
 });
 
 test('defaults to the warning level when the level is missing or unknown', () => {

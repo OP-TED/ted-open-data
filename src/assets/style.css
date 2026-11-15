@@ -905,7 +905,10 @@ main {
     border: 1px solid #dee2e6;
     border-radius: 0.25rem;
     overflow-y: auto;
-    max-height: calc(100vh - var(--header-total-height, 251px) - 80px);
+    /* Fills the space left under the header, but never less than enough to show
+       a few categories: when space is tight (a phone, or with the service notice
+       showing) the page scrolls instead of the list collapsing to nothing. */
+    max-height: max(calc(100vh - var(--header-total-height, 251px) - 80px), 16rem);
 }
 
 /* Accordions in this application look alike wherever they appear: the query
@@ -1801,26 +1804,23 @@ main {
    carousel doesn't jump as you flip between short and tall slides.
    ───────────────────────────────────────────────────────────────── */
 
-/* The carousel fills its tab-pane vertically and never overflows it.
-   Without explicit flex sizing, the carousel + its inner padding
-   would push the slide content past the bottom of the visible area
-   and the page would grow a scrollbar. */
+/* The carousel fills the space left under the header, so the page has no
+   scrollbar when the slides fit. Its height is a minimum, not fixed: where a
+   slide needs more room (a phone, a short window, or the service notice
+   showing), the slide grows and the page scrolls rather than clipping the
+   slide's buttons. --home-carousel-padding-y is the padding above and below,
+   which the slide's own minimum takes off. */
 .home-carousel {
-  height: calc(100vh - var(--header-total-height, 251px));
+  --home-carousel-padding-y: 1rem;
+  min-height: calc(100vh - var(--header-total-height, 251px));
   display: flex;
   flex-direction: column;
-  padding: 1rem 4rem;
+  padding: var(--home-carousel-padding-y) 4rem;
   overflow: hidden;
 }
 
 .home-carousel .carousel-inner {
   flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-.home-carousel .carousel-item {
-  height: 100%;
 }
 
 .home-carousel-slide {
@@ -1832,7 +1832,7 @@ main {
      a bit of breathing room). Without this, full-width buttons on
      slides 2-5 sit right on top of the dots and hide them. */
   padding: 1rem 1rem 3rem 1rem;
-  height: 100%;
+  min-height: calc(100vh - var(--header-total-height, 251px) - 2 * var(--home-carousel-padding-y));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1899,7 +1899,8 @@ main {
    screens so the content can breathe. */
 @media (max-width: 576px) {
   .home-carousel {
-    padding: 0.5rem 1rem;
+    --home-carousel-padding-y: 0.5rem;
+    padding: var(--home-carousel-padding-y) 1rem;
   }
   .home-carousel .carousel-control-prev,
   .home-carousel .carousel-control-next {

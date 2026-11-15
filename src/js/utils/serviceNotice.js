@@ -43,7 +43,9 @@ export function parseServiceNotice(data) {
   const text = value => (typeof value === 'string' ? value.trim() : '');
   const message = text(data.message);
   if (!message) return null;
-  const level = Object.hasOwn(LEVELS, data.level) ? data.level : 'warning';
+  // typeof first: Object.hasOwn turns its key into a string, so ['error'] would
+  // pass as 'error', and an object with its own toString could throw.
+  const level = typeof data.level === 'string' && Object.hasOwn(LEVELS, data.level) ? data.level : 'warning';
   return { level, title: text(data.title), message };
 }
 
