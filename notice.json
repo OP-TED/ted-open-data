@@ -1,5 +1,5 @@
 {
-  "show": true,
+  "show": false,
   "level": "warning",
   "title": "Service disruption",
   "message": "We are experiencing temporary technical issues, so some queries may fail or be slow to respond. We are working to restore the service as soon as possible."
